@@ -171,7 +171,6 @@ async function finishWord(skipped = false) {
   replayHidden.value = !c.notes.length;   // only when a stroke was out of order or backwards
   if (g === "perfect") confetti();
   if (g === "again" && !session.requeued.has(c.word.id)) { session.requeued.add(c.word.id); session.queue.push(c.word); }
-  speak(c.word.w);
   await nextTick();
   nextBtn.value?.focus({ preventScroll: true });
 }
