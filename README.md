@@ -8,7 +8,7 @@ npm install
 npm run dev          # http://localhost:5173
 npm run build        # static site in dist/ (relative paths, hash routing: host it anywhere)
 npm test             # unit tests for the spaced-repetition and grading rules
-npm run test:parity  # builds, then compares the Vue app with the original xiexie.html in Chrome
+npm run test:parity  # builds, then compares the Vue app with archived/xiexie.html in Chrome
 ```
 
 ## Layout
@@ -22,7 +22,7 @@ src/
   lib/                          srs (pure rules), storage (IndexedDB), chardata, speech, momo, dom
   data/                         levels, words.json, chardata.json.gz (stroke data)
   vendor/hanzi-writer.js        Hanzi Writer 3.7.3, patched for out-of-order strokes and leniency
-xiexie.html                     the original single-file app, kept as the parity-test reference
+archived/xiexie.html            the original single-file app, kept as the parity-test reference
 ```
 
 Progress is stored in IndexedDB (`xiexie-db`) in the same format as the original single-file version,

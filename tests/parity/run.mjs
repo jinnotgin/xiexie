@@ -1,6 +1,6 @@
 /**
  * Parity test: runs identical scripted scenarios against the original single-file
- * app (xiexie.html) and the built Vue app (dist/), in system Chrome, and compares:
+ * app (archived/xiexie.html) and the built Vue app (dist/), in system Chrome, and compares:
  *   - a normalised snapshot of the visible screen's DOM (texts, classes, hidden/disabled state)
  *   - what each app saved to IndexedDB
  *   - screenshots (pixel diff), with reduced motion so animations don't interfere
@@ -29,7 +29,7 @@ if (!fs.existsSync(path.join(ROOT, "dist/index.html"))) {
 }
 
 /* ---------- reference data, taken from the original file ---------- */
-const ORIGINAL = fs.readFileSync(path.join(ROOT, "xiexie.html"), "utf8");
+const ORIGINAL = fs.readFileSync(path.join(ROOT, "archived/xiexie.html"), "utf8");
 const LINES = Function(`return ${ORIGINAL.match(/const LINES = (\{[\s\S]*?\n\});/)[1]}`)();
 const CHARDATA = JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(ROOT, "src/data/chardata.json.gz"))));
 const lineCategory = new Map();
@@ -50,7 +50,7 @@ function serve(dir) {
 const origServer = await serve(ROOT);
 const vueServer = await serve(path.join(ROOT, "dist"));
 const TARGETS = {
-  original: `http://127.0.0.1:${origServer.address().port}/xiexie.html`,
+  original: `http://127.0.0.1:${origServer.address().port}/archived/xiexie.html`,
   vue: `http://127.0.0.1:${vueServer.address().port}/index.html`,
 };
 
@@ -501,7 +501,7 @@ origServer.close(); vueServer.close();
 /* ---------- report ---------- */
 const passed = report.scenarios.filter(s => s.ok).length + report.visuals.filter(v => v.ok).length;
 const total = report.scenarios.length + report.visuals.length;
-let md = `# Parity report: original xiexie.html vs Vue build\n\n${passed}/${total} passed.\n\n## Behaviour scenarios\n\n| | Scenario | Checkpoints |\n|---|---|---|\n`;
+let md = `# Parity report: original archived/xiexie.html vs Vue build\n\n${passed}/${total} passed.\n\n## Behaviour scenarios\n\n| | Scenario | Checkpoints |\n|---|---|---|\n`;
 for (const s of report.scenarios) md += `| ${s.ok ? "✅" : "❌"} | ${s.name} | ${s.checkpoints.filter(c => c.ok).length}/${s.checkpoints.length} |\n`;
 md += `\n## Screenshots (reduced motion)\n\n| | Screen | Differing pixels | Sizes (original vs vue) |\n|---|---|---|---|\n`;
 for (const v of report.visuals) md += `| ${v.ok ? "✅" : "❌"} | ${v.name} | ${v.diffPixels} (${v.diffPct}%) | ${v.sizes.join(" vs ")} |\n`;
