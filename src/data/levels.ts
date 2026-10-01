@@ -20,7 +20,7 @@ export const LEVEL_MIGRATION: Record<string, string[]> = {
 };
 
 export const LIB_INTRO: Record<string, string> = {
-  p: "Characters first taught in this year, following the 欢乐伙伴 primary character lists.",
+  p: "Characters first taught in this year, following the 欢乐伙伴 Higher Chinese character lists (which include every Chinese character).",
   sec1: "The most common quarter of China's 3,500 everyday characters not taught in primary school.",
   sec2: "The second most common quarter of China's 3,500 everyday characters not taught in primary school.",
   sec3: "The third most common quarter of China's 3,500 everyday characters not taught in primary school.",

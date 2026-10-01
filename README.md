@@ -33,13 +33,15 @@ so data carries over when the new build is served from the same origin.
 `src/data/words.json` is built around characters, not vocabulary: every character is taught by at least one word,
 but a common word is left out when its characters are already covered elsewhere (雨伞 is missing, while 下雨 and 伞 are in).
 
-- **Characters**: all 3,500 level-one characters of the [通用规范汉字表 (2013)](https://github.com/shengdoushi/common-standard-chinese-characters-table), plus 咦, each with stroke data.
-- **P1 to P6**: characters placed by the year they are first taught in the 欢乐伙伴 primary textbooks (Chinese, not Higher Chinese),
-  using each lesson's 识读字 (read) and 识写字 (write) list. All 1,655 of the list's characters sit in the same year here, and no other characters are in P1 to P6.
+- **Characters**: all 3,500 level-one characters of the [通用规范汉字表 (2013)](https://github.com/shengdoushi/common-standard-chinese-characters-table), plus 咦 and 踮 (a Higher Chinese P6 character), each with stroke data.
+- **P1 to P6**: characters placed by the year they are first taught in the 欢乐伙伴 primary textbooks, following the Higher Chinese list,
+  which holds every Chinese character plus 160 more in P5 and P6. All 1,815 of its characters sit in the same year here, and no other characters are in P1 to P6.
+  Every Chinese character is in the same year as on the Chinese list too, except 28 that Higher Chinese teaches a year earlier.
+  Each lesson lists 识读字 (read) and 识写字 (write) characters, and a character counts from the first lesson it appears in either column.
   MOE publishes the lists on its [Chinese Language teaching resources](https://www.moe.gov.sg/careers/become-teachers/pri-sec-jc-ci/chinese-language-teaching/useful-information-and-resources) page,
   and copies are kept in `docs/sources/` (© Ministry of Education, Singapore):
-  - 2015 edition, P1 to P6: [Chinese](https://www.moe.gov.sg/media/files/primary/f607087e-d909-4581-82ac-9c3867c617ee.pdf) (the one this bank follows) and
-    [Higher Chinese](https://www.moe.gov.sg/media/files/primary/e055a4ab-c7f4-42b2-96a1-e2b96a370477.pdf).
+  - 2015 edition, P1 to P6: [Chinese](https://www.moe.gov.sg/media/files/primary/f607087e-d909-4581-82ac-9c3867c617ee.pdf) and
+    [Higher Chinese](https://www.moe.gov.sg/media/files/primary/e055a4ab-c7f4-42b2-96a1-e2b96a370477.pdf) (the one this bank follows).
   - 欢乐伙伴 2.0 (2024 edition, P1 and P2 so far): [Chinese](https://www.moe.gov.sg/api/media/6c0f68ed-a8bf-471c-9f32-b5ea75831910/2024-Character-List-Primary-One-to-Two-Chinese.pdf) and
     [Higher Chinese](https://www.moe.gov.sg/api/media/394e06b1-f4f3-4e90-adb4-a33efd9e1c5e/2024-Character-List-Primary-One-to-Two-Higher-Chinese.pdf).
     2.0 moves some characters earlier: about 80% of its P1 and P2 characters are in this bank's P1 and P2 (伞 is P1 in 2.0 but P2 here).
