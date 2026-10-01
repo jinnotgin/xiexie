@@ -138,7 +138,6 @@ dist
 .claude/launch.json
 
 # Firebase
-firebase.json
 .firebaserc
 .firebase/
 firebase-debug.log
