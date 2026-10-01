@@ -168,6 +168,7 @@ h2{font-size:1.05rem;margin:0 0 10px}
 @keyframes shake{20%{transform:translateX(-6px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
 .momo-line{display:flex;align-items:center;gap:8px;justify-content:center;min-height:44px;margin:12px 0 6px;font-size:.98rem}
 .momo-line svg{width:34px;height:34px;flex:none}
+#momo-say{text-wrap:balance}
 .actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:6px}
 .stamp{
   position:absolute;right:-10px;top:-14px;width:92px;height:92px;border-radius:14px;
