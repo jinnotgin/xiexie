@@ -19,6 +19,7 @@ import { cloudError } from "../lib/cloud";
 import { useStartSession } from "../composables/useStartSession";
 import Momo from "../components/Momo.vue";
 import Icon from "../components/Icon.vue";
+import InstallCard from "../components/InstallCard.vue";
 
 const app = useProgressStore();
 const account = useAccountStore();
@@ -165,6 +166,7 @@ async function signOut() {
       <button class="btn" id="open-library" @click="router.push({ name: 'library' })">Browse all words</button>
     </div>
 
+    <InstallCard />
     <div class="sync-card" :class="{ synced: account.signedIn }">
       <Icon :name="account.signedIn ? 'cloud' : 'device'" class="sync-icon" />
       <p class="sync-text">

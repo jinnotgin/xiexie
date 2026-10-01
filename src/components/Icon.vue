@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** Small line icons drawn in the current text colour, with the same rounded weight as the app's borders. */
-defineProps<{ name: "flame" | "pen" | "award" | "speaker" | "cloud" | "device" | "reset" }>();
+defineProps<{ name: "flame" | "pen" | "award" | "speaker" | "cloud" | "device" | "reset" | "install" | "share" }>();
 </script>
 
 <template>
@@ -30,6 +30,14 @@ defineProps<{ name: "flame" | "pen" | "award" | "speaker" | "cloud" | "device" |
     <template v-else-if="name === 'reset'">
       <path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.5" />
       <path d="M4 3.5v5h5" />
+    </template>
+    <template v-else-if="name === 'install'">
+      <rect x="6.5" y="2.5" width="11" height="19" rx="2.5" />
+      <path d="M12 7v7m-3-3 3 3 3-3" />
+    </template>
+    <template v-else-if="name === 'share'">
+      <path d="M8.5 9.5H7a1.5 1.5 0 0 0-1.5 1.5v8A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 17 9.5h-1.5" />
+      <path d="M12 14V3m-3.5 3.5L12 3l3.5 3.5" />
     </template>
     <template v-else>
       <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" />
