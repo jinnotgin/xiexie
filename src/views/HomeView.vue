@@ -62,7 +62,7 @@ async function reset() {
     <label class="toggle">
       <input type="checkbox" id="strict" :checked="ready && app.meta.relaxed === false"
         @change="app.setStrict(($event.target as HTMLInputElement).checked)">
-      <span>Strict stroke order<small>Strokes must go in the right order and direction. Off means any order counts, with a note if it differs.</small></span>
+      <span>Strict stroke order<small>Strokes must go in the right order and direction.</small></span>
     </label>
 
     <div class="start-row">
