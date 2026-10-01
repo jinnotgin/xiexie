@@ -74,13 +74,6 @@ describe("lazy checker", () => {
     expect(checker.check(asInk(DATA["字"].medians), "not a character").ok).toBe(false);
   });
 
-  it("points a hint at the next stroke to write", () => {
-    expect(checker.nextStroke([], "字")).toBe(0);
-    expect(checker.nextStroke(asInk(DATA["字"].medians.slice(0, 3)), "字")).toBe(3);
-    // nothing left to point at once it is all written: stays on the last stroke
-    expect(checker.nextStroke(asInk(DATA["字"].medians), "字")).toBe(5);
-  });
-
   it("knows each character's stroke count", () => {
     expect(checker.strokeCount("字")).toBe(6);
     expect(checker.strokeCount("not a character")).toBe(0);

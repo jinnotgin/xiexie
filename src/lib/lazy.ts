@@ -237,22 +237,6 @@ export function makeChecker(data: Record<string, CharMedians>) {
     return { ok, rank, score, best: scored[0].c, bestScore, rival };
   }
 
-  /** The next stroke of `target` to write, judging by how far along the reference the ink has got. */
-  function nextStroke(ink: Pt[][], target: string): number {
-    const strokes = ink.filter(s => s.length > 0);
-    if (!data[target] || !strokes.length) return 0;
-    const meds = data[target].medians;
-    // Compare the ink, in each prefix's order, with each prefix of the reference (first k strokes).
-    let bestK = 0, bestD = Infinity;
-    const norm = splitCorners(normalize(strokes, true));
-    for (let k = 1; k <= meds.length; k++) {
-      const r = toPath(meds.slice(0, k), N_COARSE, false);
-      const d = dtw(toPath(canonicalize(norm, r), N_COARSE, false), r);
-      if (d < bestD) { bestD = d; bestK = k; }
-    }
-    return Math.min(bestK, meds.length - 1);
-  }
-
   /** Builds the reference paths ahead of time, a slice per call, so the first check doesn't stall. */
   function warm(budgetMs = 8): boolean {
     const t = performance.now();
@@ -266,5 +250,5 @@ export function makeChecker(data: Record<string, CharMedians>) {
 
   const strokeCount = (c: string) => data[c]?.medians.length ?? 0;
 
-  return { check, nextStroke, strokeCount, warm };
+  return { check, strokeCount, warm };
 }
