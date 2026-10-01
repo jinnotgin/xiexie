@@ -142,15 +142,19 @@ async function signOut() {
       <button class="btn" id="open-library" @click="router.push({ name: 'library' })">Browse all words</button>
     </div>
 
+    <div class="sync-card" :class="{ synced: account.signedIn }">
+      <Icon :name="account.signedIn ? 'cloud' : 'device'" class="sync-icon" />
+      <p class="sync-text">
+        <span id="storage-note">{{ storageNote }}</span>
+        <small v-if="account.enabled && !account.signedIn">Sign in to keep it on all your devices.</small>
+      </p>
+      <template v-if="account.enabled">
+        <button v-if="account.signedIn" class="linkish" id="sign-out" @click="signOut">Sign out</button>
+        <button v-else class="btn small" id="sign-in" :disabled="account.state === 'busy'" @click="signIn">Sign in with Google</button>
+      </template>
+    </div>
     <div class="foot">
-      <span id="storage-note">{{ storageNote }}</span>
-      <span class="foot-actions">
-        <template v-if="account.enabled">
-          <button v-if="account.signedIn" class="linkish" id="sign-out" @click="signOut">Sign out</button>
-          <button v-else class="btn small" id="sign-in" :disabled="account.state === 'busy'" @click="signIn">Sign in with Google to sync</button>
-        </template>
-        <button class="linkish" id="reset" @click="reset">Reset progress</button>
-      </span>
+      <button class="linkish" id="reset" @click="reset"><Icon name="reset" />Reset progress</button>
     </div>
   </section>
   </Transition>
