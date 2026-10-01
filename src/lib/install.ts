@@ -22,7 +22,7 @@ export const install = reactive({
 
 export function setupInstall() {
   if (import.meta.env.PROD && "serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
   }
   if (!isMobile || standalone()) return;
   if (isIOS) install.mode = "ios";

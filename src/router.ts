@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory } from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 import HomeView from "./views/HomeView.vue";
 import PracticeView from "./views/PracticeView.vue";
 import SummaryView from "./views/SummaryView.vue";
@@ -6,9 +6,12 @@ import LibraryView from "./views/LibraryView.vue";
 import { useProgressStore } from "./stores/progress";
 import { useSessionStore } from "./stores/session";
 
-// Hash history keeps the app working from any static host or folder, with no server rewrites.
+// Old links and home-screen shortcuts used hash URLs (/#/library); move them to the clean path before routing.
+if (location.hash.startsWith("#/")) history.replaceState(null, "", location.hash.slice(1));
+
+// Clean URLs (/library). The host must serve index.html for every path: see the rewrite in firebase.json.
 export const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: "/", name: "home", component: HomeView },
     { path: "/practice", name: "practice", component: PracticeView },

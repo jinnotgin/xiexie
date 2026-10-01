@@ -31,7 +31,7 @@ The live site is on Firebase Hosting: `npm run build`, then `firebase deploy --o
 
 ```
 src/
-  main.ts, App.vue, router.ts   app shell; screens are routes (#/, #/practice, #/summary, #/library)
+  main.ts, App.vue, router.ts   app shell; screens are routes (/, /practice, /summary, /library)
   views/                        HomeView, PracticeView, SummaryView, LibraryView
   components/                   HanziStage (one HanziWriter), GridSvg, Momo, Icon, WordModal, SyncConflict
   stores/                       progress (saved state), session (current round), ui (popup, library tab), account (sign-in, sync)

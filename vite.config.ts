@@ -17,8 +17,8 @@ function git(cmd: string): string {
 const commit = (git("rev-parse --short HEAD") || "unknown") + (git("status --porcelain") ? "-dirty" : "");
 
 export default defineConfig({
-  // Relative base so the built app works from any folder or static host (GitHub Pages etc).
-  base: "./",
+  // Absolute base: with clean URLs a page like /library must still load /assets/..., not /library/assets/...
+  base: "/",
   plugins: [
     vue(),
     {
