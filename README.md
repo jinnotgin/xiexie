@@ -11,7 +11,7 @@ Many Singaporeans spend ten years or more learning Chinese in school, then rarel
 - **Levels follow the Singapore syllabus.** P1 to P6 use the MOE 欢乐伙伴 character lists, so you can start from the year you remember.
   Sec 1 to Sec 4 cover the rest of China's 3,500 everyday characters, and Business adds words for working life.
 - **You write every stroke,** with a lenient checker that forgives small wobbles.
-  Turn off strict stroke order to write freely instead: joined-up, cursive strokes count once the whole character is close enough.
+  Turn off strict stroke order to write freely instead: any order, any direction, joined-up strokes and all; the character counts once it is close enough.
 - **Spaced repetition** brings words back just before you are likely to forget them.
 - **No account needed.** Progress stays on your device unless you sign in with Google to sync it.
 

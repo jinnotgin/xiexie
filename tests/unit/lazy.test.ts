@@ -19,6 +19,16 @@ const CURSIVE_ZI: Pt[][] = [
   [[210, 1403], [380, 1440], [520, 1475], [725, 1540]],
 ];
 
+// 西 from a phone, with the left side and bottom joined into one L before the inner strokes
+// (standard order puts the bottom last). Five pen strokes for six.
+const XI = {
+  top: [[148, 95], [230, 88], [312, 80]] as Pt[],
+  pie: [[190, 112], [187, 160], [160, 195]] as Pt[],
+  inR: [[235, 112], [238, 185], [272, 188]] as Pt[],
+  leftBottom: [[110, 155], [130, 195], [150, 237], [240, 238], [330, 240]] as Pt[],
+  hengZhe: [[110, 155], [215, 152], [320, 150], [323, 195], [325, 240]] as Pt[],
+};
+
 describe("lazy checker", () => {
   it("accepts real cursive writing with joined strokes", () => {
     const v = checker.check(CURSIVE_ZI, "字");
@@ -37,6 +47,18 @@ describe("lazy checker", () => {
 
   it("accepts a whole character written without lifting the pen", () => {
     for (const c of "你我字是") expect(checker.check(joined(DATA[c].medians), c).ok, c).toBe(true);
+  });
+
+  it("ignores stroke order", () => {
+    const { top, pie, inR, leftBottom, hengZhe } = XI;
+    expect(checker.check([top, leftBottom, hengZhe, pie, inR], "西").ok).toBe(true);
+    expect(checker.check([pie, inR, hengZhe, leftBottom, top], "西").ok).toBe(true);
+    // a whole character's strokes reversed in order
+    for (const c of "你我国写") expect(checker.check(asInk([...DATA[c].medians].reverse()), c).ok, c).toBe(true);
+  });
+
+  it("ignores stroke direction", () => {
+    for (const c of "你我国写西") expect(checker.check(asInk(DATA[c].medians.map(s => [...s].reverse())), c).ok, c).toBe(true);
   });
 
   it("waits for the rest of the character", () => {
