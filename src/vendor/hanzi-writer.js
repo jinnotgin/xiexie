@@ -2,7 +2,7 @@
 // @ts-nocheck
 /**
  * Hanzi Writer v3.7.3 | https://chanind.github.io/hanzi-writer | MIT licence, (c) 2014 David Chanin
- * Patched for 写写: optional out-of-order stroke acceptance (acceptOutOfOrderStrokes)
+ * Patched for 写写: leniency tuning and misplaced-stroke handling (see [xiexie patch] notes)
  */
 
 var HanziWriter = (function () {
@@ -633,13 +633,7 @@ var HanziWriter = (function () {
 
   const MIN_LEN_THRESHOLD = 0.35; // smaller = more lenient
 
-  // [xiexie patch] relaxed-mode scoring. Geometry alone can't separate two strokes of the
-  // same type sitting near each other (the two verticals in 们, the stacked horizontals in
-  // 三), so the out-of-order scan biases towards the earliest stroke still to be drawn.
-  const ORDER_PENALTY = 0.18; // score multiplier per undrawn stroke skipped over
-  const ORDER_PENALTY_CAP = 6; // stop growing the penalty beyond this many strokes
-  const ENDPOINT_WEIGHT = 0.5; // how much endpoint placement counts next to average distance
-  const MAX_LEN_RATIO = 1.9; // reject a candidate the user's stroke badly overshoots
+  const MAX_LEN_RATIO = 1.9; // [xiexie patch] reject a stroke that badly overshoots the one it is matched to
   // [xiexie patch] adaptive leniency: first attempt at a stroke is judged normally, each miss on
   // the same stroke loosens the thresholds a step (capped), so retries get easier without making
   // a clean first attempt meaningless.
@@ -682,10 +676,7 @@ var HanziWriter = (function () {
     } // if there is a better match among strokes the user hasn't drawn yet, the user probably drew the wrong stroke
 
 
-    // [xiexie patch] in out-of-order mode some later strokes are already on the page, and a
-    // stroke the user has finished must not keep stealing attention from the expected one.
-    const skipStrokes = options.skipStrokes;
-    const laterStrokes = strokes.slice(strokeNum + 1).filter(stroke => !skipStrokes || !skipStrokes.has(stroke.strokeNum));
+    const laterStrokes = strokes.slice(strokeNum + 1);
     let closestMatchDist = avgDist;
 
     for (let i = 0; i < laterStrokes.length; i++) {
@@ -1263,10 +1254,9 @@ var HanziWriter = (function () {
       this._currentStrokeIndex = Math.min(startIndex, this._character.strokes.length - 1);
       this._mistakesOnStroke = 0;
       this._totalMistakes = 0;
-      // [xiexie patch] track which strokes are done, and any order/direction notes
+      // [xiexie patch] track which strokes are done, and any direction/placement notes
       this._drawn = new Set();
       this._drawOrder = [];
-      this._outOfOrder = [];
       this._backwards = [];
       this._misplaced = [];
       return this._renderState.run(startQuiz(this._character, options.strokeFadeDuration, this._currentStrokeIndex));
@@ -1328,70 +1318,6 @@ var HanziWriter = (function () {
       } = this._options;
 
       const currentStroke = this._getCurrentStroke();
-
-      // [xiexie patch] relaxed mode, in two passes. The stroke the learner is due to write wins
-      // unless a stroke still to come fits decidedly better; only then do we look further afield.
-      if (this._options.acceptOutOfOrderStrokes) {
-        const isOutlineVisible = this._renderState.state.character.outline.opacity > 0;
-        const distMod = isOutlineVisible || this._drawn.size > 0 ? LATER_STROKE_DIST_MOD : 1;
-        const matchOpts = {
-          isOutlineVisible,
-          leniency: retryLeniency(this._options.leniency, this._mistakesOnStroke),
-          shapeLeniency: SHAPE_LENIENCY,
-          averageDistanceThreshold: this._options.averageDistanceThreshold,
-          distModOverride: distMod
-        };
-        const points = stripDuplicates(this._userStroke.points);
-        const expected = this._currentStrokeIndex;
-        let best = null;
-
-        // Pass 1 — the expected stroke, forwards only. strokeMatches already rejects it when an
-        // undrawn stroke further on fits much better, which is what lets a genuine out-of-order
-        // stroke through. A backwards match is deliberately left to pass 2: strokeMatches returns
-        // early on backwards without running that guard, so accepting one here would let the
-        // expected stroke swallow a later stroke that matches it forwards.
-        if (points.length >= 2 && expected < this._character.strokes.length && !this._drawn.has(expected)) {
-          const { isMatch } = strokeMatches(this._userStroke, this._character, expected, { ...matchOpts,
-            skipStrokes: this._drawn
-          });
-          if (isMatch) best = { i: expected, score: 0, backwards: false };
-        } // Pass 2 — an out-of-order or backwards stroke. Score every undrawn candidate, leaning on endpoint
-        // placement as well as average distance, and charging a penalty for skipping ahead.
-
-
-        if (!best && points.length >= 2) {
-          const userLength = length(points);
-          let rank = 0;
-
-          this._character.strokes.forEach((stroke, i) => {
-            if (this._drawn.has(i)) return;
-            const skipped = rank++;
-            const d = getMatchData(points, stroke, matchOpts);
-            const backwards = !d.isMatch && d.meta.isStrokeBackwards;
-            if (!d.isMatch && !(backwards && acceptBackwardsStrokes)) return; // a stroke that badly overshoots this candidate is answering a different stroke
-
-            if (userLength + 25 > MAX_LEN_RATIO * (stroke.getLength() + 25)) return;
-            const head = backwards ? points[points.length - 1] : points[0];
-            const tail = backwards ? points[0] : points[points.length - 1];
-            const endpointDist = (distance(stroke.getStartingPoint(), head) + distance(stroke.getEndingPoint(), tail)) / 2;
-            const score = (d.avgDist + ENDPOINT_WEIGHT * endpointDist) * (backwards ? 1.15 : 1) * (1 + Math.min(skipped, ORDER_PENALTY_CAP) * ORDER_PENALTY);
-            if (!best || score < best.score) best = { i, score, backwards };
-          });
-        }
-
-        const forced = !best && markStrokeCorrectAfterMisses && this._mistakesOnStroke + 1 >= markStrokeCorrectAfterMisses;
-        if (best || forced) {
-          this._acceptStroke(best ? best.i : this._currentStrokeIndex, !!(best && best.backwards), !best);
-        } else {
-          this._handleFailure({ isStrokeBackwards: false });
-          const { showHintAfterMisses, highlightColor, strokeHighlightSpeed } = this._options;
-          if (showHintAfterMisses !== false && this._mistakesOnStroke >= showHintAfterMisses) {
-            this._renderState.run(highlightStroke(currentStroke, colorStringToVals(highlightColor), strokeHighlightSpeed));
-          }
-        }
-        this._userStroke = undefined;
-        return;
-      }
 
       const strictOpts = {
         isOutlineVisible: this._renderState.state.character.outline.opacity > 0,
@@ -1482,7 +1408,7 @@ var HanziWriter = (function () {
         onComplete === null || onComplete === void 0 ? void 0 : onComplete({
           character: symbol,
           totalMistakes: this._totalMistakes,
-          outOfOrder: [], backwards: (this._backwards || []).slice(), misplaced: (this._misplaced || []).slice(), drawOrder: (this._drawOrder || []).slice()
+          backwards: (this._backwards || []).slice(), misplaced: (this._misplaced || []).slice(), drawOrder: (this._drawOrder || []).slice()
         });
 
         if (highlightOnComplete) {
@@ -1490,40 +1416,6 @@ var HanziWriter = (function () {
         }
       }
 
-      this._renderState.run(animation);
-    }
-
-    // [xiexie patch] accept stroke i (possibly out of order / backwards)
-    _acceptStroke(i, backwards, forced = false) {
-      const { strokes, symbol } = this._character;
-      const expected = this._currentStrokeIndex;
-      const outOfOrder = i !== expected;
-      this._drawn.add(i);
-      this._drawOrder.push(i);
-      if (outOfOrder) this._outOfOrder.push(i);
-      if (backwards) this._backwards.push(i);
-      const { onCorrectStroke, onComplete, highlightOnComplete, strokeFadeDuration, highlightCompleteColor, highlightColor, strokeHighlightDuration } = this._options;
-      let next = 0;
-      while (this._drawn.has(next)) next++;
-      const strokesRemaining = strokes.length - this._drawn.size;
-      onCorrectStroke === null || onCorrectStroke === void 0 ? void 0 : onCorrectStroke({
-        character: symbol, strokeNum: i, expectedStrokeNum: expected, mistakesOnStroke: this._mistakesOnStroke,
-        totalMistakes: this._totalMistakes, strokesRemaining, drawnPath: getDrawnPath(this._userStroke),
-        isBackwards: backwards, isOutOfOrder: outOfOrder, isForced: forced
-      });
-      let animation = showStroke('main', i, strokeFadeDuration);
-      this._mistakesOnStroke = 0;
-      this._currentStrokeIndex = next;
-      if (strokesRemaining === 0) {
-        this._isActive = false;
-        onComplete === null || onComplete === void 0 ? void 0 : onComplete({
-          character: symbol, totalMistakes: this._totalMistakes,
-          outOfOrder: this._outOfOrder.slice(), backwards: this._backwards.slice(), drawOrder: this._drawOrder.slice()
-        });
-        if (highlightOnComplete) {
-          animation = animation.concat(highlightCompleteChar(this._character, colorStringToVals(highlightCompleteColor || highlightColor), (strokeHighlightDuration || 0) * 2));
-        }
-      }
       this._renderState.run(animation);
     }
 
@@ -2430,7 +2322,6 @@ var HanziWriter = (function () {
     highlightOnComplete: true,
     highlightCompleteColor: null,
     markStrokeCorrectAfterMisses: false,
-    acceptOutOfOrderStrokes: false,
     acceptBackwardsStrokes: false,
     quizStartStrokeNum: 0,
     averageDistanceThreshold: 350,

@@ -163,7 +163,7 @@ async function signOut() {
     <label class="toggle">
       <input type="checkbox" id="strict" :checked="app.meta.relaxed === false"
         @change="app.setStrict(($event.target as HTMLInputElement).checked)">
-      <span>Strict stroke order<small>Strokes must go in the right order and direction.</small></span>
+      <span>Strict stroke order<small>Each stroke is checked as you write it. Turn off to write freely, joined-up strokes and all.</small></span>
     </label>
 
     <div class="start-row">
