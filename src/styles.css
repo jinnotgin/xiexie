@@ -257,3 +257,6 @@ h2{font-size:1.05rem;margin:0 0 10px}
   .momo.bob,.splash-momo.bob,.loadbar.busy span,.stage.shake,.stamp,.confetti span{animation:none!important}
   .splash-enter-active,.splash-leave-active,.line-enter-active,.line-leave-active{transition:none}
 }
+.stage .ink{position:absolute;inset:0;touch-action:none;cursor:crosshair}
+.stage .ink path{fill:none;stroke:var(--ink);stroke-linecap:round;stroke-linejoin:round}
+.stage .ink.fading{opacity:0;transition:opacity .25s}

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 /**
  * The writing card. Session data lives in the session store; this view drives
- * the HanziWriter quiz for one character at a time and shows the graded result.
+ * one character at a time and shows the graded result. Strict mode runs the
+ * HanziWriter quiz, stroke by stroke; lazy mode collects free ink on an InkPad
+ * and checks the whole character at once (lib/lazy.ts).
  */
 import posthog from "posthog-js";
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowRef } from "vue";
@@ -12,6 +14,7 @@ import { STAMPS, gradeOf } from "../lib/srs";
 import { confetti, cssVar, reduceMotion, writerColors } from "../lib/dom";
 import { speak, speechOk } from "../lib/speech";
 import { posthogEnabled, practiceLogger } from "../lib/posthog";
+import { lazyChecker } from "../lib/chardata";
 import { useProgressStore } from "../stores/progress";
 import { useSessionStore } from "../stores/session";
 import { useKeydown } from "../composables/useKeydown";
@@ -19,6 +22,7 @@ import Momo from "../components/Momo.vue";
 import GridSvg from "../components/GridSvg.vue";
 import HanziStage from "../components/HanziStage.vue";
 import Icon from "../components/Icon.vue";
+import InkPad from "../components/InkPad.vue";
 
 const app = useProgressStore();
 const session = useSessionStore();
@@ -39,6 +43,15 @@ const writerSize = ref(0);
 const stageBox = ref<number | null>(null);
 const writerOpts = shallowRef<Record<string, unknown>>({});
 let writer: any = null;
+
+// Lazy mode: free writing, re-checked as a whole after every pen-up until it's close enough.
+const lazy = ref(false);
+const inkPad = ref<InstanceType<typeof InkPad>>();
+const inkWidth = ref(8);
+let charPassed = false;
+let checkTimer: ReturnType<typeof setTimeout> | undefined;
+const CHECK_DELAY_MS = 120;   // let the stroke paint before the check runs
+const OVERSHOOT = 2;          // pen strokes past the character's own count, still no match = a miss
 
 // Result phase: the whole word, a stamp and an optional stroke-order replay.
 const finalSize = ref(0);
@@ -87,10 +100,14 @@ function mountWriter() {
   const size = stageSize();
   writerSize.value = size;
   stageBox.value = size + 4;
+  lazy.value = app.meta.relaxed === true;
+  charPassed = false;
+  cancelCheck();
+  inkWidth.value = Math.max(8, Math.round(size / 26));
   writerOpts.value = {
     width: size, height: size, padding: Math.round(size * 0.07),
     showCharacter: false, showOutline: false,
-    drawingWidth: Math.max(8, Math.round(size / 26)),
+    drawingWidth: inkWidth.value,
     strokeAnimationSpeed: 1.1, delayBetweenStrokes: 140,
     ...writerColors(),
   };
@@ -102,10 +119,9 @@ function onWriterReady(w: any) {
   writer = w;
   const c = session.cur!;
   const ch = c.word.w[c.ci];
-  const relaxed = app.meta.relaxed === true;
+  if (lazy.value) { warmChecker(); return; }
   w.quiz({
     showHintAfterMisses: 3, highlightOnComplete: true, leniency: 1.25,
-    acceptBackwardsStrokes: relaxed, acceptOutOfOrderStrokes: relaxed,
     onMistake: (d: any) => {
       c.mistakes++;
       const stage = stageEl.value;
@@ -113,18 +129,72 @@ function onWriterReady(w: any) {
       if (d && d.mistakesOnStroke >= 3) setMomo("hmm", "Watch the stroke light up, then draw it the same way.");
       else setMomo("hmm", pick(LINES.mistake));
     },
-    onCorrectStroke: (d: any) => {
-      if (d.isOutOfOrder) setMomo("happy", "Counted! That stroke usually comes later.");
-      else if (d.isBackwards) setMomo("happy", "Counted! That one usually goes the other way.");
-      else if (c.mistakes === 0 && !c.revealed) setMomo("happy", "Good, keep going…");
+    onCorrectStroke: () => {
+      if (c.mistakes === 0 && !c.revealed) setMomo("happy", "Good, keep going…");
     },
     onComplete: (d: any) => {
-      const o = (d && d.outOfOrder) ? d.outOfOrder.length : 0, b = (d && d.backwards) ? d.backwards.length : 0;
+      const b = (d && d.backwards) ? d.backwards.length : 0;
       // Misplaced strokes are accepted quietly: no note, no effect on the grade
-      if (!c.revealed && (o || b)) c.notes.push({ ch, order: o, backwards: b });
+      if (!c.revealed && b) c.notes.push({ ch, order: 0, backwards: b });
       later(charDone, 380);
     },
   });
+}
+
+// Builds the checker's reference paths in small slices, so the first check is quick.
+function warmChecker() {
+  const step = () => { if (alive && !lazyChecker().warm()) later(step, 16); };
+  later(step, 300);
+}
+
+function cancelCheck() {
+  if (checkTimer) { clearTimeout(checkTimer); timers.delete(checkTimer); checkTimer = undefined; }
+}
+function onInkEnd() { cancelCheck(); checkTimer = later(() => { checkTimer = undefined; checkInk(); }, CHECK_DELAY_MS); }
+
+/**
+ * Checks all the ink so far. Not close enough yet is fine: the learner keeps writing.
+ * Only ink that has run well past the character without matching counts as a miss.
+ */
+function checkInk() {
+  const c = session.cur;
+  if (!c || c.done || charPassed || !inkPad.value) return;
+  const ink = inkPad.value.strokes;
+  const ch = c.word.w[c.ci];
+  if (!ink.length) return;
+  const v = lazyChecker().check(ink, ch);
+  const overshot = !v.ok && ink.length >= lazyChecker().strokeCount(ch) + OVERSHOOT;
+  if (posthogEnabled && (v.ok || overshot)) {
+    posthog.capture("practice_lazy_check", {
+      accepted: v.ok, rank: v.rank, score: v.score, best_score: v.bestScore,
+      ink_stroke_count: ink.length, character: ch, best_match: v.best,
+    });
+  }
+  if (v.ok) return passChar();
+  if (!overshot) return;
+  c.mistakes++;
+  const stage = stageEl.value;
+  if (!reduceMotion && stage) { stage.classList.remove("shake"); void stage.offsetWidth; stage.classList.add("shake"); }
+  // Name the look-alike only when the ink really is a good fit for it.
+  if (v.best && v.best !== ch && v.bestScore < 0.09) setMomo("hmm", `Hmm, that looks more like ${v.best}. Try again?`);
+  else if (c.mistakes >= 3) setMomo("hmm", "Stuck? Tap Show me for a peek.");
+  else setMomo("hmm", pick(LINES.mistake));
+  inkPad.value.clear(true);
+}
+
+function clearInk() {
+  if (charPassed) return;
+  cancelCheck();
+  inkPad.value?.clear();
+}
+
+function passChar() {
+  const c = session.cur!;
+  charPassed = true;
+  if (c.mistakes === 0 && !c.revealed) setMomo("happy", "Got it!");
+  inkPad.value?.clear(true);
+  try { writer.showCharacter({ duration: 300 }); } catch (e) {}
+  later(charDone, 650);
 }
 
 function charDone() {
@@ -180,7 +250,8 @@ async function finishWord(skipped = false) {
       : `Correct! A stroke in ${chars} went the other way.`;
   }
   setMomo(g === "perfect" ? "wow" : g === "again" ? "hmm" : "happy", noteLine || pick(LINES[g]));
-  replayHidden.value = !c.notes.length;   // only when a stroke was out of order or backwards
+  // Offer the usual stroke order when a stroke went its own way, and always after free writing.
+  replayHidden.value = !c.notes.length && !lazy.value;
   if (g === "perfect") confetti();
   if (g === "again" && !session.requeued.has(c.word.id)) { session.requeued.add(c.word.id); session.queue.push(c.word); }
   await nextTick();
@@ -227,6 +298,15 @@ function next() {
 function hint() {
   const c = session.cur;
   if (!writer || !c || c.done) return;
+  if (lazy.value) {
+    // Hint: light up the stroke after the ones the ink already seems to cover.
+    if (charPassed || !inkPad.value) return;
+    c.hints++;
+    if (posthogEnabled) posthog.capture("practice_hint_requested", { hint_count: c.hints });
+    setMomo("happy", "Here's the next stroke. Watch where it starts and which way it goes.");
+    try { writer.highlightStroke(lazyChecker().nextStroke(inkPad.value.strokes, c.word.w[c.ci])); } catch (e) {}
+    return;
+  }
   // Hint: trace just the next stroke to write, once, then it fades.
   const q = writer._quiz;
   if (!q || !q._isActive) return;
@@ -302,6 +382,8 @@ onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clea
       <div class="stage" id="stage" ref="stageEl" :style="stageBox ? { width: stageBox + 'px', height: stageBox + 'px' } : undefined">
         <HanziStage v-if="cur && phase === 'writing' && writerSize" :key="mountId" :char="cur.word.w[cur.ci] ?? ''"
           :size="writerSize" :options="writerOpts" @ready="onWriterReady" />
+        <InkPad v-if="cur && phase === 'writing' && writerSize && lazy" :key="'ink' + mountId" ref="inkPad"
+          :size="writerSize" :width="inkWidth" @start="cancelCheck" @end="onInkEnd" />
         <template v-else-if="cur && phase === 'done'">
           <GridSvg :size="finalSize" />
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
@@ -313,6 +395,7 @@ onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clea
       </div>
       <div class="momo-line"><Momo id="momo-small" :mood="momo.mood" /><span id="momo-say">{{ momo.text }}</span></div>
       <div class="actions" id="actions" :hidden="phase === 'done'">
+        <button v-if="lazy" class="btn small" id="clear" @click="clearInk">Clear</button>
         <button class="btn small" id="hint" @click="hint">Hint</button>
         <button class="btn small" id="showme" @click="showMe">Show me</button>
         <button class="btn small" id="skip" @click="skip">Skip</button>
@@ -322,6 +405,6 @@ onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clea
         <button class="btn primary" id="next" ref="nextBtn" @click="next">Next</button>
       </div>
     </div>
-    <p class="tip" id="tip">Write with a finger, stylus or mouse.</p>
+    <p class="tip" id="tip">{{ lazy ? "Write it your way, joined-up strokes are fine. It fills in once it's close enough." : "Write with a finger, stylus or mouse." }}</p>
   </section>
 </template>

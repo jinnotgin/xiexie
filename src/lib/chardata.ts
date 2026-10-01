@@ -1,5 +1,6 @@
 // Stroke data for ~3,500 characters (Make Me a Hanzi via hanzi-writer-data), shipped as one gzipped JSON file.
 import chardataUrl from "../data/chardata.json.gz?url";
+import { type CharMedians, makeChecker } from "./lazy";
 
 let CHARDATA: Record<string, unknown> = {};
 
@@ -14,6 +15,7 @@ export async function loadCharData(url: string = chardataUrl, onProgress?: (f: n
     ? await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"))).text()
     : new TextDecoder().decode(bin);
   CHARDATA = JSON.parse(text);
+  checker = null;
 }
 
 async function readAll(res: Response, onProgress?: (f: number | null) => void): Promise<Uint8Array<ArrayBuffer>> {
@@ -41,3 +43,7 @@ export const loader = (c: string, onLoad: (d: unknown) => void, onErr: (e: Error
   const d = CHARDATA[c];
   d ? onLoad(d) : onErr(new Error("No stroke data for " + c));
 };
+
+let checker: ReturnType<typeof makeChecker> | null = null;
+/** The lazy-mode checker over every loaded character, built on first use (after loadCharData). */
+export const lazyChecker = () => checker ??= makeChecker(CHARDATA as Record<string, CharMedians>);
