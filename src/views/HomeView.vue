@@ -60,9 +60,8 @@ const levelLabel = computed(() => {
   return names.length <= 2 ? names.join(" + ") : `${names.length} levels`;
 });
 const dueCount = computed(() => app.due().length);
-const dueNote = computed(() => dueCount.value
-  ? `${dueCount.value} word${dueCount.value > 1 ? "s" : ""} due for review. They'll come up first.`
-  : "Nothing due for review. New words await.");
+const dueNote = computed(() =>
+  `${dueCount.value} word${dueCount.value > 1 ? "s" : ""} due for review. They'll come up first.`);
 
 async function reset() {
   if (account.signedIn) {
@@ -162,7 +161,7 @@ async function signOut() {
 
     <div class="start-row">
       <button class="btn primary" id="start" @click="startSession()">Start 10 words</button>
-      <p class="due-note" id="due-note">{{ dueNote }}</p>
+      <p v-if="dueCount" class="due-note" id="due-note">{{ dueNote }}</p>
       <button class="btn" id="open-library" @click="router.push({ name: 'library' })">Browse all words</button>
     </div>
 
