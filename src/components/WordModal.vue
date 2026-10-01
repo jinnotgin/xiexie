@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Popup with a looping stroke-order animation for each character of a word. */
+/** Popup with a looping stroke-order animation that writes a word one character at a time. */
 import { computed, nextTick, ref, watch } from "vue";
 import { reduceMotion, writerColors } from "../lib/dom";
 import { speak, speechOk } from "../lib/speech";
@@ -18,12 +18,17 @@ const word = computed(() => ui.modalWord);
 const size = ref(0);
 const opts = ref<Record<string, unknown>>({});
 
+let writers: any[] = [];
+let run = 0;   // bumped to cancel the running animation loop
+
 watch(word, async w => {
+  writers = [];
+  run++;
   if (!w) return;
   const n = w.w.length;
   const s = Math.max(90, Math.min(170, Math.floor((Math.min(window.innerWidth, 440) - 80) / Math.min(n, 2)) - 10));
   size.value = s;
-  opts.value = { width: s, height: s, padding: Math.round(s * .07), showOutline: true, strokeAnimationSpeed: 1, delayBetweenStrokes: 180, delayBetweenLoops: 1600, ...writerColors() };
+  opts.value = { width: s, height: s, padding: Math.round(s * .07), showOutline: true, strokeAnimationSpeed: 1, delayBetweenStrokes: 180, ...writerColors() };
   await nextTick();
   closeBtn.value?.focus();
 });
@@ -37,7 +42,29 @@ const status = computed(() => {
     `${st === "mastered" ? "Mastered" : "Learning"}. Written ${p.seen} time${p.seen > 1 ? "s" : ""}, ${p.perfect} perfect.`;
 });
 
-function start(wr: any) { if (reduceMotion) wr.showCharacter(); else wr.loopCharacterAnimation(); }
+function onReady(i: number, wr: any) {
+  if (reduceMotion) { wr.showCharacter(); return; }
+  wr.hideCharacter({ duration: 0 });
+  writers[i] = wr;
+  const n = word.value ? [...word.value.w].length : 0;
+  if (writers.filter(Boolean).length === n) loop(++run);
+}
+
+// Animate each character in turn, pause, clear them all, and go again.
+async function loop(id: number) {
+  const pause = (ms: number) => new Promise(res => setTimeout(res, ms));
+  const list = writers;
+  while (id === run) {
+    for (const wr of list) {
+      await new Promise(res => wr.animateCharacter({ onComplete: res }));
+      if (id !== run) return;
+    }
+    await pause(1600);
+    if (id !== run) return;
+    for (const wr of list) wr.hideCharacter();
+    await pause(400);
+  }
+}
 const close = () => { ui.modalWord = null; };
 function practise() { const w = word.value!; close(); startSession([w]); }
 
@@ -52,7 +79,7 @@ useKeydown(e => { if (e.key === "Escape" && word.value) close(); });
       <div class="anim-row" id="m-anim">
         <template v-if="word">
           <div v-for="(ch, i) in [...word.w]" :key="word.id + i" class="stage" :style="{ width: size + 3 + 'px', height: size + 3 + 'px' }">
-            <HanziStage :char="ch" :size="size" :options="opts" @ready="start" />
+            <HanziStage :char="ch" :size="size" :options="opts" @ready="wr => onReady(i, wr)" />
           </div>
         </template>
       </div>
