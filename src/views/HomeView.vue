@@ -38,6 +38,20 @@ const unpacking = computed(() => pct.value === null || pct.value >= 100);
 
 const levelCount = (id: string) => WORDS.filter(w => w.l === id).length;
 
+// Phones: levels grouped by stage: pick a stage, then a number within it.
+const STAGES = [
+  { id: "pri", name: "Primary", levels: LEVELS.filter(L => /^p\d/.test(L.id)) },
+  { id: "sec", name: "Secondary", levels: LEVELS.filter(L => L.id.startsWith("sec")) },
+  { id: "biz", name: "Business", levels: LEVELS.filter(L => L.id === "biz") },
+];
+const stage = computed(() => STAGES.find(S => S.levels.some(L => app.meta.levels.includes(L.id))) ?? STAGES[0]);
+// Switching stage starts at its first level; tapping the current stage keeps the choice.
+function pickStage(S: typeof STAGES[number]) {
+  if (S !== stage.value) app.setLevel(S.levels[0].id);
+}
+const levelNote = computed(() =>
+  `${LEVELS.filter(L => app.meta.levels.includes(L.id)).map(L => L.sub).join(" + ")} · ${levelWords.value.length} words`);
+
 // Mastery counted within the chosen levels, so a new learner sees a goal they can reach.
 const levelWords = computed(() => WORDS.filter(w => app.meta.levels.includes(w.l)));
 const levelMastered = computed(() => levelWords.value.filter(w => app.statusOf(w.id) === "mastered").length);
@@ -126,8 +140,18 @@ async function signOut() {
 
     <h2>Practise from</h2>
     <div class="levels" id="levels" role="group" aria-label="Levels">
-      <button v-for="L in LEVELS" :key="L.id" class="chip" :class="{ wide: L.id === 'biz' }" :aria-pressed="app.meta.levels.includes(L.id)"
+      <button v-for="L in LEVELS" :key="L.id" class="chip" :aria-pressed="app.meta.levels.includes(L.id)"
         @click="app.setLevel(L.id)">{{ L.name }}<small>{{ L.sub }}, {{ levelCount(L.id) }}</small></button>
+    </div>
+    <div class="stage-picker">
+      <div class="seg" role="group" aria-label="Stage">
+        <button v-for="S in STAGES" :key="S.id" :aria-pressed="S === stage" @click="pickStage(S)">{{ S.name }}</button>
+      </div>
+      <div v-if="stage.levels.length > 1" class="level-nums" role="group" :aria-label="`${stage.name} level`">
+        <button v-for="L in stage.levels" :key="L.id" :aria-label="L.name" :aria-pressed="app.meta.levels.includes(L.id)"
+          @click="app.setLevel(L.id)">{{ L.name.replace(/\D/g, "") }}</button>
+      </div>
+      <p class="level-note">{{ levelNote }}</p>
     </div>
 
     <label class="toggle">
