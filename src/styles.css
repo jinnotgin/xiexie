@@ -108,12 +108,19 @@ h2{font-size:1.05rem;margin:0 0 10px}
 .level-nums button{flex:1;height:38px;border:2px solid var(--ink);border-radius:10px;background:transparent;font-weight:700;cursor:pointer}
 .seg button[aria-pressed="true"],.level-nums button[aria-pressed="true"]{background:var(--marker);color:#1C2B3A}
 .level-note{margin:6px 0 0;color:var(--ink-soft);font-size:.85rem}
-.toggle{display:flex;align-items:center;gap:10px;margin:0 0 20px;cursor:pointer;user-select:none;font-size:.92rem;line-height:1.3}
-.toggle input{appearance:none;width:40px;height:23px;border-radius:99px;border:2px solid var(--ink);background:var(--card);position:relative;cursor:pointer;flex:none;margin:0}
-.toggle input::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:var(--ink);transition:left .15s}
-.toggle input:checked{background:var(--jade)}
-.toggle input:checked::after{left:19px;background:var(--card)}
-.toggle span small{display:block;color:var(--ink-soft);font-size:.78rem}
+.modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 20px}
+.mode{border:2px solid var(--ink);background:transparent;border-radius:14px;padding:10px 12px;cursor:pointer;font-weight:600;font-size:.95rem;text-align:left;line-height:1.25;display:flex;flex-direction:column}
+.mode svg{width:55px;height:48px;margin:0 auto 6px;display:block}
+.mode svg text{font-size:9px;font-weight:700;text-anchor:middle}
+.mode small{font-weight:400;color:var(--ink-soft);font-size:.78rem;margin-top:2px}
+.mode[aria-pressed="true"]{background:var(--marker);color:#1C2B3A}
+.mode[aria-pressed="true"] small{color:#3b4a5a}
+/* Phones: icon beside the label, no captions, so the pair sits about as tall as the stage picker. */
+@media (max-width:480px){
+  .mode{flex-direction:row;align-items:center;gap:5px;padding:5px 7px;font-size:.82rem;border-radius:12px}
+  .mode svg{width:34px;height:30px;margin:0;flex:none}
+  .mode small{display:none}
+}
 .start-row{display:flex;flex-direction:column;align-items:stretch;gap:12px}
 .due-note{color:var(--ink-soft);font-size:.92rem;text-align:center;margin:0}
 .sync-card{margin-top:34px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px 12px;padding:12px 14px;border:1.5px dashed var(--ink-soft);border-radius:16px;background:color-mix(in srgb,var(--card) 60%,transparent)}
