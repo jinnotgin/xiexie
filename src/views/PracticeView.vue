@@ -1,0 +1,292 @@
+<script setup lang="ts">
+/**
+ * The writing card. Session data lives in the session store; this view drives
+ * the HanziWriter quiz for one character at a time and shows the graded result.
+ */
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowRef } from "vue";
+import { useRouter } from "vue-router";
+import type { Grade, Mood } from "../types";
+import { LINES, pick } from "../lib/momo";
+import { STAMPS, gradeOf, xpFor } from "../lib/srs";
+import { confetti, cssVar, reduceMotion, writerColors } from "../lib/dom";
+import { speak, speechOk } from "../lib/speech";
+import { useProgressStore } from "../stores/progress";
+import { useSessionStore } from "../stores/session";
+import { useKeydown } from "../composables/useKeydown";
+import Momo from "../components/Momo.vue";
+import GridSvg from "../components/GridSvg.vue";
+import HanziStage from "../components/HanziStage.vue";
+
+const app = useProgressStore();
+const session = useSessionStore();
+const router = useRouter();
+
+const stageEl = ref<HTMLDivElement>();
+const nextBtn = ref<HTMLButtonElement>();
+const momo = reactive<{ mood: Mood; text: string }>({ mood: "happy", text: "" });
+const setMomo = (mood: Mood, text: string) => { momo.mood = mood; momo.text = text; };
+
+const cur = computed(() => session.cur);
+const phase = ref<"writing" | "done">("writing");
+const grade = ref<Grade>("perfect");
+
+// Writing phase: one HanziStage, re-keyed for every character / restart.
+const mountId = ref(0);
+const writerSize = ref(0);
+const stageBox = ref<number | null>(null);
+const writerOpts = shallowRef<Record<string, unknown>>({});
+let writer: any = null;
+
+// Result phase: the whole word, a stamp and an optional stroke-order replay.
+const finalSize = ref(0);
+const finalOpts = shallowRef<Record<string, unknown>>({});
+const replayHidden = ref(true);
+const replayBusy = ref(false);
+const stampStyle = ref<Record<string, string>>({});
+let finalWriters: any[] = [];
+
+// Timers die with the view, so nothing fires into a card that has gone.
+let alive = true;
+const timers = new Set<ReturnType<typeof setTimeout>>();
+function later(fn: () => void, ms: number) {
+  const t = setTimeout(() => { timers.delete(t); if (alive) fn(); }, ms);
+  timers.add(t);
+  return t;
+}
+let peekTimer: ReturnType<typeof setTimeout> | undefined;
+
+const dotClass = (i: number) => {
+  const r = session.results[i];
+  return "dot" + (r ? " " + r.grade : i === session.idx ? " now" : "");
+};
+const slotClass = (i: number) => {
+  const f = cur.value!.filled;
+  return "slot han" + (i < f ? " done" : i === f ? " now" : "");
+};
+
+function stageSize() {
+  const avail = stageEl.value!.parentElement!.clientWidth - 36;
+  return Math.max(220, Math.min(320, avail));
+}
+
+function renderCard() {
+  const w = session.queue[session.idx];
+  session.cur = { word: w, ci: 0, filled: 0, mistakes: 0, hints: 0, revealed: false, done: false, notes: [] };
+  phase.value = "writing";
+  finalWriters = [];
+  stampStyle.value = {};
+  const again = session.requeued.has(w.id) && session.results.length > session.idx - 0 && session.idx >= session.total;
+  setMomo("happy", again ? "Round two for this one. You've seen it, now write it." : pick(LINES.start));
+  mountWriter();
+}
+
+function mountWriter(forceOutline = false) {
+  const size = stageSize();
+  writerSize.value = size;
+  stageBox.value = size + 4;
+  writerOpts.value = {
+    width: size, height: size, padding: Math.round(size * 0.07),
+    showCharacter: false, showOutline: app.meta.tracing || forceOutline,
+    drawingWidth: Math.max(8, Math.round(size / 26)),
+    strokeAnimationSpeed: 1.1, delayBetweenStrokes: 140,
+    ...writerColors(),
+  };
+  writer = null;
+  mountId.value++;
+}
+
+function onWriterReady(w: any) {
+  writer = w;
+  const c = session.cur!;
+  const ch = c.word.w[c.ci];
+  const relaxed = app.meta.relaxed !== false;
+  w.quiz({
+    showHintAfterMisses: 3, highlightOnComplete: true, leniency: 1.25,
+    acceptBackwardsStrokes: relaxed, acceptOutOfOrderStrokes: relaxed,
+    onMistake: (d: any) => {
+      c.mistakes++;
+      const stage = stageEl.value;
+      if (!reduceMotion && stage) { stage.classList.remove("shake"); void stage.offsetWidth; stage.classList.add("shake"); }
+      if (d && d.mistakesOnStroke >= 3) setMomo("hmm", "Watch the stroke light up, then draw it the same way.");
+      else setMomo("hmm", pick(LINES.mistake));
+    },
+    onCorrectStroke: (d: any) => {
+      if (d.isOutOfOrder) setMomo("happy", "Counted! That stroke usually comes later.");
+      else if (d.isBackwards) setMomo("happy", "Counted! That one usually goes the other way.");
+      else if (c.mistakes === 0 && !c.revealed) setMomo("happy", "Good, keep going…");
+    },
+    onComplete: (d: any) => {
+      const o = (d && d.outOfOrder) ? d.outOfOrder.length : 0, b = (d && d.backwards) ? d.backwards.length : 0;
+      if (!c.revealed && (o || b)) c.notes.push({ ch, order: o, backwards: b });
+      later(charDone, 380);
+    },
+  });
+}
+
+function charDone() {
+  const c = session.cur!;
+  if (c.done) return;
+  c.filled = c.ci + 1;
+  c.ci++;
+  if (c.ci < c.word.w.length) {
+    if (c.revealed) setMomo("happy", "Next character. From memory if you can!");
+    mountWriter();
+  } else finishWord();
+}
+
+async function finishWord(skipped = false) {
+  const c = session.cur!;
+  c.done = true;
+  if (writer) { try { writer.cancelQuiz(); } catch (e) {} }
+  if (skipped) { c.revealed = true; c.filled = [...c.word.w].length; }
+  const g = gradeOf(c);
+  const gained = xpFor(g, c.word);
+  session.xp += gained;
+  session.results[session.idx] = { word: c.word, grade: g, notes: c.notes };
+  await app.record(c.word, g, gained);
+  if (!alive) return;
+
+  // Show the whole word in the box with a stamp.
+  const size = stageSize();
+  const n = c.word.w.length;
+  const cell = n === 1 ? size : Math.floor(Math.min(size * 0.92 / n, size * 0.5));
+  finalSize.value = size;
+  finalOpts.value = {
+    width: cell, height: cell, padding: Math.round(cell * 0.07), showOutline: true,
+    strokeAnimationSpeed: 1, delayBetweenStrokes: 220, ...writerColors(), outlineColor: cssVar("--grid"),
+  };
+  grade.value = g;
+  phase.value = "done";
+
+  // One friendly sentence instead of a stats box.
+  let noteLine: string | null = null;
+  if (c.notes.length && g === "good") {
+    const chars = c.notes.map(n => n.ch).join(" and ");
+    const anyOrder = c.notes.some(n => n.order), anyBack = c.notes.some(n => n.backwards);
+    noteLine = anyOrder && anyBack ? `Correct! The strokes in ${chars} went a bit differently from usual.`
+      : anyOrder ? `Correct! Only the stroke order in ${chars} was different.`
+      : `Correct! A stroke in ${chars} went the other way.`;
+  }
+  setMomo(g === "perfect" ? "wow" : g === "again" ? "hmm" : "happy", noteLine || pick(LINES[g]));
+  replayHidden.value = !c.notes.length;   // only when a stroke was out of order or backwards
+  if (g === "perfect") confetti();
+  if (g === "again" && !session.requeued.has(c.word.id)) { session.requeued.add(c.word.id); session.queue.push(c.word); }
+  speak(c.word.w);
+  await nextTick();
+  nextBtn.value?.focus({ preventScroll: true });
+}
+
+async function replay() {
+  const c = session.cur;
+  if (!c || !finalWriters.length) return;
+  stampStyle.value = { animation: "none", opacity: "0.15" };
+  replayBusy.value = true;
+  // Replay the characters that had notes first; if none had notes, replay them all.
+  const withNotes = new Set(c.notes.map(n => n.ch));
+  const targets = finalWriters.filter((_, i) => !withNotes.size || withNotes.has(c.word.w[i]));
+  for (const w of targets) { try { w.hideCharacter(); } catch (e) {} }
+  for (const w of targets) { await new Promise(res => w.animateCharacter({ onComplete: res })); }
+  if (!alive) return;
+  stampStyle.value = { animation: "none", opacity: "1" };
+  replayBusy.value = false;
+}
+
+function next() {
+  session.idx++;
+  if (session.idx >= session.queue.length) router.push({ name: "summary" });
+  else renderCard();
+}
+
+function hint() {
+  const c = session.cur;
+  if (!writer || !c || c.done) return;
+  // Hint: trace just the next stroke to write, once, then it fades.
+  const q = writer._quiz;
+  if (!q || !q._isActive) return;
+  const n = q._currentStrokeIndex;
+  if (n == null || n >= q._character.strokes.length) return;
+  c.hints++;
+  setMomo("happy", "Here's the next stroke. Watch where it starts and which way it goes.");
+  try { writer.highlightStroke(n); } catch (e) {}
+}
+
+function showMe() {
+  const c = session.cur;
+  if (!writer || !c || c.done) return;
+  c.revealed = true;
+  if (app.meta.tracing) {
+    // The outline is already on screen in tracing mode, so demonstrate the stroke order instead.
+    writer.cancelQuiz();
+    setMomo("happy", "Watch the stroke order…");
+    writer.hideCharacter();
+    writer.animateCharacter({
+      onComplete: () => later(() => { if (c.done) return; setMomo("happy", pick(LINES.retry)); mountWriter(true); }, 600),
+    });
+    return;
+  }
+  // Show me: flash the whole character, keep the strokes already written.
+  const w = writer;
+  setMomo("happy", "Here's the whole character. Take a good look…");
+  if (peekTimer) clearTimeout(peekTimer);
+  w.showOutline();
+  peekTimer = later(() => {
+    if (w !== writer || c.done) return;
+    try { w.hideOutline(); } catch (e) {}
+    setMomo("happy", "Now finish it from memory.");
+  }, 2500);
+}
+
+function skip() { if (session.cur && !session.cur.done) finishWord(true); }
+
+function quit() {
+  if (writer) try { writer.cancelQuiz(); } catch (e) {}
+  router.push({ name: session.results.filter(Boolean).length ? "summary" : "home" });
+}
+
+useKeydown(e => {
+  if (e.key === "Enter" && phase.value === "done") { e.preventDefault(); next(); }
+});
+
+onMounted(renderCard);
+onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clear(); });
+</script>
+
+<template>
+  <section id="practice">
+    <div class="topbar">
+      <button class="btn ghost small" id="quit" aria-label="End session" @click="quit">✕ End</button>
+      <div class="dots" id="dots"><span v-for="(_, i) in session.queue" :key="i" :class="dotClass(i)"></span></div>
+      <div class="xp" id="session-xp">+{{ session.xp }} XP</div>
+    </div>
+    <div class="sheet">
+      <div class="prompt-py"><span id="p-py">{{ cur?.word.p }}</span><button class="speak" id="p-speak" aria-label="Hear it" :hidden="!speechOk" @click="cur && speak(cur.word.w)">🔊</button></div>
+      <p class="prompt-en" id="p-en">{{ cur?.word.e }}</p>
+      <div class="slots" id="slots" :hidden="!cur || cur.word.w.length === 1">
+        <template v-if="cur"><span v-for="(ch, i) in [...cur.word.w]" :key="i" :class="slotClass(i)">{{ i < cur.filled ? ch : "？" }}</span></template>
+      </div>
+      <div class="stage" id="stage" ref="stageEl" :style="stageBox ? { width: stageBox + 'px', height: stageBox + 'px' } : undefined">
+        <HanziStage v-if="cur && phase === 'writing' && writerSize" :key="mountId" :char="cur.word.w[cur.ci] ?? ''"
+          :size="writerSize" :options="writerOpts" @ready="onWriterReady" />
+        <template v-else-if="cur && phase === 'done'">
+          <GridSvg :size="finalSize" />
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
+            <HanziStage v-for="(ch, i) in [...cur.word.w]" :key="mountId + ':' + i" :grid="false" :char="ch"
+              :options="finalOpts" @ready="(w: any) => (finalWriters[i] = w)" />
+          </div>
+          <div :class="['stamp', grade]" :style="stampStyle"><span class="han">{{ STAMPS[grade].ch }}</span><small>{{ STAMPS[grade].label }}</small></div>
+        </template>
+      </div>
+      <div class="momo-line"><Momo id="momo-small" :mood="momo.mood" /><span id="momo-say">{{ momo.text }}</span></div>
+      <div class="actions" id="actions" :hidden="phase === 'done'">
+        <button class="btn small" id="hint" @click="hint">Hint</button>
+        <button class="btn small" id="showme" @click="showMe">Show me</button>
+        <button class="btn small" id="skip" @click="skip">Skip</button>
+      </div>
+      <div class="actions" id="next-wrap" :hidden="phase !== 'done'">
+        <button class="btn small" id="replay" :hidden="replayHidden" :disabled="replayBusy" @click="replay">▶ See the usual order</button>
+        <button class="btn primary" id="next" ref="nextBtn" @click="next">Next</button>
+      </div>
+    </div>
+    <p class="tip" id="tip">Write with a finger, stylus or mouse.</p>
+  </section>
+</template>

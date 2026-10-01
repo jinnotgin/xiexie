@@ -134,3 +134,7 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Parity test artefacts (screenshots, diffs, report)
+tests/parity/out/
+.claude/launch.json
