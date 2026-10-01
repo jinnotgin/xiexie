@@ -55,7 +55,7 @@ async function reset() {
     <div class="levels" id="levels" role="group" aria-label="Levels">
       <template v-if="ready">
         <button v-for="L in LEVELS" :key="L.id" class="chip" :aria-pressed="app.meta.levels.includes(L.id)"
-          @click="app.toggleLevel(L.id)">{{ L.name }}<small>{{ L.sub }}, {{ levelCount(L.id) }}</small></button>
+          @click="app.setLevel(L.id)">{{ L.name }}<small>{{ L.sub }}, {{ levelCount(L.id) }}</small></button>
       </template>
     </div>
 
