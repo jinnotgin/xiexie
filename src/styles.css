@@ -116,13 +116,14 @@ h2{font-size:1.05rem;margin:0 0 10px}
 .toggle span small{display:block;color:var(--ink-soft);font-size:.78rem}
 .start-row{display:flex;flex-direction:column;align-items:stretch;gap:12px}
 .due-note{color:var(--ink-soft);font-size:.92rem;text-align:center;margin:0}
-.sync-card{margin-top:34px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border:1.5px dashed var(--ink-soft);border-radius:16px;background:color-mix(in srgb,var(--card) 60%,transparent)}
+.sync-card{margin-top:34px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px 12px;padding:12px 14px;border:1.5px dashed var(--ink-soft);border-radius:16px;background:color-mix(in srgb,var(--card) 60%,transparent)}
 .sync-card.synced{border-style:solid;border-color:var(--jade)}
 .sync-icon{width:22px;height:22px;flex:none;color:var(--ink-soft)}
 .sync-card.synced .sync-icon{color:var(--jade)}
-.sync-text{margin:0;flex:1 1 180px;font-size:.9rem;line-height:1.35}
+.sync-text{margin:0;min-width:0;overflow-wrap:anywhere;font-size:.9rem;line-height:1.35}
 .sync-text small{display:block;color:var(--ink-soft);font-size:.82rem}
-@media (max-width:440px){.sync-card .btn{margin-left:34px}}
+/* Phones: the action drops to its own row, lined up with the text. */
+@media (max-width:480px){.sync-card{grid-template-columns:auto 1fr}.sync-card>button{grid-column:2;justify-self:start}}
 .foot{margin-top:14px;display:flex;justify-content:center}
 .linkish{display:inline-flex;align-items:center;gap:.35em;background:none;border:none;color:var(--ink-soft);text-decoration:underline;text-underline-offset:2px;cursor:pointer;padding:0;font-size:.82rem}
 .linkish .icon{width:1em;height:1em}
