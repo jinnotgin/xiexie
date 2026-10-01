@@ -20,7 +20,6 @@ export interface ProgressRec {
 
 /** Profile document, stored in IndexedDB ("meta" store, id "meta"). */
 export interface Meta {
-  xp: number;
   streak: number;
   lastDay: string | null;
   levels: string[];
@@ -29,14 +28,14 @@ export interface Meta {
   sync?: SyncState;
 }
 
-export interface Counts { xp: number; written: number }
+export interface Counts { written: number }
 
 /** What this device knows about its link to a Google account (see lib/sync.ts). */
 export interface SyncState {
   uid: string | null;      // account this device's progress belongs to; null for a guest
   epoch: string | null;    // the account's reset generation this device last synced with
   contrib: string;         // this device's key in the cloud counters map
-  own: Counts;             // XP and characters written on this device
+  own: Counts;             // characters written on this device
   others: Counts;          // the account's totals from all other devices, as of the last sync
   settingsAt: number;      // when levels or strict mode last changed here
 }

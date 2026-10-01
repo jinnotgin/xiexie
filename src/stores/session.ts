@@ -7,16 +7,15 @@ export const useSessionStore = defineStore("session", () => {
   const queue = ref<Word[]>([]);
   const idx = ref(0);
   const results = ref<(Result | undefined)[]>([]);
-  const xp = ref(0);
   const requeued = ref(new Set<string>());
   const total = ref(0);
   const cur = ref<CardState | null>(null);
 
   function start(words: Word[]) {
-    queue.value = [...words]; idx.value = 0; results.value = []; xp.value = 0;
+    queue.value = [...words]; idx.value = 0; results.value = [];
     requeued.value = new Set(); total.value = words.length; cur.value = null;
   }
   const active = () => queue.value.length > 0;
 
-  return { queue, idx, results, xp, requeued, total, cur, start, active };
+  return { queue, idx, results, requeued, total, cur, start, active };
 });

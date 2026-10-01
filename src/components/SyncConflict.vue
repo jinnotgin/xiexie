@@ -17,10 +17,10 @@ useKeydown(e => { if (e.key === "Escape" && account.conflict) account.choose("ca
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sc-title" v-if="account.conflict">
       <h2 id="sc-title">You have progress in two places</h2>
       <div class="sync-compare">
-        <div><small>This device</small>{{ words(account.conflict.device.words) }}<br>⭐ {{ account.conflict.device.xp }} XP</div>
-        <div><small>Your account</small>{{ words(account.conflict.account.words) }}<br>⭐ {{ account.conflict.account.xp }} XP</div>
+        <div><small>This device</small>{{ words(account.conflict.device.words) }}</div>
+        <div><small>Your account</small>{{ words(account.conflict.account.words) }}</div>
       </div>
-      <p class="answer">Combining keeps your latest result for each word and adds the XP together.</p>
+      <p class="answer">Combining keeps your latest result for each word.</p>
       <div class="row" style="margin-top:12px">
         <button class="btn primary small" ref="mergeBtn" @click="account.choose('merge')">Combine both</button>
         <button class="btn small" @click="account.choose('account')">Use account's only</button>

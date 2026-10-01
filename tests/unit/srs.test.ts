@@ -3,7 +3,7 @@ import type { Meta, ProgressRec, Word } from "../../src/types";
 import { WORDS } from "../../src/data/words";
 import {
   DAY, DEFAULT_META, INTERVALS, applyWritten, buildSession, dueWords, gradeOf, migrateLevels,
-  nextProgress, statusOf, streakLive, todayKey, xpFor,
+  nextProgress, statusOf, streakLive, todayKey,
 } from "../../src/lib/srs";
 
 const word = (w: string, l = "p1"): Word => ({ w, p: "", e: "", l, id: w });
@@ -87,7 +87,7 @@ describe("buildSession", () => {
   });
 });
 
-describe("gradeOf and XP", () => {
+describe("gradeOf", () => {
   const c = { word: word("你好"), mistakes: 0, hints: 0, revealed: false, notes: [] as { ch: string; order: number; backwards: number }[] };
   it("grades perfect, good, ok and again", () => {
     expect(gradeOf(c)).toBe("perfect");
@@ -96,11 +96,6 @@ describe("gradeOf and XP", () => {
     expect(gradeOf({ ...c, mistakes: 5 })).toBe("ok");
     expect(gradeOf({ ...c, hints: 1 })).toBe("ok");
     expect(gradeOf({ ...c, revealed: true })).toBe("again");
-  });
-  it("gives XP per character, except for again", () => {
-    expect(xpFor("perfect", word("你好"))).toBe(20);
-    expect(xpFor("good", word("你"))).toBe(6);
-    expect(xpFor("again", word("你好"))).toBe(1);
   });
 });
 

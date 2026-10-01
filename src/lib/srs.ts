@@ -9,7 +9,7 @@ import { LEVEL_MIGRATION, LEVELS } from "../data/levels";
 export const DAY = 86400000;
 export const INTERVALS = [0, 1, 2, 4, 8, 16, 32].map(d => d * DAY);
 export const MASTERED_BOX = 4;
-export const DEFAULT_META: Meta = { xp: 0, streak: 0, lastDay: null, levels: ["p1"], relaxed: false, written: 0 };
+export const DEFAULT_META: Meta = { streak: 0, lastDay: null, levels: ["p1"], relaxed: false, written: 0 };
 
 export type ProgressMap = Map<string, ProgressRec>;
 
@@ -90,11 +90,10 @@ export function gradeOf(c: Pick<CardState, "revealed" | "word" | "mistakes" | "h
   return "ok";
 }
 
-export const STAMPS: Record<Grade, { ch: string; label: string; xp: number }> = {
-  perfect: { ch: "优", label: "Excellent", xp: 10 },
-  good:    { ch: "好", label: "Good", xp: 6 },
-  ok:      { ch: "进", label: "Improving", xp: 3 },
-  again:   { ch: "再", label: "Once more", xp: 1 },
+export const STAMPS: Record<Grade, { ch: string; label: string }> = {
+  perfect: { ch: "优", label: "Excellent" },
+  good:    { ch: "好", label: "Good" },
+  ok:      { ch: "进", label: "Improving" },
+  again:   { ch: "再", label: "Once more" },
 };
 
-export const xpFor = (grade: Grade, word: Word) => STAMPS[grade].xp * (grade === "again" ? 1 : word.w.length);

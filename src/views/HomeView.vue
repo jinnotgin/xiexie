@@ -30,11 +30,11 @@ const dueNote = computed(() => dueCount.value
 
 async function reset() {
   if (account.signedIn) {
-    if (!confirm("Clear all progress, XP and streak in your account and on all your devices?")) return;
+    if (!confirm("Clear all progress and streak in your account and on all your devices?")) return;
     try { await account.resetAll(); }
     catch (e) { alert(cloudError(e) || "Couldn't reset your account. Please try again."); return; }
   } else {
-    if (!confirm("Clear all progress, XP and streak on this device?")) return;
+    if (!confirm("Clear all progress and streak on this device?")) return;
     await app.reset();
   }
   greeting.value = pick(LINES.home);
@@ -82,7 +82,6 @@ async function signOut() {
     <div class="stats" id="stats">
       <template v-if="ready">
         <span class="pill">🔥 {{ streakLive(app.meta) ? app.meta.streak : 0 }}-day streak</span>
-        <span class="pill">⭐ {{ app.meta.xp }} XP</span>
         <span class="pill">✍️ {{ app.meta.written }} written</span>
         <span class="pill">熟 {{ app.masteredCount }} / {{ WORDS.length }} mastered</span>
       </template>

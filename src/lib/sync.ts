@@ -9,9 +9,9 @@
      progress  { wordId: "box,due,seen,perfect,last,updatedAt" }
                one string per word keeps all 3,000+ words under
                Firestore's per-document index limit; newest wins
-     counters  { contribId: { xp, written } }, one entry per
+     counters  { contribId: { written } }, one entry per
                device. Totals are the sum, so two devices never
-               overwrite each other's XP, and a guest's XP adds
+               overwrite each other's count, and a guest's adds
                to the account's when they first sign in
      streak    { streak, lastDay }, merged as day ranges
      settings  { levels, relaxed, at }, newest wins
@@ -33,8 +33,8 @@ export type CloudPatch = Partial<CloudDoc>;
 export const newId = () =>
   globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36) + Math.random().toString(36).slice(2);
 
-export const freshSync = (own: Counts = { xp: 0, written: 0 }): SyncState =>
-  ({ uid: null, epoch: null, contrib: newId(), own: { ...own }, others: { xp: 0, written: 0 }, settingsAt: 0 });
+export const freshSync = (own: Counts = { written: 0 }): SyncState =>
+  ({ uid: null, epoch: null, contrib: newId(), own: { ...own }, others: { written: 0 }, settingsAt: 0 });
 
 export const emptyCloud = (epoch: string): CloudDoc =>
   ({ epoch, progress: {}, counters: {}, streak: { streak: 0, lastDay: null }, settings: null });
@@ -44,7 +44,7 @@ export function normalizeCloud(d: any): CloudDoc {
   const obj = (v: unknown) => (v && typeof v === "object" ? v : {}) as Record<string, any>;
   const num = (v: unknown) => (typeof v === "number" && isFinite(v) ? v : 0);
   const counters: Record<string, Counts> = {};
-  for (const [k, c] of Object.entries(obj(d?.counters))) counters[k] = { xp: num(c?.xp), written: num(c?.written) };
+  for (const [k, c] of Object.entries(obj(d?.counters))) counters[k] = { written: num(c?.written) };
   const s = d?.settings;
   return {
     epoch: typeof d?.epoch === "string" ? d.epoch : "",
@@ -105,11 +105,11 @@ export function linkAction(sync: SyncState, uid: string, cloud: CloudDoc | null,
   return "ask";
 }
 
-export const cloudEmpty = (c: CloudDoc) => !Object.keys(c.progress).length && !sumCounts(c.counters).xp;
+export const cloudEmpty = (c: CloudDoc) => !Object.keys(c.progress).length && !sumCounts(c.counters).written;
 
 export function sumCounts(counters: Record<string, Counts>, except?: string): Counts {
-  const t = { xp: 0, written: 0 };
-  for (const [k, c] of Object.entries(counters)) if (k !== except) { t.xp += c.xp; t.written += c.written; }
+  const t = { written: 0 };
+  for (const [k, c] of Object.entries(counters)) if (k !== except) t.written += c.written;
   return t;
 }
 
@@ -128,8 +128,8 @@ export function pushPatch(progress: ProgressMap, meta: Meta, sync: SyncState, cl
   if (Object.keys(recs).length) patch.progress = recs;
 
   const mine = base.counters[sync.contrib];
-  if (sync.own.xp > (mine?.xp || 0) || sync.own.written > (mine?.written || 0)) {
-    patch.counters = { [sync.contrib]: { xp: Math.max(sync.own.xp, mine?.xp || 0), written: Math.max(sync.own.written, mine?.written || 0) } };
+  if (sync.own.written > (mine?.written || 0)) {
+    patch.counters = { [sync.contrib]: { written: sync.own.written } };
   }
 
   const streak = mergeStreak({ streak: meta.streak, lastDay: meta.lastDay }, base.streak);
@@ -156,7 +156,7 @@ export function applyPatch(cloud: CloudDoc | null, patch: CloudPatch | null, epo
 
 export interface Pull {
   save: ProgressRec[];   // records where the cloud is newer than this device
-  meta: Pick<Meta, "xp" | "written" | "streak" | "lastDay"> & Partial<Pick<Meta, "levels" | "relaxed">>;
+  meta: Pick<Meta, "written" | "streak" | "lastDay"> & Partial<Pick<Meta, "levels" | "relaxed">>;
   sync: SyncState;
 }
 
@@ -171,12 +171,12 @@ export function pullChanges(progress: ProgressMap, meta: Meta, sync: SyncState, 
     if (c && (!l || compareRec(c, l) > 0)) save.push(c);
   }
   const mine = cloud.counters[sync.contrib];
-  const own = { xp: Math.max(sync.own.xp, mine?.xp || 0), written: Math.max(sync.own.written, mine?.written || 0) };
+  const own = { written: Math.max(sync.own.written, mine?.written || 0) };
   const others = sumCounts(cloud.counters, sync.contrib);
   const streak = mergeStreak({ streak: meta.streak, lastDay: meta.lastDay }, cloud.streak);
   const out: Pull = {
     save,
-    meta: { xp: own.xp + others.xp, written: own.written + others.written, streak: streak.streak, lastDay: streak.lastDay },
+    meta: { written: own.written + others.written, streak: streak.streak, lastDay: streak.lastDay },
     sync: { ...sync, own, others, epoch: cloud.epoch },
   };
   if (cloud.settings && cloud.settings.at > sync.settingsAt) {
@@ -189,6 +189,6 @@ export function pullChanges(progress: ProgressMap, meta: Meta, sync: SyncState, 
 
 /** Headline numbers for the "which progress do you want to keep?" prompt. */
 export const summarizeLocal = (progress: ProgressMap, meta: Meta) =>
-  ({ words: [...progress.values()].filter(p => p.seen).length, xp: meta.xp });
+  ({ words: [...progress.values()].filter(p => p.seen).length });
 export const summarizeCloud = (c: CloudDoc) =>
-  ({ words: Object.values(c.progress).filter(s => Number(s.split(",")[2]) > 0).length, xp: sumCounts(c.counters).xp });
+  ({ words: Object.values(c.progress).filter(s => Number(s.split(",")[2]) > 0).length });

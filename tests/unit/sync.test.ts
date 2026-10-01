@@ -55,7 +55,7 @@ describe("mergeStreak", () => {
 
 describe("linkAction", () => {
   const guest = sync({ uid: null, epoch: null });
-  const used = cloud({ progress: { 人: encodeRec(rec("人", 1)) }, counters: { a: { xp: 10, written: 1 } } });
+  const used = cloud({ progress: { 人: encodeRec(rec("人", 1)) }, counters: { a: { written: 1 } } });
   it("asks only when a never-linked device and the account both have progress", () => {
     expect(linkAction(guest, "u1", used, false)).toBe("ask");
     expect(linkAction(guest, "u1", used, true)).toBe("merge");   // empty device: just take the account's
@@ -74,14 +74,14 @@ describe("linkAction", () => {
 
 describe("sync round", () => {
   it("uploads everything to a new account, with the epoch", () => {
-    const m = meta({ xp: 50, written: 7, streak: 2, lastDay: "2026-10-01" });
-    const s = sync({ own: { xp: 50, written: 7 }, settingsAt: 0 });
+    const m = meta({ written: 7, streak: 2, lastDay: "2026-10-01" });
+    const s = sync({ own: { written: 7 }, settingsAt: 0 });
     const { patch, pull } = round(map(rec("人", 100)), m, s, null);
-    expect(patch).toMatchObject({ epoch: "e1", counters: { me: { xp: 50, written: 7 } }, streak: { streak: 2, lastDay: "2026-10-01" } });
+    expect(patch).toMatchObject({ epoch: "e1", counters: { me: { written: 7 } }, streak: { streak: 2, lastDay: "2026-10-01" } });
     expect(Object.keys(patch!.progress!)).toEqual(["人"]);
     expect(patch!.settings).toMatchObject({ levels: ["p1"], at: 0 });
     expect(pull.save).toEqual([]);
-    expect(pull.meta).toMatchObject({ xp: 50, written: 7 });
+    expect(pull.meta).toMatchObject({ written: 7 });
   });
 
   it("keeps the newer record of each word in both directions", () => {
@@ -93,29 +93,29 @@ describe("sync round", () => {
     expect(pull.save.find(r => r.id === "大")!.updatedAt).toBe(300);
   });
 
-  it("adds XP from every device instead of overwriting it (guest merging into an account)", () => {
-    const c = cloud({ counters: { phone: { xp: 500, written: 40 }, tablet: { xp: 100, written: 9 } } });
-    const s = sync({ own: { xp: 30, written: 3 } });
-    const { patch, pull } = round(new Map(), meta({ xp: 30, written: 3 }), s, c);
-    expect(patch!.counters).toEqual({ me: { xp: 30, written: 3 } });
-    expect(pull.meta).toMatchObject({ xp: 630, written: 52 });
-    expect(pull.sync.others).toEqual({ xp: 600, written: 49 });
+  it("adds counts from every device instead of overwriting it (guest merging into an account)", () => {
+    const c = cloud({ counters: { phone: { written: 40 }, tablet: { written: 9 } } });
+    const s = sync({ own: { written: 3 } });
+    const { patch, pull } = round(new Map(), meta({ written: 3 }), s, c);
+    expect(patch!.counters).toEqual({ me: { written: 3 } });
+    expect(pull.meta).toMatchObject({ written: 52 });
+    expect(pull.sync.others).toEqual({ written: 49 });
   });
 
   it("is idempotent: syncing twice writes nothing the second time", () => {
     const local = map(rec("人", 200));
-    const m = meta({ xp: 10, written: 1, streak: 1, lastDay: "2026-10-01" });
-    const s = sync({ own: { xp: 10, written: 1 }, settingsAt: 5 });
+    const m = meta({ written: 1, streak: 1, lastDay: "2026-10-01" });
+    const s = sync({ own: { written: 1 }, settingsAt: 5 });
     const first = round(local, m, s, cloud());
     const m2 = { ...m, ...first.pull.meta };
     expect(pushPatch(local, m2, first.pull.sync, first.after)).toBeNull();
   });
 
   it("never lowers this device's counter, even if the cloud has seen more (e.g. another tab)", () => {
-    const c = cloud({ counters: { me: { xp: 80, written: 8 } } });
-    const { patch, pull } = round(new Map(), meta({ xp: 50 }), sync({ own: { xp: 50, written: 5 } }), c);
+    const c = cloud({ counters: { me: { written: 8 } } });
+    const { patch, pull } = round(new Map(), meta({ written: 5 }), sync({ own: { written: 5 } }), c);
     expect(patch?.counters).toBeUndefined();
-    expect(pull.sync.own).toEqual({ xp: 80, written: 8 });
+    expect(pull.sync.own).toEqual({ written: 8 });
   });
 
   it("takes newer settings from either side", () => {
@@ -146,7 +146,7 @@ describe("normalizeCloud", () => {
     expect(normalizeCloud(undefined)).toEqual({ ...emptyCloud(""), epoch: "" });
     const c = normalizeCloud({ epoch: "e", progress: { 人: 3, 大: "1,2,3,4,,5" }, counters: { a: { xp: "x" } }, settings: { levels: "p1" } });
     expect(c.progress).toEqual({ 大: "1,2,3,4,,5" });
-    expect(c.counters).toEqual({ a: { xp: 0, written: 0 } });
+    expect(c.counters).toEqual({ a: { written: 0 } });
     expect(c.settings).toBeNull();
   });
 });

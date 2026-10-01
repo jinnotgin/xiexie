@@ -7,7 +7,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowR
 import { useRouter } from "vue-router";
 import type { Grade, Mood } from "../types";
 import { LINES, pick } from "../lib/momo";
-import { STAMPS, gradeOf, xpFor } from "../lib/srs";
+import { STAMPS, gradeOf } from "../lib/srs";
 import { confetti, cssVar, reduceMotion, writerColors } from "../lib/dom";
 import { speak, speechOk } from "../lib/speech";
 import { useProgressStore } from "../stores/progress";
@@ -140,10 +140,8 @@ async function finishWord(skipped = false) {
   if (writer) { try { writer.cancelQuiz(); } catch (e) {} }
   if (skipped) { c.revealed = true; c.filled = [...c.word.w].length; }
   const g = gradeOf(c);
-  const gained = xpFor(g, c.word);
-  session.xp += gained;
   session.results[session.idx] = { word: c.word, grade: g, notes: c.notes };
-  await app.record(c.word, g, gained);
+  await app.record(c.word, g);
   if (!alive) return;
 
   // Show the whole word in the box with a stamp.
@@ -245,7 +243,6 @@ onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clea
     <div class="topbar">
       <button class="btn ghost small" id="quit" aria-label="End session" @click="quit">✕ End</button>
       <div class="dots" id="dots"><span v-for="(_, i) in session.queue" :key="i" :class="dotClass(i)"></span></div>
-      <div class="xp" id="session-xp">+{{ session.xp }} XP</div>
     </div>
     <div class="sheet">
       <div class="prompt-py"><span id="p-py">{{ cur?.word.p }}</span><button class="speak" id="p-speak" aria-label="Hear it" :hidden="!speechOk" @click="cur && speak(cur.word.w)">🔊</button></div>

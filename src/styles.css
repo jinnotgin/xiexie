@@ -93,7 +93,6 @@ h2{font-size:1.05rem;margin:0 0 10px}
 .dot.good{background:var(--marker);border-color:var(--ink)}
 .dot.ok{background:var(--seal);border-color:var(--seal);opacity:.6}
 .dot.again{background:var(--seal);border-color:var(--seal)}
-.xp{font-weight:700;font-size:.9rem;min-width:56px;text-align:right}
 .sheet{
   background:var(--card);border:2px solid var(--ink);border-radius:22px;box-shadow:5px 5px 0 var(--ink);
   padding:18px 16px 16px;text-align:center;

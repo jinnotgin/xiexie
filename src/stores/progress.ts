@@ -7,7 +7,7 @@ import { loadCharData } from "../lib/chardata";
 import { DEFAULT_META, applyWritten, dueWords, migrateLevels, nextProgress, statusOf } from "../lib/srs";
 import { freshSync, type Pull } from "../lib/sync";
 
-/** The learner's saved state: per-word progress plus the profile (XP, streak, settings). */
+/** The learner's saved state: per-word progress plus the profile (streak, settings). */
 export const useProgressStore = defineStore("progress", () => {
   const status = ref<"loading" | "ready" | "error">("loading");
   const persistent = ref(false);
@@ -20,7 +20,7 @@ export const useProgressStore = defineStore("progress", () => {
   const status_ = (id: string) => statusOf(progress, id);
   const due = (levels = meta.levels) => dueWords(WORDS, progress, levels);
   const sync = () => meta.sync!;
-  const isEmpty = () => !progress.size && !meta.xp;
+  const isEmpty = () => !progress.size && !meta.written;
 
   async function init() {
     try { await loadCharData(); }
@@ -40,9 +40,10 @@ export const useProgressStore = defineStore("progress", () => {
     Object.assign(meta, DEFAULT_META, (await Store.getMeta()) || {});
     delete (meta as Partial<Meta> & { id?: string }).id;
     delete (meta as Partial<Meta> & { tracing?: boolean }).tracing; // retired setting
+    delete (meta as Partial<Meta> & { xp?: number }).xp;            // retired XP counter
     meta.levels = migrateLevels(meta.levels).slice(0, 1); // one level at a time
     // Progress from before sign-in existed counts as this device's own contribution.
-    if (!meta.sync) meta.sync = freshSync({ xp: meta.xp, written: meta.written });
+    if (!meta.sync) meta.sync = freshSync({ written: meta.written });
   }
 
   const saveMeta = () => Store.putMeta(meta);
@@ -59,14 +60,12 @@ export const useProgressStore = defineStore("progress", () => {
     await saveMeta(); changed();
   }
 
-  async function record(word: Word, grade: Grade, xp: number) {
+  async function record(word: Word, grade: Grade) {
     // All in-memory changes happen before the first await, so a sync landing mid-way can't drop any.
     const p = nextProgress(progress.get(word.id), word.id, grade);
     progress.set(p.id, p);
     const written = meta.written;
     applyWritten(meta, word);
-    meta.xp += xp;
-    sync().own.xp += xp;
     sync().own.written += meta.written - written;
     await Store.putProgress(p);
     await saveMeta(); changed();

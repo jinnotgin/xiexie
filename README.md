@@ -35,7 +35,7 @@ Signed in, IndexedDB stays the source of truth on each device and is synced with
 The merge rules are pure functions in `src/lib/sync.ts`, tested in `tests/unit/sync.test.ts`:
 
 - **Words**: the most recently practised result for each word wins.
-- **XP and characters written**: each device keeps its own counter, and the total is the sum, so devices never overwrite each other.
+- **Characters written**: each device keeps its own counter, and the total is the sum, so devices never overwrite each other.
 - **Streak**: day ranges from each device are joined, so 1 day on a new phone after a 10-day run elsewhere makes 11.
 - **First sign-in** on a device that has progress, to an account that also has progress: the learner chooses to combine both or keep only the account's.
 - **Sign out** clears the device (after checking everything reached the account), so a shared computer starts fresh.

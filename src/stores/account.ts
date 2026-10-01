@@ -7,7 +7,7 @@ import {
 } from "../lib/sync";
 
 export type Choice = "merge" | "account" | "cancel";
-export interface Conflict { device: { words: number; xp: number }; account: { words: number; xp: number } }
+export interface Conflict { device: { words: number }; account: { words: number } }
 
 /**
  * Optional Google sign-in. When signed in, this device's progress (still kept in IndexedDB)
