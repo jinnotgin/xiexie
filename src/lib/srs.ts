@@ -8,7 +8,7 @@ import { LEVEL_MIGRATION, LEVELS } from "../data/levels";
 
 export const DAY = 86400000;
 export const INTERVALS = [0, 1, 2, 4, 8, 16, 32].map(d => d * DAY);
-export const MASTERED_BOX = 4;
+export const MASTERED_BOX = 2;
 export const DEFAULT_META: Meta = { streak: 0, lastDay: null, levels: ["p1"], relaxed: false, written: 0 };
 
 export type ProgressMap = Map<string, ProgressRec>;
