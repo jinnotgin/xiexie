@@ -35,7 +35,7 @@ but a common word is left out when its characters are already covered elsewhere 
 
 - **Characters**: all 3,500 level-one characters of the [通用规范汉字表 (2013)](https://github.com/shengdoushi/common-standard-chinese-characters-table), plus 咦, each with stroke data.
 - **P1 to P6**: characters placed by the year they are first taught in the 欢乐伙伴 primary textbooks (Chinese, not Higher Chinese),
-  using each lesson's 识读字 (read) and 识写字 (write) list. 1,648 of the list's 1,655 characters sit in the same year here.
+  using each lesson's 识读字 (read) and 识写字 (write) list. All 1,655 of the list's characters sit in the same year here, and no other characters are in P1 to P6.
   MOE publishes the lists on its [Chinese Language teaching resources](https://www.moe.gov.sg/careers/become-teachers/pri-sec-jc-ci/chinese-language-teaching/useful-information-and-resources) page,
   and copies are kept in `docs/sources/` (© Ministry of Education, Singapore):
   - 2015 edition, P1 to P6: [Chinese](https://www.moe.gov.sg/media/files/primary/f607087e-d909-4581-82ac-9c3867c617ee.pdf) (the one this bank follows) and
