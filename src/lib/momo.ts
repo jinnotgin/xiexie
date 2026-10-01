@@ -27,12 +27,11 @@ export const LINES = {
     "Pick a level and let's write a few. Won't take long one."
   ],
   loading: [
-    "Wait ah, grinding the ink…",
-    "Loading lah, don't rush.",
+    "Grinding the ink…",
+    "Getting ready for you, ok?",
     "Steady, steady, almost there…",
-    "Finding my brush, where I put ah…",
-    "Eh, wait one second can?",
-    "Sharpening pencil, one moment hor…"
+    "Preparing your brushes…",
+    "Sharpening pencils, one moment…"
   ],
   start: ["Write it from memory. You can do it.", "What's the character? Take your time.", "Strokes in order, top to bottom, left to right."],
   mistake: ["Eh, not that stroke. Try again.", "Hmm, check the stroke order leh.", "Almost! Mind the direction.", "Close. Which stroke comes first?"],
