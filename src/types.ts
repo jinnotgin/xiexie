@@ -24,7 +24,6 @@ export interface Meta {
   streak: number;
   lastDay: string | null;
   levels: string[];
-  tracing: boolean;
   relaxed: boolean;
   written: number;
 }

@@ -80,13 +80,13 @@ function renderCard() {
   mountWriter();
 }
 
-function mountWriter(forceOutline = false) {
+function mountWriter() {
   const size = stageSize();
   writerSize.value = size;
   stageBox.value = size + 4;
   writerOpts.value = {
     width: size, height: size, padding: Math.round(size * 0.07),
-    showCharacter: false, showOutline: app.meta.tracing || forceOutline,
+    showCharacter: false, showOutline: false,
     drawingWidth: Math.max(8, Math.round(size / 26)),
     strokeAnimationSpeed: 1.1, delayBetweenStrokes: 140,
     ...writerColors(),
@@ -214,16 +214,6 @@ function showMe() {
   const c = session.cur;
   if (!writer || !c || c.done) return;
   c.revealed = true;
-  if (app.meta.tracing) {
-    // The outline is already on screen in tracing mode, so demonstrate the stroke order instead.
-    writer.cancelQuiz();
-    setMomo("happy", "Watch the stroke order…");
-    writer.hideCharacter();
-    writer.animateCharacter({
-      onComplete: () => later(() => { if (c.done) return; setMomo("happy", pick(LINES.retry)); mountWriter(true); }, 600),
-    });
-    return;
-  }
   // Show me: flash the whole character, keep the strokes already written.
   const w = writer;
   setMomo("happy", "Here's the whole character. Take a good look…");

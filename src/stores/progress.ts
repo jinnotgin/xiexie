@@ -25,6 +25,7 @@ export const useProgressStore = defineStore("progress", () => {
     (await Store.allProgress()).forEach(p => progress.set(p.id, p));
     Object.assign(meta, DEFAULT_META, (await Store.getMeta()) || {});
     delete (meta as Partial<Meta> & { id?: string }).id;
+    delete (meta as Partial<Meta> & { tracing?: boolean }).tracing; // retired setting
     meta.levels = migrateLevels(meta.levels);
     status.value = "ready";
   }
@@ -37,7 +38,6 @@ export const useProgressStore = defineStore("progress", () => {
     meta.levels = on ? meta.levels.filter(x => x !== id) : [...meta.levels, id];
     await saveMeta();
   }
-  async function setTracing(v: boolean) { meta.tracing = v; await saveMeta(); }
   async function setStrict(v: boolean) { meta.relaxed = !v; await saveMeta(); }
 
   async function record(word: Word, grade: Grade, xp: number) {
@@ -56,5 +56,5 @@ export const useProgressStore = defineStore("progress", () => {
     await saveMeta();
   }
 
-  return { status, persistent, progress, meta, masteredCount, statusOf: status_, due, init, toggleLevel, setTracing, setStrict, record, reset };
+  return { status, persistent, progress, meta, masteredCount, statusOf: status_, due, init, toggleLevel, setStrict, record, reset };
 });

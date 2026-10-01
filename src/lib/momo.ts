@@ -31,8 +31,7 @@ export const LINES = {
   perfect: ["Wah, steady lah!", "Shiok! Every stroke correct.", "Your 老师 would give you a star.", "Solid. Like you never forgot."],
   good: ["Not bad leh, a few wobbles only.", "Nice one!", "Got it. Next time smoother."],
   ok: ["Can, can. Hints are for learning.", "Getting there. It'll come back again soon.", "Slowly remembering already."],
-  again: ["Never mind, you'll see this one again later.", "No stress. Watch, then we try again.", "That's what practice is for."],
-  retry: ["Your turn now. Trace it once.", "Now you write it, following the outline."]
+  again: ["Never mind, you'll see this one again later.", "No stress. Watch, then we try again.", "That's what practice is for."]
 };
 
 export const pick = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)];

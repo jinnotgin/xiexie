@@ -60,12 +60,6 @@ async function reset() {
     </div>
 
     <label class="toggle">
-      <input type="checkbox" id="tracing" :checked="ready && !!app.meta.tracing"
-        @change="app.setTracing(($event.target as HTMLInputElement).checked)">
-      <span>Tracing guide<small>Show a faint outline to trace over. Off means writing from memory.</small></span>
-    </label>
-
-    <label class="toggle">
       <input type="checkbox" id="strict" :checked="ready && app.meta.relaxed === false"
         @change="app.setStrict(($event.target as HTMLInputElement).checked)">
       <span>Strict stroke order<small>Strokes must go in the right order and direction. Off means any order counts, with a note if it differs.</small></span>

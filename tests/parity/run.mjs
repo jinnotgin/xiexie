@@ -240,7 +240,6 @@ const SCENARIOS = [
     await chip(0).click();              // drop P1
     await chip(1).click();              // P2 is the last one, so this is refused
     await chip(8).click();              // add Business
-    await click(page, "#tracing");
     await click(page, "#strict");
     cp("after clicks", await snapshot(page));
     await sleep(300);                   // let the last IndexedDB write commit; a reload aborts it otherwise
@@ -368,23 +367,11 @@ const SCENARIOS = [
     cp("db", await dumpDB(page));
   }],
 
-  ["tracing mode: show me demonstrates, then trace again", async ({ page }, cp) => {
-    await click(page, "#tracing");
-    await practiseFromLibrary(page, "十");
-    await click(page, "#showme");
-    cp("demonstrating", await snapshot(page));
-    await page.waitForFunction(() => /Trace it once|following the outline/.test(document.getElementById("momo-say").textContent), null, { timeout: 15000 });
-    await sleep(200);
-    cp("retry", await snapshot(page));
-    await drawChar(page, "十");
-    await waitDone(page);
-    cp("done", await snapshot(page));
-  }],
 
   ["old saved data: level migration, due reviews first", async ({ page }, cp) => {
     const p1 = ["的", "一起", "是", "不", "了", "在", "人", "没有"];
     await seedDB(page, {
-      meta: { xp: 50, streak: 3, lastDay: yesterday(), levels: ["p12"], tracing: false, relaxed: true, written: 20 },
+      meta: { xp: 50, streak: 3, lastDay: yesterday(), levels: ["p12"], relaxed: true, written: 20 },
       progress: [
         ...p1.slice(0, 3).map((w, i) => ({ id: w, box: 1, seen: 2, perfect: 0, dueIn: -100000 * (i + 1) })),
         ...p1.slice(3, 6).map(w => ({ id: w, box: 5, seen: 6, perfect: 5, dueIn: 86400000 * 9 })),
