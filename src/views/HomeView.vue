@@ -126,7 +126,7 @@ async function signOut() {
 
     <h2>Practise from</h2>
     <div class="levels" id="levels" role="group" aria-label="Levels">
-      <button v-for="L in LEVELS" :key="L.id" class="chip" :aria-pressed="app.meta.levels.includes(L.id)"
+      <button v-for="L in LEVELS" :key="L.id" class="chip" :class="{ wide: L.id === 'biz' }" :aria-pressed="app.meta.levels.includes(L.id)"
         @click="app.setLevel(L.id)">{{ L.name }}<small>{{ L.sub }}, {{ levelCount(L.id) }}</small></button>
     </div>
 
