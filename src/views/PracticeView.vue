@@ -3,6 +3,7 @@
  * The writing card. Session data lives in the session store; this view drives
  * the HanziWriter quiz for one character at a time and shows the graded result.
  */
+import posthog from "posthog-js";
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowRef } from "vue";
 import { useRouter } from "vue-router";
 import type { Grade, Mood } from "../types";
@@ -10,6 +11,7 @@ import { LINES, pick } from "../lib/momo";
 import { STAMPS, gradeOf } from "../lib/srs";
 import { confetti, cssVar, reduceMotion, writerColors } from "../lib/dom";
 import { speak, speechOk } from "../lib/speech";
+import { posthogEnabled, practiceLogger } from "../lib/posthog";
 import { useProgressStore } from "../stores/progress";
 import { useSessionStore } from "../stores/session";
 import { useKeydown } from "../composables/useKeydown";
@@ -142,6 +144,16 @@ async function finishWord(skipped = false) {
   if (skipped) { c.revealed = true; c.filled = [...c.word.w].length; }
   const g = gradeOf(c);
   session.results[session.idx] = { word: c.word, grade: g, notes: c.notes };
+  if (posthogEnabled) {
+    posthog.capture("practice_word_completed", {
+      grade: g,
+      character_count: [...c.word.w].length,
+      mistake_count: c.mistakes,
+      hint_count: c.hints,
+      was_revealed: c.revealed,
+      was_skipped: skipped,
+    });
+  }
   await app.record(c.word, g);
   if (!alive) return;
 
@@ -191,7 +203,23 @@ async function replay() {
 
 function next() {
   session.idx++;
-  if (session.idx >= session.queue.length) router.push({ name: "summary" });
+  if (session.idx >= session.queue.length) {
+    if (posthogEnabled) {
+      const completedCardCount = session.results.filter(Boolean).length;
+      posthog.capture("practice_session_completed", {
+        initial_word_count: session.total,
+        completed_card_count: completedCardCount,
+        requeued_word_count: session.requeued.size,
+      });
+      practiceLogger.info("practice session completed", {
+        event: "practice_session_completed",
+        initial_word_count: session.total,
+        completed_card_count: completedCardCount,
+        requeued_word_count: session.requeued.size,
+      });
+    }
+    router.push({ name: "summary" });
+  }
   else renderCard();
 }
 
@@ -204,6 +232,7 @@ function hint() {
   const n = q._currentStrokeIndex;
   if (n == null || n >= q._character.strokes.length) return;
   c.hints++;
+  if (posthogEnabled) posthog.capture("practice_hint_requested", { hint_count: c.hints });
   setMomo("happy", "Here's the next stroke. Watch where it starts and which way it goes.");
   try { writer.highlightStroke(n); } catch (e) {}
 }
@@ -211,6 +240,7 @@ function hint() {
 function showMe() {
   const c = session.cur;
   if (!writer || !c || c.done) return;
+  if (!c.revealed && posthogEnabled) posthog.capture("practice_word_revealed");
   c.revealed = true;
   // Show me: flash the whole character, keep the strokes already written.
   const w = writer;
@@ -224,9 +254,25 @@ function showMe() {
   }, 2500);
 }
 
-function skip() { if (session.cur && !session.cur.done) finishWord(true); }
+function skip() {
+  if (!session.cur || session.cur.done) return;
+  if (posthogEnabled) posthog.capture("practice_word_skipped");
+  finishWord(true);
+}
 
 function quit() {
+  if (posthogEnabled) {
+    const completedCardCount = session.results.filter(Boolean).length;
+    posthog.capture("practice_session_abandoned", {
+      initial_word_count: session.total,
+      completed_card_count: completedCardCount,
+    });
+    practiceLogger.info("practice session abandoned", {
+      event: "practice_session_abandoned",
+      initial_word_count: session.total,
+      completed_card_count: completedCardCount,
+    });
+  }
   if (writer) try { writer.cancelQuiz(); } catch (e) {}
   router.push({ name: session.results.filter(Boolean).length ? "summary" : "home" });
 }

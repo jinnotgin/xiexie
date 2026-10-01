@@ -7,6 +7,8 @@ setTimeout(() => { splashHeld.value = false; }, SPLASH_MIN_MS);
 </script>
 
 <script setup lang="ts">
+import posthog from "posthog-js";
+import { posthogEnabled } from "../lib/posthog";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { LEVELS } from "../data/levels";
@@ -72,6 +74,9 @@ async function reset() {
   } else {
     if (!confirm("Clear all progress and streak on this device?")) return;
     await app.reset();
+  }
+  if (posthogEnabled) {
+    posthog.capture("progress_reset", { reset_scope: account.signedIn ? "account" : "device" });
   }
   greeting.value = pick(LINES.home);
 }

@@ -1,4 +1,6 @@
 import { defineStore } from "pinia";
+import posthog from "posthog-js";
+import { posthogEnabled } from "../lib/posthog";
 import { computed, ref, watch } from "vue";
 import { useProgressStore } from "./progress";
 import { cloudEnabled, loadCloud, type Cloud, type CloudUser } from "../lib/cloud";
@@ -26,6 +28,24 @@ export const useAccountStore = defineStore("account", () => {
   let syncedRev = -1;  // app.rev as of the last successful sync; -1 until the first one
   let timer: ReturnType<typeof setTimeout> | undefined;
   let queued = false;
+  let identifiedUserId: string | null = null;
+
+  function syncPosthogIdentity(nextUser: CloudUser | null) {
+    if (!posthogEnabled) return;
+
+    if (!nextUser) {
+      if (identifiedUserId) posthog.reset();
+      identifiedUserId = null;
+      return;
+    }
+
+    if (identifiedUserId && identifiedUserId !== nextUser.uid) posthog.reset();
+    posthog.identify(nextUser.uid, {
+      ...(nextUser.email ? { email: nextUser.email } : {}),
+      ...(nextUser.name ? { name: nextUser.name } : {}),
+    });
+    identifiedUserId = nextUser.uid;
+  }
 
   /** Signed in, and this device's progress belongs to that account. */
   const signedIn = computed(() => !!user.value && user.value.uid === app.meta.sync?.uid);
@@ -63,6 +83,7 @@ export const useAccountStore = defineStore("account", () => {
       let first = true;
       c.onUser(u => {
         const reload = !first; first = false;
+        syncPosthogIdentity(u);
         user.value = u;
         exclusive(async () => {
           if (reload) await app.load(); // another tab may have signed in, out, or reset
@@ -167,6 +188,7 @@ export const useAccountStore = defineStore("account", () => {
   async function signOut(force = false) {
     if (!(await flush()) || !upToDate()) { if (!force) return false; }
     await exclusive(async () => {
+      if (posthogEnabled) posthog.capture("account_signed_out");
       await cloud!.signOut();
       await app.wipe();
       syncedRev = -1;

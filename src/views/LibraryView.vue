@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import posthog from "posthog-js";
+import { posthogEnabled } from "../lib/posthog";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { LEVELS, LIB_INTRO, SOURCE_NOTE } from "../data/levels";
@@ -30,6 +32,16 @@ const tabLabel = (id: string, name: string) => {
 };
 const intro = computed(() => LIB_INTRO[level.value.startsWith("p") ? "p" : level.value]);
 function pickLevel(id: string) { ui.libLevel = id; ui.libQuery = ""; }
+function openWord(word: typeof WORDS[number]) {
+  if (posthogEnabled) {
+    posthog.capture("library_word_opened", {
+      level: word.l,
+      word_status: app.statusOf(word.id),
+      opened_from_search: searching.value,
+    });
+  }
+  ui.modalWord = word;
+}
 </script>
 
 <template>
@@ -52,7 +64,7 @@ function pickLevel(id: string) { ui.libLevel = id; ui.libQuery = ""; }
     <p class="lib-intro" id="lib-intro" aria-live="polite">{{ searching ? resultNote : intro }}</p>
     <div class="legend"><span><i></i>New</span><span><i class="l"></i>Learning</span><span><i class="m"></i>Mastered</span></div>
     <div class="tiles" id="tiles">
-      <button v-for="w in words" :key="w.id" :class="['tile', app.statusOf(w.id), { tagged: searching }]" @click="ui.modalWord = w">
+      <button v-for="w in words" :key="w.id" :class="['tile', app.statusOf(w.id), { tagged: searching }]" @click="openWord(w)">
         <span v-if="searching" class="tile-level">{{ LEVEL_NAME[w.l] }}</span>
         <span class="w han">{{ w.w }}</span><small>{{ w.p }}</small><small class="en">{{ w.e }}</small>
       </button>
