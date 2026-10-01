@@ -26,6 +26,14 @@ export const LINES = {
     "No 听写 marks today. Just you, me and some strokes.",
     "Pick a level and let's write a few. Won't take long one."
   ],
+  loading: [
+    "Wait ah, grinding the ink…",
+    "Loading lah, don't rush.",
+    "Steady, steady, almost there…",
+    "Finding my brush, where I put ah…",
+    "Eh, wait one second can?",
+    "Sharpening pencil, one moment hor…"
+  ],
   start: ["Write it from memory. You can do it.", "What's the character? Take your time.", "Strokes in order, top to bottom, left to right."],
   mistake: ["Eh, not that stroke. Try again.", "Hmm, check the stroke order leh.", "Almost! Mind the direction.", "Close. Which stroke comes first?"],
   perfect: ["Wah, steady lah!", "Shiok! Every stroke correct.", "Your 老师 would give you a star.", "Solid. Like you never forgot."],

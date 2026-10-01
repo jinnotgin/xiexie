@@ -1,5 +1,13 @@
+<script lang="ts">
+import { ref as vueRef } from "vue";
+// Keep the splash up for a beat from app start, so a fast load doesn't just flash it.
+const SPLASH_MIN_MS = 1400;
+const splashHeld = vueRef(true);
+setTimeout(() => { splashHeld.value = false; }, SPLASH_MIN_MS);
+</script>
+
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { LEVELS } from "../data/levels";
 import { WORDS } from "../data/words";
@@ -18,10 +26,15 @@ const router = useRouter();
 const startSession = useStartSession();
 
 const greeting = ref(pick(LINES.home));
-const ready = computed(() => app.status === "ready");
-const bubble = computed(() => app.status === "error"
-  ? "This browser can't unpack the stroke data. Try an up-to-date Chrome, Safari or Firefox."
-  : ready.value ? greeting.value : "");
+// Rotate through Momo's loading lines, starting from a random one.
+const loadingIdx = ref(Math.floor(Math.random() * LINES.loading.length));
+const loadingLine = computed(() => LINES.loading[loadingIdx.value % LINES.loading.length]);
+const rotate = setInterval(() => { ready.value ? clearInterval(rotate) : loadingIdx.value++; }, 1800);
+onUnmounted(() => clearInterval(rotate));
+const ready = computed(() => app.status === "ready" && !splashHeld.value);
+const failed = computed(() => app.status === "error");
+const pct = computed(() => app.loaded === null ? null : Math.round(app.loaded * 100));
+const unpacking = computed(() => pct.value === null || pct.value >= 100);
 
 const levelCount = (id: string) => WORDS.filter(w => w.l === id).length;
 
@@ -52,7 +65,6 @@ async function reset() {
 onMounted(() => { if (!account.signedIn) account.prepare(); });
 
 const storageNote = computed(() => {
-  if (!ready.value) return "Progress is saved on this device.";
   if (account.signedIn) {
     const who = account.user!.email || account.user!.name || "your Google account";
     return {
@@ -79,7 +91,25 @@ async function signOut() {
 </script>
 
 <template>
-  <section id="home">
+  <Transition name="splash" mode="out-in">
+  <section v-if="!ready" id="splash" class="splash" :aria-busy="!failed">
+    <Momo class="splash-momo" :class="{ bob: !failed }" :mood="failed ? 'hmm' : 'happy'" />
+    <h1 class="han">写写</h1>
+    <p class="splash-tag">Remember how to write, one stroke at a time.</p>
+    <template v-if="failed">
+      <p class="bubble splash-msg" role="alert">This browser can't unpack the stroke data. Try an up-to-date Chrome, Safari or Firefox.</p>
+    </template>
+    <template v-else>
+      <div class="loadbar" :class="{ busy: unpacking }" role="progressbar" aria-label="Loading"
+        aria-valuemin="0" aria-valuemax="100" :aria-valuenow="unpacking ? undefined : pct!">
+        <span :style="{ width: unpacking ? '100%' : pct + '%' }"></span>
+      </div>
+      <Transition name="line" mode="out-in">
+        <p class="splash-status" :key="loadingLine" aria-live="polite">{{ loadingLine }}</p>
+      </Transition>
+    </template>
+  </section>
+  <section v-else id="home">
     <div class="masthead">
       <Momo class="momo bob" id="momo-big" />
       <div>
@@ -87,46 +117,41 @@ async function signOut() {
         <p>Remember how to write, one stroke at a time.</p>
       </div>
     </div>
-    <div class="bubble" id="home-bubble">{{ bubble }}</div>
+    <div class="bubble" id="home-bubble">{{ greeting }}</div>
     <div class="stats" id="stats">
-      <template v-if="ready">
-        <span class="pill"><Icon name="flame" />{{ streakLive(app.meta) ? app.meta.streak : 0 }}-day streak</span>
-        <span class="pill"><Icon name="pen" />{{ app.meta.written }} written</span>
-        <span class="pill"><Icon name="award" />{{ levelMastered }} / {{ levelWords.length }} mastered in {{ levelLabel }}</span>
-      </template>
+      <span class="pill"><Icon name="flame" />{{ streakLive(app.meta) ? app.meta.streak : 0 }}-day streak</span>
+      <span class="pill"><Icon name="pen" />{{ app.meta.written }} written</span>
+      <span class="pill"><Icon name="award" />{{ levelMastered }} / {{ levelWords.length }} mastered in {{ levelLabel }}</span>
     </div>
 
     <h2>Practise from</h2>
     <div class="levels" id="levels" role="group" aria-label="Levels">
-      <template v-if="ready">
-        <button v-for="L in LEVELS" :key="L.id" class="chip" :aria-pressed="app.meta.levels.includes(L.id)"
-          @click="app.setLevel(L.id)">{{ L.name }}<small>{{ L.sub }}, {{ levelCount(L.id) }}</small></button>
-      </template>
+      <button v-for="L in LEVELS" :key="L.id" class="chip" :aria-pressed="app.meta.levels.includes(L.id)"
+        @click="app.setLevel(L.id)">{{ L.name }}<small>{{ L.sub }}, {{ levelCount(L.id) }}</small></button>
     </div>
 
     <label class="toggle">
-      <input type="checkbox" id="strict" :checked="ready && app.meta.relaxed === false"
+      <input type="checkbox" id="strict" :checked="app.meta.relaxed === false"
         @change="app.setStrict(($event.target as HTMLInputElement).checked)">
       <span>Strict stroke order<small>Strokes must go in the right order and direction.</small></span>
     </label>
 
     <div class="start-row">
-      <button class="btn primary" id="start" :disabled="!ready" @click="startSession()">
-        {{ ready ? "Start 10 words" : "Unpacking 3,500 characters…" }}
-      </button>
-      <p class="due-note" id="due-note">{{ ready ? dueNote : "" }}</p>
-      <button class="btn" id="open-library" :disabled="!ready" @click="router.push({ name: 'library' })">Browse all words</button>
+      <button class="btn primary" id="start" @click="startSession()">Start 10 words</button>
+      <p class="due-note" id="due-note">{{ dueNote }}</p>
+      <button class="btn" id="open-library" @click="router.push({ name: 'library' })">Browse all words</button>
     </div>
 
     <div class="foot">
       <span id="storage-note">{{ storageNote }}</span>
       <span class="foot-actions">
-        <template v-if="ready && account.enabled">
+        <template v-if="account.enabled">
           <button v-if="account.signedIn" class="linkish" id="sign-out" @click="signOut">Sign out</button>
           <button v-else class="btn small" id="sign-in" :disabled="account.state === 'busy'" @click="signIn">Sign in with Google to sync</button>
         </template>
-        <button class="linkish" id="reset" :disabled="!ready" @click="reset">Reset progress</button>
+        <button class="linkish" id="reset" @click="reset">Reset progress</button>
       </span>
     </div>
   </section>
+  </Transition>
 </template>

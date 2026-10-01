@@ -10,6 +10,8 @@ import { freshSync, type Pull } from "../lib/sync";
 /** The learner's saved state: per-word progress plus the profile (streak, settings). */
 export const useProgressStore = defineStore("progress", () => {
   const status = ref<"loading" | "ready" | "error">("loading");
+  /** Stroke-data download progress, 0–1, or null while unpacking or when the size is unknown. */
+  const loaded = ref<number | null>(0);
   const persistent = ref(false);
   const progress = reactive(new Map<string, ProgressRec>());
   const meta = reactive<Meta>({ ...DEFAULT_META });
@@ -23,7 +25,7 @@ export const useProgressStore = defineStore("progress", () => {
   const isEmpty = () => !progress.size && !meta.written;
 
   async function init() {
-    try { await loadCharData(); }
+    try { await loadCharData(undefined, f => { loaded.value = f; }); }
     catch (e) { status.value = "error"; return; }
     await Store.init();
     persistent.value = Store.persistent;
@@ -96,7 +98,7 @@ export const useProgressStore = defineStore("progress", () => {
   }
 
   return {
-    status, persistent, progress, meta, rev, masteredCount, statusOf: status_, due, sync, isEmpty,
+    status, loaded, persistent, progress, meta, rev, masteredCount, statusOf: status_, due, sync, isEmpty,
     init, load, setLevel, setStrict, record, reset, wipe, applyPull, setLink,
   };
 });
