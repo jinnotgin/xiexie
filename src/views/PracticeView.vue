@@ -16,6 +16,7 @@ import { useKeydown } from "../composables/useKeydown";
 import Momo from "../components/Momo.vue";
 import GridSvg from "../components/GridSvg.vue";
 import HanziStage from "../components/HanziStage.vue";
+import Icon from "../components/Icon.vue";
 
 const app = useProgressStore();
 const session = useSessionStore();
@@ -245,7 +246,7 @@ onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clea
       <div class="dots" id="dots"><span v-for="(_, i) in session.queue" :key="i" :class="dotClass(i)"></span></div>
     </div>
     <div class="sheet">
-      <div class="prompt-py"><span id="p-py">{{ cur?.word.p }}</span><button class="speak" id="p-speak" aria-label="Hear it" :hidden="!speechOk" @click="cur && speak(cur.word.w)">🔊</button></div>
+      <div class="prompt-py"><span id="p-py">{{ cur?.word.p }}</span><button class="speak" id="p-speak" aria-label="Hear it" :hidden="!speechOk" @click="cur && speak(cur.word.w)"><Icon name="speaker" /></button></div>
       <p class="prompt-en" id="p-en">{{ cur?.word.e }}</p>
       <div class="slots" id="slots" :hidden="!cur || cur.word.w.length === 1">
         <template v-if="cur"><span v-for="(ch, i) in [...cur.word.w]" :key="i" :class="slotClass(i)">{{ i < cur.filled ? ch : "？" }}</span></template>

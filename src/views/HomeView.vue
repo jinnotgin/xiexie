@@ -10,6 +10,7 @@ import { useAccountStore } from "../stores/account";
 import { cloudError } from "../lib/cloud";
 import { useStartSession } from "../composables/useStartSession";
 import Momo from "../components/Momo.vue";
+import Icon from "../components/Icon.vue";
 
 const app = useProgressStore();
 const account = useAccountStore();
@@ -23,6 +24,14 @@ const bubble = computed(() => app.status === "error"
   : ready.value ? greeting.value : "");
 
 const levelCount = (id: string) => WORDS.filter(w => w.l === id).length;
+
+// Mastery counted within the chosen levels, so a new learner sees a goal they can reach.
+const levelWords = computed(() => WORDS.filter(w => app.meta.levels.includes(w.l)));
+const levelMastered = computed(() => levelWords.value.filter(w => app.statusOf(w.id) === "mastered").length);
+const levelLabel = computed(() => {
+  const names = LEVELS.filter(L => app.meta.levels.includes(L.id)).map(L => L.name);
+  return names.length <= 2 ? names.join(" + ") : `${names.length} levels`;
+});
 const dueCount = computed(() => app.due().length);
 const dueNote = computed(() => dueCount.value
   ? `${dueCount.value} word${dueCount.value > 1 ? "s" : ""} due for review. They'll come up first.`
@@ -81,9 +90,9 @@ async function signOut() {
     <div class="bubble" id="home-bubble">{{ bubble }}</div>
     <div class="stats" id="stats">
       <template v-if="ready">
-        <span class="pill">🔥 {{ streakLive(app.meta) ? app.meta.streak : 0 }}-day streak</span>
-        <span class="pill">✍️ {{ app.meta.written }} written</span>
-        <span class="pill">熟 {{ app.masteredCount }} / {{ WORDS.length }} mastered</span>
+        <span class="pill"><Icon name="flame" />{{ streakLive(app.meta) ? app.meta.streak : 0 }}-day streak</span>
+        <span class="pill"><Icon name="pen" />{{ app.meta.written }} written</span>
+        <span class="pill"><Icon name="award" />{{ levelMastered }} / {{ levelWords.length }} mastered in {{ levelLabel }}</span>
       </template>
     </div>
 
@@ -114,7 +123,7 @@ async function signOut() {
       <span class="foot-actions">
         <template v-if="ready && account.enabled">
           <button v-if="account.signedIn" class="linkish" id="sign-out" @click="signOut">Sign out</button>
-          <button v-else class="linkish" id="sign-in" :disabled="account.state === 'busy'" @click="signIn">Sign in with Google to save your progress</button>
+          <button v-else class="btn small" id="sign-in" :disabled="account.state === 'busy'" @click="signIn">Sign in with Google to sync</button>
         </template>
         <button class="linkish" id="reset" :disabled="!ready" @click="reset">Reset progress</button>
       </span>

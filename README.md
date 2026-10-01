@@ -16,9 +16,9 @@ npm test             # unit tests for the spaced-repetition and grading rules
 src/
   main.ts, App.vue, router.ts   app shell; screens are routes (#/, #/practice, #/summary, #/library)
   views/                        HomeView, PracticeView, SummaryView, LibraryView
-  components/                   HanziStage (one HanziWriter), GridSvg, Momo, WordModal, SyncConflict
+  components/                   HanziStage (one HanziWriter), GridSvg, Momo, Icon, WordModal, SyncConflict
   stores/                       progress (saved state), session (current round), ui (popup, library tab), account (Google sign-in, sync)
-  lib/                          srs (pure rules), storage (IndexedDB), sync (pure merge rules), cloud (Firebase), chardata, speech, momo, dom
+  lib/                          srs (pure rules), storage (IndexedDB), sync (pure merge rules), search (library search), cloud (Firebase), chardata, speech, momo, dom
   data/                         levels, words.json, chardata.json.gz (stroke data)
   vendor/hanzi-writer.js        Hanzi Writer 3.7.3, patched for out-of-order strokes and leniency
 archived/xiexie.html            the original single-file app, kept for reference

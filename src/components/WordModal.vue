@@ -8,6 +8,7 @@ import { useUiStore } from "../stores/ui";
 import { useStartSession } from "../composables/useStartSession";
 import { useKeydown } from "../composables/useKeydown";
 import HanziStage from "./HanziStage.vue";
+import Icon from "./Icon.vue";
 
 const app = useProgressStore();
 const ui = useUiStore();
@@ -74,7 +75,7 @@ useKeydown(e => { if (e.key === "Escape" && word.value) close(); });
 <template>
   <div class="modal" id="modal" :hidden="!word" @click.self="close">
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="m-en">
-      <div class="prompt-py"><span id="m-py">{{ word?.p }}</span><button class="speak" id="m-speak" aria-label="Hear it" :hidden="!speechOk" @click="word && speak(word.w)">🔊</button></div>
+      <div class="prompt-py"><span id="m-py">{{ word?.p }}</span><button class="speak" id="m-speak" aria-label="Hear it" :hidden="!speechOk" @click="word && speak(word.w)"><Icon name="speaker" /></button></div>
       <p class="prompt-en" id="m-en">{{ word?.e }}</p>
       <div class="anim-row" id="m-anim">
         <template v-if="word">
