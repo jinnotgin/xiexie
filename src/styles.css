@@ -124,13 +124,12 @@ h2{font-size:1.05rem;margin:0 0 10px}
 .sync-text small{display:block;color:var(--ink-soft);font-size:.82rem}
 /* Phones: the action drops to its own row, lined up with the text. */
 @media (max-width:480px){.sync-card{grid-template-columns:auto 1fr}.sync-card>button{grid-column:2;justify-self:start}}
-/* Phones only: invite to add the app to the home screen. Sits above the sync card. */
-.install-card{border-style:solid;border-color:var(--seal)}
-.install-card .sync-icon{color:var(--seal)}
-.install-card + .sync-card{margin-top:12px}
-.install-actions{display:flex;align-items:center;gap:14px}
-.inline-icon{width:1.1em;height:1.1em;vertical-align:-.2em}
-@media (max-width:480px){.install-actions{grid-column:2}}
+/* Phones only: small "Install" pill in the masthead; on iOS it opens the Add to Home Screen hint. */
+.install{position:relative;margin-left:auto;align-self:flex-start}
+.install-btn{display:inline-flex;align-items:center;gap:.3em;border:2px solid var(--ink);background:var(--card);border-radius:999px;padding:.3em .7em;font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.install-btn .icon{width:1.1em;height:1.1em;color:var(--seal)}
+.install-tip{position:absolute;right:0;top:calc(100% + 8px);z-index:5;width:220px;margin:0;padding:10px 12px;background:var(--card);border:2px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink);font-size:.85rem;line-height:1.35}
+.install-tip .icon{width:1.1em;height:1.1em;vertical-align:-.2em}
 .foot{margin-top:14px;display:flex;justify-content:center}
 .linkish{display:inline-flex;align-items:center;gap:.35em;background:none;border:none;color:var(--ink-soft);text-decoration:underline;text-underline-offset:2px;cursor:pointer;padding:0;font-size:.82rem}
 .linkish .icon{width:1em;height:1em}

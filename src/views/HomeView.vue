@@ -19,7 +19,7 @@ import { cloudError } from "../lib/cloud";
 import { useStartSession } from "../composables/useStartSession";
 import Momo from "../components/Momo.vue";
 import Icon from "../components/Icon.vue";
-import InstallCard from "../components/InstallCard.vue";
+import InstallButton from "../components/InstallButton.vue";
 
 const app = useProgressStore();
 const account = useAccountStore();
@@ -130,6 +130,7 @@ async function signOut() {
         <h1 class="han">写写</h1>
         <p>Remember how to write, one stroke at a time.</p>
       </div>
+      <InstallButton />
     </div>
     <div class="bubble" id="home-bubble">{{ greeting }}</div>
     <div class="stats" id="stats">
@@ -166,7 +167,6 @@ async function signOut() {
       <button class="btn" id="open-library" @click="router.push({ name: 'library' })">Browse all words</button>
     </div>
 
-    <InstallCard />
     <div class="sync-card" :class="{ synced: account.signedIn }">
       <Icon :name="account.signedIn ? 'cloud' : 'device'" class="sync-icon" />
       <p class="sync-text">
