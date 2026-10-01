@@ -10,12 +10,14 @@ export const useSessionStore = defineStore("session", () => {
   const requeued = ref(new Set<string>());
   const total = ref(0);
   const cur = ref<CardState | null>(null);
+  const returnTo = ref("/");   // the page the round was started from, to go back to afterwards
 
-  function start(words: Word[]) {
+  function start(words: Word[], from: string) {
     queue.value = [...words]; idx.value = 0; results.value = [];
     requeued.value = new Set(); total.value = words.length; cur.value = null;
+    returnTo.value = from;
   }
   const active = () => queue.value.length > 0;
 
-  return { queue, idx, results, requeued, total, cur, start, active };
+  return { queue, idx, results, requeued, total, cur, returnTo, start, active };
 });

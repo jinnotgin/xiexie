@@ -44,6 +44,10 @@ function reason(r: Result): string | null {
   return (order && back ? "strokes differed" : order ? "stroke order differed" : "a stroke went backwards") + chars;
 }
 
+// A round picked from the library offers the same words again and a way back to them.
+const fromLibrary = computed(() => router.resolve(session.returnTo).name === "library");
+const again = () => fromLibrary.value ? startSession(session.queue.slice(0, session.total)) : startSession();
+
 onMounted(() => { if (allPerfect.value) confetti(); });
 </script>
 
@@ -60,8 +64,9 @@ onMounted(() => { if (allPerfect.value) confetti(); });
       </div>
     </div>
     <div class="row">
-      <button class="btn primary" id="again" @click="startSession()">Another round</button>
-      <button class="btn" id="home-btn" @click="router.push({ name: 'home' })">Home</button>
+      <button class="btn primary" id="again" @click="again">{{ fromLibrary ? "Practise again" : "Another round" }}</button>
+      <button v-if="fromLibrary" class="btn" id="back-btn" @click="router.push(session.returnTo)">← Back to words</button>
+      <button v-else class="btn" id="home-btn" @click="router.push({ name: 'home' })">Home</button>
     </div>
   </section>
 </template>

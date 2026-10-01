@@ -219,7 +219,7 @@ function next() {
         requeued_word_count: session.requeued.size,
       });
     }
-    router.push({ name: "summary" });
+    router.replace({ name: "summary" });
   }
   else renderCard();
 }
@@ -275,7 +275,8 @@ function quit() {
     });
   }
   if (writer) try { writer.cancelQuiz(); } catch (e) {}
-  router.push({ name: session.results.filter(Boolean).length ? "summary" : "home" });
+  if (session.results.some(Boolean)) router.replace({ name: "summary" });
+  else router.replace(session.returnTo);
 }
 
 useKeydown(e => {

@@ -27,7 +27,9 @@ export function useStartSession() {
         word_count: list.length,
       });
     }
-    session.start(list);
+    // A round started from the summary ("practise again") goes back where the previous one came from.
+    const here = router.currentRoute.value;
+    session.start(list, here.name === "summary" ? session.returnTo : here.fullPath);
     router.push({ name: "practice" });
   };
 }
