@@ -1,5 +1,5 @@
 /* =========================================================
-   Lazy mode: checks a whole handwritten character at once, so
+   Relaxed mode: checks a whole handwritten character at once, so
    joined-up (cursive) strokes still count. Pure functions: the
    stroke data is passed in, so the rules can be unit-tested.
 
@@ -35,7 +35,7 @@ const ANGLE_WEIGHT = 0.15;
 const SPLIT_STEP = 0.025;             // corner detection works on points this far apart (unit box)
 const SPLIT_SPAN = 2;                 // ...comparing the heading this many points before and after
 const SPLIT_TURN = Math.PI * 0.3;     // a turn sharper than 54° splits the stroke
-// Acceptance, calibrated on simulated lazy writing (see tests/unit/lazy.test.ts).
+// Acceptance, calibrated on simulated relaxed writing (see tests/unit/relaxed.test.ts).
 const MAX_SCORE = 0.15;   // beyond this the ink is a different shape altogether
 const NEAR_BEST = 1.03;   // the target may trail the best fit by this factor...
 const NEAR_RANK = 3;      // ...if it is still among the top few

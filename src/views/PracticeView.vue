@@ -2,8 +2,8 @@
 /**
  * The writing card. Session data lives in the session store; this view drives
  * one character at a time and shows the graded result. Strict mode runs the
- * HanziWriter quiz, stroke by stroke; lazy mode collects free ink on an InkPad
- * and checks the whole character at once (lib/lazy.ts).
+ * HanziWriter quiz, stroke by stroke; relaxed mode collects free ink on an InkPad
+ * and checks the whole character at once (lib/relaxed.ts).
  */
 import posthog from "posthog-js";
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowRef } from "vue";
@@ -14,7 +14,7 @@ import { STAMPS, gradeOf } from "../lib/srs";
 import { confetti, cssVar, reduceMotion, writerColors } from "../lib/dom";
 import { speak, speechOk } from "../lib/speech";
 import { posthogEnabled, practiceLogger } from "../lib/posthog";
-import { lazyChecker } from "../lib/chardata";
+import { relaxedChecker } from "../lib/chardata";
 import { useProgressStore } from "../stores/progress";
 import { useSessionStore } from "../stores/session";
 import { useKeydown } from "../composables/useKeydown";
@@ -44,8 +44,8 @@ const stageBox = ref<number | null>(null);
 const writerOpts = shallowRef<Record<string, unknown>>({});
 let writer: any = null;
 
-// Lazy mode: free writing, re-checked as a whole after every pen-up until it's close enough.
-const lazy = ref(false);
+// Relaxed mode: free writing, re-checked as a whole after every pen-up until it's close enough.
+const relaxed = ref(false);
 const inkPad = ref<InstanceType<typeof InkPad>>();
 const inkWidth = ref(8);
 let charPassed = false;
@@ -100,7 +100,7 @@ function mountWriter() {
   const size = stageSize();
   writerSize.value = size;
   stageBox.value = size + 4;
-  lazy.value = app.meta.relaxed === true;
+  relaxed.value = app.meta.relaxed === true;
   charPassed = false;
   cancelCheck();
   inkWidth.value = Math.max(8, Math.round(size / 26));
@@ -119,7 +119,7 @@ function onWriterReady(w: any) {
   writer = w;
   const c = session.cur!;
   const ch = c.word.w[c.ci];
-  if (lazy.value) { warmChecker(); return; }
+  if (relaxed.value) { warmChecker(); return; }
   w.quiz({
     showHintAfterMisses: 3, highlightOnComplete: true, leniency: 1.25,
     onMistake: (d: any) => {
@@ -143,7 +143,7 @@ function onWriterReady(w: any) {
 
 // Builds the checker's reference paths in small slices, so the first check is quick.
 function warmChecker() {
-  const step = () => { if (alive && !lazyChecker().warm()) later(step, 16); };
+  const step = () => { if (alive && !relaxedChecker().warm()) later(step, 16); };
   later(step, 300);
 }
 
@@ -162,10 +162,10 @@ function checkInk() {
   const ink = inkPad.value.strokes;
   const ch = c.word.w[c.ci];
   if (!ink.length) return;
-  const v = lazyChecker().check(ink, ch);
-  const overshot = !v.ok && ink.length >= lazyChecker().strokeCount(ch) + OVERSHOOT;
+  const v = relaxedChecker().check(ink, ch);
+  const overshot = !v.ok && ink.length >= relaxedChecker().strokeCount(ch) + OVERSHOOT;
   if (posthogEnabled && (v.ok || overshot)) {
-    posthog.capture("practice_lazy_check", {
+    posthog.capture("practice_relaxed_check", {
       accepted: v.ok, rank: v.rank, score: v.score, best_score: v.bestScore,
       ink_stroke_count: ink.length, character: ch, best_match: v.best,
     });
@@ -178,7 +178,7 @@ function checkInk() {
   // Name the look-alike only when the ink really is a good fit for it.
   if (v.best && v.best !== ch && v.bestScore < 0.09) setMomo("hmm", `Hmm, that looks more like ${v.best}. Try again?`);
   else if (c.mistakes >= 3) setMomo("hmm", "Stuck? Tap Show me for a peek.");
-  else setMomo("hmm", pick(LINES.lazyMiss));
+  else setMomo("hmm", pick(LINES.relaxedMiss));
   inkPad.value.clear(true);
 }
 
@@ -257,7 +257,7 @@ async function finishWord(skipped = false) {
   }
   setMomo(g === "perfect" ? "wow" : g === "again" ? "hmm" : "happy", noteLine || pick(LINES[g]));
   // Offer the usual stroke order when a stroke went its own way, and always after free writing.
-  replayHidden.value = !c.notes.length && !lazy.value;
+  replayHidden.value = !c.notes.length && !relaxed.value;
   if (g === "perfect") confetti();
   if (g === "again" && !session.requeued.has(c.word.id)) { session.requeued.add(c.word.id); session.queue.push(c.word); }
   await nextTick();
@@ -379,7 +379,7 @@ onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clea
       <div class="stage" id="stage" ref="stageEl" :style="stageBox ? { width: stageBox + 'px', height: stageBox + 'px' } : undefined">
         <HanziStage v-if="cur && phase === 'writing' && writerSize" :key="mountId" :char="cur.word.w[cur.ci] ?? ''"
           :size="writerSize" :options="writerOpts" @ready="onWriterReady" />
-        <InkPad v-if="cur && phase === 'writing' && writerSize && lazy" :key="'ink' + mountId" ref="inkPad"
+        <InkPad v-if="cur && phase === 'writing' && writerSize && relaxed" :key="'ink' + mountId" ref="inkPad"
           :size="writerSize" :width="inkWidth" @start="cancelCheck" @end="onInkEnd" />
         <template v-else-if="cur && phase === 'done'">
           <GridSvg :size="finalSize" />
@@ -392,12 +392,12 @@ onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clea
       </div>
       <div class="momo-line"><Momo id="momo-small" :mood="momo.mood" /><span id="momo-say">{{ momo.text }}</span></div>
       <div class="actions" id="actions" :hidden="phase === 'done'">
-        <div v-if="lazy" class="btn-set" id="ink-actions">
+        <div v-if="relaxed" class="btn-set" id="ink-actions">
           <button class="btn small" id="undo" @click="undoInk"><Icon name="undo" />Undo</button>
           <button class="btn small" id="clear" @click="clearInk"><Icon name="clear" />Clear</button>
         </div>
         <div class="btn-set">
-          <button v-if="!lazy" class="btn small" id="hint" @click="hint">Hint</button>
+          <button v-if="!relaxed" class="btn small" id="hint" @click="hint">Hint</button>
           <button class="btn small" id="showme" @click="showMe">Show me</button>
           <button class="btn small" id="skip" @click="skip">Skip</button>
         </div>
@@ -407,6 +407,6 @@ onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clea
         <button class="btn primary" id="next" ref="nextBtn" @click="next">Next</button>
       </div>
     </div>
-    <p class="tip" id="tip">{{ lazy ? "Write it your way, joined-up strokes are fine. It fills in once it's close enough." : "Write with a finger, stylus or mouse." }}</p>
+    <p class="tip" id="tip">{{ relaxed ? "Write it your way, joined-up strokes are fine. It fills in once it's close enough." : "Write with a finger, stylus or mouse." }}</p>
   </section>
 </template>

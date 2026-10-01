@@ -1,6 +1,6 @@
 // Stroke data for ~3,500 characters (Make Me a Hanzi via hanzi-writer-data), shipped as one gzipped JSON file.
 import chardataUrl from "../data/chardata.json.gz?url";
-import { type CharMedians, makeChecker } from "./lazy";
+import { type CharMedians, makeChecker } from "./relaxed";
 
 let CHARDATA: Record<string, unknown> = {};
 
@@ -45,5 +45,5 @@ export const loader = (c: string, onLoad: (d: unknown) => void, onErr: (e: Error
 };
 
 let checker: ReturnType<typeof makeChecker> | null = null;
-/** The lazy-mode checker over every loaded character, built on first use (after loadCharData). */
-export const lazyChecker = () => checker ??= makeChecker(CHARDATA as Record<string, CharMedians>);
+/** The relaxed-mode checker over every loaded character, built on first use (after loadCharData). */
+export const relaxedChecker = () => checker ??= makeChecker(CHARDATA as Record<string, CharMedians>);

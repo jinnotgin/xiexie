@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
-import { type CharMedians, type Pt, makeChecker } from "../../src/lib/lazy";
+import { type CharMedians, type Pt, makeChecker } from "../../src/lib/relaxed";
 
 const DATA: Record<string, CharMedians> = JSON.parse(gunzipSync(readFileSync("src/data/chardata.json.gz")).toString());
 const checker = makeChecker(DATA);
@@ -29,7 +29,7 @@ const XI = {
   hengZhe: [[110, 155], [215, 152], [320, 150], [323, 195], [325, 240]] as Pt[],
 };
 
-describe("lazy checker", () => {
+describe("relaxed checker", () => {
   it("accepts real cursive writing with joined strokes", () => {
     const v = checker.check(CURSIVE_ZI, "字");
     expect(v.ok).toBe(true);

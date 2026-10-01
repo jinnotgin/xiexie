@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
- * A transparent drawing layer for lazy mode: collects the learner's ink as
+ * A transparent drawing layer for relaxed mode: collects the learner's ink as
  * strokes of [x, y] points (screen pixels, y down) and draws it. It does no
  * checking itself; it reports each pen-down and pen-up to the parent.
  */
 import { ref } from "vue";
-import type { Pt } from "../lib/lazy";
+import type { Pt } from "../lib/relaxed";
 
 defineProps<{ size: number; width: number }>();
 const emit = defineEmits<{ start: []; end: [] }>();
