@@ -88,7 +88,7 @@ const storageNote = computed(() => {
   }
   if (account.state === "busy") return "Signing in…";
   if (account.lapsed) return "You've been signed out. Sign in again to keep syncing.";
-  return app.persistent ? "Progress is saved on this device." : "Storage is unavailable here, so progress lasts until you close this page.";
+  return app.persistent ? "Progress is saved on this browser." : "Storage is unavailable here, so progress lasts until you close this page.";
 });
 
 async function signIn() {
