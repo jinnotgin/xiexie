@@ -304,15 +304,6 @@ function next() {
 function hint() {
   const c = session.cur;
   if (!writer || !c || c.done) return;
-  if (lazy.value) {
-    // Hint: light up the stroke after the ones the ink already seems to cover.
-    if (charPassed || !inkPad.value) return;
-    c.hints++;
-    if (posthogEnabled) posthog.capture("practice_hint_requested", { hint_count: c.hints });
-    setMomo("happy", "Here's the next stroke. Watch where it starts and which way it goes.");
-    try { writer.highlightStroke(lazyChecker().nextStroke(inkPad.value.strokes, c.word.w[c.ci])); } catch (e) {}
-    return;
-  }
   // Hint: trace just the next stroke to write, once, then it fades.
   const q = writer._quiz;
   if (!q || !q._isActive) return;
@@ -406,7 +397,7 @@ onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clea
           <button class="btn small" id="clear" @click="clearInk"><Icon name="clear" />Clear</button>
         </div>
         <div class="btn-set">
-          <button class="btn small" id="hint" @click="hint">Hint</button>
+          <button v-if="!lazy" class="btn small" id="hint" @click="hint">Hint</button>
           <button class="btn small" id="showme" @click="showMe">Show me</button>
           <button class="btn small" id="skip" @click="skip">Skip</button>
         </div>
