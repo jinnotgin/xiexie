@@ -38,7 +38,7 @@ onMounted(() => { if (allPerfect.value) confetti(); });
     <div class="wall" id="wall">
       <div v-for="r in list" :key="r.word.id" class="wall-item">
         <span :class="['mini-stamp', 'han', r.grade]">{{ STAMPS[r.grade].ch }}</span>
-        <div><span class="w han">{{ r.word.w }}</span><small>{{ r.word.p }}</small><small>{{ r.word.e }}</small><small v-if="r.notes && r.notes.length" class="note">stroke order to polish</small></div>
+        <div><span class="w han">{{ r.word.w }}</span><small>{{ r.word.p }}</small><small>{{ r.word.e }}</small><small v-if="r.notes && r.notes.length" class="note">{{ r.notes.some(n => n.order || n.backwards) ? "stroke order to polish" : "stroke placement to polish" }}</small></div>
       </div>
     </div>
     <div class="row">

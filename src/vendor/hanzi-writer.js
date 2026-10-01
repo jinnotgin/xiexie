@@ -647,7 +647,13 @@ var HanziWriter = (function () {
   const RETRY_LENIENCY_MAX_STEPS = 2;
   const LATER_STROKE_DIST_MOD = 0.65; // distance budget after the first stroke / with outline (library default 0.5)
   const SHAPE_LENIENCY = 1; // library default; retries never loosen shape
-  const retryLeniency = (base, misses) => (base || 1) * (1 + RETRY_LENIENCY_STEP * Math.min(misses || 0, RETRY_LENIENCY_MAX_STEPS));
+  // [xiexie patch] strict-mode placement fallback: the expected stroke, drawn the right shape but
+  // in the wrong spot, still counts (flagged as misplaced) as long as it isn't sitting where
+  // another stroke belongs.
+  const MISPLACED_DIST_MOD = 2.25; // distance budget multiplier over the normal one
+  const MISPLACED_MIN_LEN_RATIO = 0.6; // tighter than MIN_LEN_THRESHOLD so a flick can't pass as a long stroke
+  const MISPLACED_LONG_STROKE = 200; // ...applied only to strokes this long; dots and ticks keep the normal floor
+  const retryLeniency =(base, misses) => (base || 1) * (1 + RETRY_LENIENCY_STEP * Math.min(misses || 0, RETRY_LENIENCY_MAX_STEPS));
 
   function strokeMatches(userStroke, character, strokeNum, options = {}) {
     const strokes = character.strokes;
@@ -716,6 +722,28 @@ var HanziWriter = (function () {
       isMatch,
       meta
     };
+  }
+
+  // [xiexie patch] shape, direction and length must all fit; location only has to be within a
+  // wide budget. Rejected if the stroke matches any other stroke where it was drawn, so drawing a
+  // later (or already drawn) stroke in its own place is still a mistake, not a misplaced pass.
+  function misplacedStrokeMatches(userStroke, character, strokeNum, options = {}) {
+    const points = stripDuplicates(userStroke.points);
+    if (points.length < 2) return false;
+    const stroke = character.strokes[strokeNum];
+    const {
+      leniency = 1,
+      averageDistanceThreshold = 350,
+      distModOverride = 1
+    } = options;
+    if (stroke.getAverageDistance(points) > averageDistanceThreshold * distModOverride * leniency * MISPLACED_DIST_MOD) return false;
+    const lenRatio = (length(points) + 25) / (stroke.getLength() + 25);
+    const minLenRatio = stroke.getLength() > MISPLACED_LONG_STROKE ? MISPLACED_MIN_LEN_RATIO : MIN_LEN_THRESHOLD;
+    if (lenRatio < minLenRatio || lenRatio > MAX_LEN_RATIO) return false;
+    if (!directionMatches(points, stroke) || !shapeFit(points, stroke.points, SHAPE_LENIENCY)) return false;
+    return !character.strokes.some((other, i) => i !== strokeNum && getMatchData(points, other, { ...options,
+      checkBackwards: false
+    }).isMatch);
   }
 
   const startAndEndMatches = (points, closestStroke, leniency) => {
@@ -1240,6 +1268,7 @@ var HanziWriter = (function () {
       this._drawOrder = [];
       this._outOfOrder = [];
       this._backwards = [];
+      this._misplaced = [];
       return this._renderState.run(startQuiz(this._character, options.strokeFadeDuration, this._currentStrokeIndex));
     }
 
@@ -1364,23 +1393,28 @@ var HanziWriter = (function () {
         return;
       }
 
-      const {
-        isMatch,
-        meta
-      } = strokeMatches(this._userStroke, this._character, this._currentStrokeIndex, {
+      const strictOpts = {
         isOutlineVisible: this._renderState.state.character.outline.opacity > 0,
         distModOverride: this._renderState.state.character.outline.opacity > 0 || this._currentStrokeIndex > 0 ? LATER_STROKE_DIST_MOD : 1,
         leniency: retryLeniency(this._options.leniency, this._mistakesOnStroke),
         shapeLeniency: SHAPE_LENIENCY,
         averageDistanceThreshold: this._options.averageDistanceThreshold
-      }); // if markStrokeCorrectAfterMisses is passed, just force the stroke to count as correct after n tries
-
+      };
+      const {
+        isMatch,
+        meta
+      } = strokeMatches(this._userStroke, this._character, this._currentStrokeIndex, strictOpts);
+      const isBackwardsAccepted = meta.isStrokeBackwards && acceptBackwardsStrokes;
+      // [xiexie patch] right stroke, wrong spot: counted, but flagged
+      const isMisplaced = !isMatch && !isBackwardsAccepted && misplacedStrokeMatches(this._userStroke, this._character, this._currentStrokeIndex, strictOpts);
+      // if markStrokeCorrectAfterMisses is passed, just force the stroke to count as correct after n tries
       const isForceAccepted = markStrokeCorrectAfterMisses && this._mistakesOnStroke + 1 >= markStrokeCorrectAfterMisses;
-      const isAccepted = isMatch || isForceAccepted || meta.isStrokeBackwards && acceptBackwardsStrokes;
+      const isAccepted = isMatch || isMisplaced || isForceAccepted || isBackwardsAccepted;
 
       if (isAccepted) {
         if (meta.isStrokeBackwards && !isMatch && this._backwards) this._backwards.push(this._currentStrokeIndex);
-        this._handleSuccess({ ...meta, isForced: !isMatch && !(meta.isStrokeBackwards && acceptBackwardsStrokes) });
+        if (isMisplaced && this._misplaced) this._misplaced.push(this._currentStrokeIndex);
+        this._handleSuccess({ ...meta, isMisplaced, isForced: !isMatch && !isMisplaced && !isBackwardsAccepted });
       } else {
         this._handleFailure(meta);
 
@@ -1418,6 +1452,7 @@ var HanziWriter = (function () {
         strokesRemaining: this._character.strokes.length - this._currentStrokeIndex - (isCorrect ? 1 : 0),
         drawnPath: getDrawnPath(this._userStroke),
         isBackwards: meta.isStrokeBackwards,
+        isMisplaced: !!meta.isMisplaced,
         isForced: !!meta.isForced
       };
     }
@@ -1447,7 +1482,7 @@ var HanziWriter = (function () {
         onComplete === null || onComplete === void 0 ? void 0 : onComplete({
           character: symbol,
           totalMistakes: this._totalMistakes,
-          outOfOrder: [], backwards: (this._backwards || []).slice(), drawOrder: (this._drawOrder || []).slice()
+          outOfOrder: [], backwards: (this._backwards || []).slice(), misplaced: (this._misplaced || []).slice(), drawOrder: (this._drawOrder || []).slice()
         });
 
         if (highlightOnComplete) {
