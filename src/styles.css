@@ -181,14 +181,17 @@ h2{font-size:1.05rem;margin:0 0 10px}
 .stamp .han{font-size:2.6rem;line-height:1}
 .stamp small{font-size:.7rem;font-weight:700;margin-top:2px}
 @keyframes thump{0%{transform:rotate(-30deg) scale(2.2);opacity:0}100%{transform:rotate(-12deg) scale(1);opacity:1}}
-.wall-item .note{color:var(--seal);font-weight:600}
+.wall-item .note{margin-top:4px;color:var(--ink);font-weight:600;font-size:.72rem}
+.wall-item .note::before{content:"";display:inline-block;width:7px;height:7px;margin-right:5px;vertical-align:1px;border-radius:50%;background:var(--seal)}
+.wall-item .note.good::before{background:var(--marker)}
+.wall-item .note.ok::before{opacity:.75}
 .answer{margin:10px 0 0;font-size:.95rem;color:var(--ink-soft)}
 .answer .han{font-size:2.2rem;color:var(--ink);vertical-align:middle;margin:0 4px}
 .tip{color:var(--ink-soft);font-size:.82rem;text-align:center;margin-top:14px}
 
 /* ---------- Summary ---------- */
 .summary-head{text-align:center;margin:10px 0 18px}
-.summary-head .big{font-size:3rem;margin:0;line-height:1.1}
+.summary-head .big{font-size:3rem;margin:0;line-height:1.1;color:var(--ink);-webkit-text-stroke:.035em currentColor;paint-order:stroke fill}
 .summary-head p{margin:6px 0 0;color:var(--ink-soft)}
 .wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:22px}
 .wall-item{background:var(--card);border:2px solid var(--ink);border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;text-align:left}

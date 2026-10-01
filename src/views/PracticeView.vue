@@ -116,13 +116,12 @@ function onWriterReady(w: any) {
     onCorrectStroke: (d: any) => {
       if (d.isOutOfOrder) setMomo("happy", "Counted! That stroke usually comes later.");
       else if (d.isBackwards) setMomo("happy", "Counted! That one usually goes the other way.");
-      else if (d.isMisplaced) setMomo("happy", "Counted! Watch where it lands, though.");
       else if (c.mistakes === 0 && !c.revealed) setMomo("happy", "Good, keep going…");
     },
     onComplete: (d: any) => {
       const o = (d && d.outOfOrder) ? d.outOfOrder.length : 0, b = (d && d.backwards) ? d.backwards.length : 0;
-      const m = (d && d.misplaced) ? d.misplaced.length : 0;
-      if (!c.revealed && (o || b || m)) c.notes.push({ ch, order: o, backwards: b, misplaced: m });
+      // Misplaced strokes are accepted quietly: no note, no effect on the grade
+      if (!c.revealed && (o || b)) c.notes.push({ ch, order: o, backwards: b });
       later(charDone, 380);
     },
   });
@@ -176,14 +175,12 @@ async function finishWord(skipped = false) {
   if (c.notes.length && g === "good") {
     const chars = c.notes.map(n => n.ch).join(" and ");
     const anyOrder = c.notes.some(n => n.order), anyBack = c.notes.some(n => n.backwards);
-    const anyPlace = c.notes.some(n => n.misplaced);
-    noteLine = +anyOrder + +anyBack + +anyPlace > 1 ? `Correct! The strokes in ${chars} went a bit differently from usual.`
+    noteLine = anyOrder && anyBack ? `Correct! The strokes in ${chars} went a bit differently from usual.`
       : anyOrder ? `Correct! Only the stroke order in ${chars} was different.`
-      : anyBack ? `Correct! A stroke in ${chars} went the other way.`
-      : `Correct! A stroke in ${chars} landed in a different spot.`;
+      : `Correct! A stroke in ${chars} went the other way.`;
   }
   setMomo(g === "perfect" ? "wow" : g === "again" ? "hmm" : "happy", noteLine || pick(LINES[g]));
-  replayHidden.value = !c.notes.length;   // only when a stroke was out of order, backwards or misplaced
+  replayHidden.value = !c.notes.length;   // only when a stroke was out of order or backwards
   if (g === "perfect") confetti();
   if (g === "again" && !session.requeued.has(c.word.id)) { session.requeued.add(c.word.id); session.queue.push(c.word); }
   await nextTick();

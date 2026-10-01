@@ -40,7 +40,7 @@ export interface SyncState {
   settingsAt: number;      // when levels or strict mode last changed here
 }
 
-export interface StrokeNote { ch: string; order: number; backwards: number; misplaced?: number }
+export interface StrokeNote { ch: string; order: number; backwards: number }
 
 /** State of the word currently on the practice card. */
 export interface CardState {

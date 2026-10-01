@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import type { Result } from "../types";
+import type { Grade, Result } from "../types";
 import { STAMPS } from "../lib/srs";
 import { confetti } from "../lib/dom";
 import { useSessionStore } from "../stores/session";
@@ -26,6 +26,24 @@ const SUB: Record<string, string> = {
   "加油！": "Every stroke counts. Those words will come round again soon.",
 };
 
+// Headline tally: the best grade reached plus the one just below it, skipping empty ones
+const ORDER: Grade[] = ["perfect", "good", "ok", "again"];
+const NAMES: Record<Grade, string> = { perfect: "perfect", good: "good", ok: "improving", again: "to retry" };
+const tally = computed(() => {
+  const count = (g: Grade) => list.value.filter(r => r.grade === g).length;
+  const best = ORDER.findIndex(g => count(g) > 0);
+  if (best < 0) return "";
+  return ORDER.slice(best, best + 2).filter(g => count(g) > 0).map(g => `${count(g)} ${NAMES[g]}`).join(" · ");
+});
+
+// A short note only for words whose strokes differed from the usual order or direction
+function reason(r: Result): string | null {
+  if (!r.notes.length) return null;
+  const chars = r.word.w.length > 1 ? " in " + [...new Set(r.notes.map(n => n.ch))].join(" ") : "";
+  const order = r.notes.some(n => n.order), back = r.notes.some(n => n.backwards);
+  return (order && back ? "strokes differed" : order ? "stroke order differed" : "a stroke went backwards") + chars;
+}
+
 onMounted(() => { if (allPerfect.value) confetti(); });
 </script>
 
@@ -33,12 +51,12 @@ onMounted(() => { if (allPerfect.value) confetti(); });
   <section id="summary">
     <div class="summary-head">
       <p class="big han" id="sum-title">{{ title }}</p>
-      <p id="sum-sub">{{ perfect }} of {{ list.length }} perfect. {{ SUB[title] }}</p>
+      <p id="sum-sub">{{ tally }}. {{ SUB[title] }}</p>
     </div>
     <div class="wall" id="wall">
       <div v-for="r in list" :key="r.word.id" class="wall-item">
         <span :class="['mini-stamp', 'han', r.grade]">{{ STAMPS[r.grade].ch }}</span>
-        <div><span class="w han">{{ r.word.w }}</span><small>{{ r.word.p }}</small><small>{{ r.word.e }}</small><small v-if="r.notes && r.notes.length" class="note">{{ r.notes.some(n => n.order || n.backwards) ? "stroke order to polish" : "stroke placement to polish" }}</small></div>
+        <div><span class="w han">{{ r.word.w }}</span><small>{{ r.word.p }}</small><small v-if="reason(r)" :class="['note', r.grade]">{{ reason(r) }}</small></div>
       </div>
     </div>
     <div class="row">
