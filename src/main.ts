@@ -3,8 +3,9 @@ import { createPinia } from "pinia";
 import App from "./App.vue";
 import { router } from "./router";
 import { useProgressStore } from "./stores/progress";
+import { useAccountStore } from "./stores/account";
 import "./styles.css";
 
 const app = createApp(App).use(createPinia()).use(router);
 app.mount("#app");
-useProgressStore().init();
+useProgressStore().init().then(() => useAccountStore().start());

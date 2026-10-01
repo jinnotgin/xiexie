@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { LEVELS } from "../data/levels";
 import { WORDS } from "../data/words";
 import { LINES, pick } from "../lib/momo";
 import { streakLive } from "../lib/srs";
 import { useProgressStore } from "../stores/progress";
+import { useAccountStore } from "../stores/account";
+import { cloudError } from "../lib/cloud";
 import { useStartSession } from "../composables/useStartSession";
 import Momo from "../components/Momo.vue";
 
 const app = useProgressStore();
+const account = useAccountStore();
 const router = useRouter();
 const startSession = useStartSession();
 
@@ -26,9 +29,43 @@ const dueNote = computed(() => dueCount.value
   : "Nothing due for review. New words await.");
 
 async function reset() {
-  if (!confirm("Clear all progress, XP and streak on this device?")) return;
-  await app.reset();
+  if (account.signedIn) {
+    if (!confirm("Clear all progress, XP and streak in your account and on all your devices?")) return;
+    try { await account.resetAll(); }
+    catch (e) { alert(cloudError(e) || "Couldn't reset your account. Please try again."); return; }
+  } else {
+    if (!confirm("Clear all progress, XP and streak on this device?")) return;
+    await app.reset();
+  }
   greeting.value = pick(LINES.home);
+}
+
+onMounted(() => { if (!account.signedIn) account.prepare(); });
+
+const storageNote = computed(() => {
+  if (!ready.value) return "Progress is saved on this device.";
+  if (account.signedIn) {
+    const who = account.user!.email || account.user!.name || "your Google account";
+    return {
+      idle: `Signed in as ${who}.`, busy: `Signed in as ${who}. Saving…`, synced: `Progress is saved to ${who}.`,
+      offline: `Signed in as ${who}. You're offline, so progress is kept on this device until you reconnect.`,
+      error: `Signed in as ${who}. Couldn't reach your account just now, will try again.`,
+    }[account.state];
+  }
+  if (account.state === "busy") return "Signing in…";
+  if (account.lapsed) return "You've been signed out. Sign in again to keep syncing.";
+  return app.persistent ? "Progress is saved on this device." : "Storage is unavailable here, so progress lasts until you close this page.";
+});
+
+async function signIn() {
+  try { await account.signIn(); }
+  catch (e) { const msg = cloudError(e); if (msg) alert(msg); }
+}
+
+async function signOut() {
+  if (!confirm("Sign out? Your progress stays in your Google account, and this device starts fresh.")) return;
+  if (await account.signOut()) return;
+  if (confirm("Some progress from this device hasn't reached your account yet (you may be offline). Sign out anyway and lose it?")) await account.signOut(true);
 }
 </script>
 
@@ -74,8 +111,14 @@ async function reset() {
     </div>
 
     <div class="foot">
-      <span id="storage-note">{{ !ready || app.persistent ? "Progress is saved on this device." : "Storage is unavailable here, so progress lasts until you close this page." }}</span>
-      <button class="linkish" id="reset" :disabled="!ready" @click="reset">Reset progress</button>
+      <span id="storage-note">{{ storageNote }}</span>
+      <span class="foot-actions">
+        <template v-if="ready && account.enabled">
+          <button v-if="account.signedIn" class="linkish" id="sign-out" @click="signOut">Sign out</button>
+          <button v-else class="linkish" id="sign-in" :disabled="account.state === 'busy'" @click="signIn">Sign in with Google to save your progress</button>
+        </template>
+        <button class="linkish" id="reset" :disabled="!ready" @click="reset">Reset progress</button>
+      </span>
     </div>
   </section>
 </template>

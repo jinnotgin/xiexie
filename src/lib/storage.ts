@@ -1,9 +1,7 @@
 /* =========================================================
-   Storage layer. Everything the app saves goes through Store,
-   so swapping IndexedDB for Firestore later means rewriting
-   only this object:
-     progress  ->  users/{uid}/progress/{wordId}
-     meta      ->  users/{uid} (profile document)
+   Storage layer. Everything the app saves on this device goes
+   through Store. It stays the source of truth when signed in:
+   stores/account.ts syncs it with Firestore (see lib/sync.ts).
    Database name, version and store layout are unchanged from
    the single-file version, so existing progress keeps loading.
    ========================================================= */
@@ -56,6 +54,12 @@ export const Store = {
     const r = plain(rec);
     mem.progress.set(r.id, r);
     if (db) { try { await run("progress", "readwrite", s => s.put(r)); } catch (e) {} }
+  },
+  async putAllProgress(recs: ProgressRec[]) {
+    if (!recs.length) return;
+    const rs = recs.map(plain);
+    rs.forEach(r => mem.progress.set(r.id, r));
+    if (db) { try { await run("progress", "readwrite", s => { rs.forEach(r => s.put(r)); }); } catch (e) {} }
   },
   async getMeta(): Promise<Partial<Meta> | null> {
     if (!db) return mem.meta;

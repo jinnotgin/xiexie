@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import WordModal from "./components/WordModal.vue";
+import SyncConflict from "./components/SyncConflict.vue";
 </script>
 
 <template>
@@ -7,4 +8,5 @@ import WordModal from "./components/WordModal.vue";
     <RouterView />
   </main>
   <WordModal />
+  <SyncConflict />
 </template>
