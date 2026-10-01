@@ -50,9 +50,9 @@ button{font:inherit;color:inherit}
 .btn:disabled{opacity:.45;cursor:default}
 
 /* ---------- Home ---------- */
-.masthead{display:flex;align-items:center;gap:12px;margin:4px 0 14px}
+.masthead{position:relative;display:flex;align-items:center;gap:12px;margin:4px 0 14px}
 .masthead h1{margin:0;font-size:2.2rem;line-height:1;letter-spacing:.02em}
-.masthead p{margin:4px 0 0;color:var(--ink-soft);font-size:.9rem}
+.masthead p{margin:4px 0 0;color:var(--ink-soft);font-size:.9rem;text-wrap:balance}
 .momo{width:60px;height:60px;flex:none}
 .momo.bob{animation:bob 3.2s ease-in-out infinite}
 @keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-5px) rotate(2deg)}}
@@ -124,8 +124,9 @@ h2{font-size:1.05rem;margin:0 0 10px}
 .sync-text small{display:block;color:var(--ink-soft);font-size:.82rem}
 /* Phones: the action drops to its own row, lined up with the text. */
 @media (max-width:480px){.sync-card{grid-template-columns:auto 1fr}.sync-card>button{grid-column:2;justify-self:start}}
-/* Phones only: small "Install" pill in the masthead; on iOS it opens the Add to Home Screen hint. */
-.install{position:relative;margin-left:auto;align-self:flex-start}
+/* Phones only: small "Install" pill in the masthead's top-right corner, beside the short 写写 title,
+   so the tagline below keeps the full width. On iOS it opens the Add to Home Screen hint. */
+.install{position:absolute;top:0;right:0}
 .install-btn{display:inline-flex;align-items:center;gap:.3em;border:2px solid var(--ink);background:var(--card);border-radius:999px;padding:.3em .7em;font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap}
 .install-btn .icon{width:1.1em;height:1.1em;color:var(--seal)}
 .install-tip{position:absolute;right:0;top:calc(100% + 8px);z-index:5;width:220px;margin:0;padding:10px 12px;background:var(--card);border:2px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink);font-size:.85rem;line-height:1.35}
