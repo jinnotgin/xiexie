@@ -42,21 +42,24 @@ const setMomo = (mood: Mood, text: string, { tone, glyph = "" }: MomoOpts = {}) 
 };
 const momoParts = computed(() => momo.glyph ? momo.text.split(momo.glyph) : [momo.text]);
 // A wrapped line's box stays at its max-width, so Momo + text would sit left of center.
-// Shrink the box to its longest rendered line so the pair centers whether it wraps or not.
+// Find the narrowest width that keeps the same number of lines (and lets no word overflow) and use it,
+// so the pair centers whether it wraps or not. Only the box's size is compared: Range rects for wrapped
+// text differ between browsers (Safari's can run to the box's edge), box sizes don't. offset* and
+// scroll* are layout pixels, so a nudge's pop-in scale doesn't skew them.
 const momoSay = ref<HTMLElement>();
 const hugMomo = () => {
   const el = momoSay.value;
   if (!el) return;
   el.style.width = "";
-  const range = document.createRange();
-  range.selectNodeContents(el);
-  const rects = [...range.getClientRects()];
-  if (!rects.length) return;
-  const right = Math.max(...rects.map(r => r.right));
-  // A nudge pops in from a smaller scale; measure in layout pixels, not the shrunken on-screen ones.
-  const box = el.getBoundingClientRect();
-  const scale = box.width / el.offsetWidth || 1;
-  el.style.width = `${Math.ceil((right - box.left) / scale)}px`;
+  const height = el.offsetHeight;
+  // offsetWidth is rounded; +1 so the start width never cuts a fraction off a line that just fits.
+  let lo = 0, hi = el.offsetWidth + 1;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    el.style.width = `${mid}px`;
+    if (el.offsetHeight > height || el.scrollWidth > el.clientWidth) lo = mid; else hi = mid;
+  }
+  el.style.width = `${hi}px`;
 };
 watch(() => momo.seq, hugMomo, { flush: "post" });
 // Re-measure whenever the card changes width (window resize, rotation, text size), not just on resize events.
