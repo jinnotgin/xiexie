@@ -51,6 +51,7 @@ const hugMomo = () => {
   const el = momoSay.value;
   if (!el) return;
   el.style.width = "";
+  if (!el.offsetWidth) return;   // not laid out (hidden or detached): nothing to measure, so don't squeeze it
   const height = el.offsetHeight;
   // offsetWidth is rounded; +1 so the start width never cuts a fraction off a line that just fits.
   let lo = 0, hi = el.offsetWidth + 1;
