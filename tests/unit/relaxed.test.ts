@@ -67,6 +67,15 @@ describe("relaxed checker", () => {
     expect(checker.check(asInk(DATA["你"].medians.slice(0, 2)), "你").ok).toBe(false);
   });
 
+  it("waits for the last stroke, even when nothing else fits better", () => {
+    // each of these used to pass with its last stroke still to write
+    for (const c of "的家因象石云昨全加共响苦") {
+      const v = checker.check(asInk(DATA[c].medians.slice(0, -1)), c);
+      expect(v.ok, c).toBe(false);
+      expect(v.incomplete, c).toBe(true);
+    }
+  });
+
   it("rejects scribbles and empty ink", () => {
     const zigzag: Pt[][] = [Array.from({ length: 20 }, (_, i): Pt => [i * 15, i % 2 ? 0 : 200])];
     expect(checker.check(zigzag, "字").ok).toBe(false);

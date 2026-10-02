@@ -11,7 +11,8 @@
    Cursive writing is the reference path with some jumps inked in,
    so the two line up under dynamic time warping (DTW). The ink
    passes when the target fits it better than (or nearly as well
-   as) every other character we know.
+   as) every other character we know, and better than the target
+   with any one stroke left out (so it waits for the last stroke).
    ========================================================= */
 
 /** Points as [x, y]. Ink is in screen space (y down); medians are Make Me a Hanzi space (y up). */
@@ -25,6 +26,7 @@ export interface Verdict {
   best: string;       // the best-fitting character
   bestScore: number;
   rival: string;      // the best-fitting character other than the target
+  incomplete: boolean; // a close fit, but the target minus a stroke fits better: not finished yet
 }
 
 const N = 64;          // points per path for the final scoring
@@ -39,6 +41,7 @@ const SPLIT_TURN = Math.PI * 0.3;     // a turn sharper than 54° splits the str
 const MAX_SCORE = 0.15;   // beyond this the ink is a different shape altogether
 const NEAR_BEST = 1.03;   // the target may trail the best fit by this factor...
 const NEAR_RANK = 3;      // ...if it is still among the top few
+const PARTIAL_FIT = 0.85; // the target minus a stroke fitting this much better than the whole means it isn't finished
 
 /** A resampled path: x, y, heading at each point, and the reference stroke it belongs to (-1 = pen in the air). */
 interface Path { x: Float32Array; y: Float32Array; a: Float32Array; s: Int16Array }
@@ -215,16 +218,14 @@ export function makeChecker(data: Record<string, CharMedians>) {
   /** Scores the ink against every known character and decides whether it is `target`. */
   function check(ink: Pt[][], target: string): Verdict {
     const strokes = ink.filter(s => s.length > 0);
-    if (!data[target] || !strokes.length) return { ok: false, rank: Infinity, score: Infinity, best: "", bestScore: Infinity, rival: "" };
+    if (!data[target] || !strokes.length) return { ok: false, rank: Infinity, score: Infinity, best: "", bestScore: Infinity, rival: "", incomplete: false };
     // Each candidate is scored on the ink as written and on the ink put into its own stroke
     // order, keeping the better: joined-up writing follows the usual order and lines up as
     // written, while strokes written in another order or direction line up once sorted.
     const norm = normalize(strokes, true), pieces = splitCorners(norm);
     const asWritten = toPath(norm, N, false), asWrittenCoarse = toPath(norm, N_COARSE, false);
-    const fit = (c: string) => {
-      const r = ref(c, N);
-      return Math.min(dtw(asWritten, r), dtw(toPath(canonicalize(pieces, r), N, false), r));
-    };
+    const fitPath = (r: Path) => Math.min(dtw(asWritten, r), dtw(toPath(canonicalize(pieces, r), N, false), r));
+    const fit = (c: string) => fitPath(ref(c, N));
     // Sweep every character cheaply (as written, and order-free), then score a shortlist properly.
     const top = (d: (r: Path) => number) =>
       chars.map(c => ({ c, d: d(ref(c, N_COARSE)) })).sort((a, b) => a.d - b.d).slice(0, SHORTLIST).map(r => r.c);
@@ -232,9 +233,14 @@ export function makeChecker(data: Record<string, CharMedians>) {
     const scored = [...short].map(c => ({ c, d: fit(c) })).sort((a, b) => a.d - b.d);
     const rank = scored.findIndex(r => r.c === target) + 1;
     const score = scored[rank - 1].d, bestScore = scored[0].d;
-    const ok = score <= MAX_SCORE && (rank === 1 || (rank <= NEAR_RANK && score <= bestScore * NEAR_BEST));
+    const close = score <= MAX_SCORE && (rank === 1 || (rank <= NEAR_RANK && score <= bestScore * NEAR_BEST));
+    // No real character is "the target minus a stroke", so unfinished ink still beats every
+    // rival. Score it against the target with each stroke left out too (only when it would pass).
+    const meds = data[target].medians;
+    const incomplete = close && meds.length > 1 &&
+      meds.some((_, k) => fitPath(toPath(meds.filter((_, i) => i !== k), N, false)) < score * PARTIAL_FIT);
     const rival = scored.find(r => r.c !== target)?.c ?? "";
-    return { ok, rank, score, best: scored[0].c, bestScore, rival };
+    return { ok: close && !incomplete, rank, score, best: scored[0].c, bestScore, rival, incomplete };
   }
 
   /** Builds the reference paths ahead of time, a slice per call, so the first check doesn't stall. */
