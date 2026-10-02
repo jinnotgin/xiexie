@@ -34,9 +34,11 @@ export const LINES = {
     "Sharpening pencils, one moment…"
   ],
   start: ["Write it from memory. You can do it.", "What's the character? Take your time.", "Strokes in order, top to bottom, left to right."],
+  relaxedStart: ["Write it from memory. You can do it.", "What's the character? Take your time.", "Write it your way. Just get the shape right."],
   mistake: ["Eh, not that stroke. Try again.", "Hmm, check the stroke order leh.", "Almost! Mind the direction.", "Close. Which stroke comes first?"],
   relaxedMiss: ["Hmm, that's not it yet. Start again?", "Not quite leh. Picture it first, then write.", "Close, but not this one. Try again."],
   perfect: ["Wah, steady lah!", "Shiok! Every stroke correct.", "Your 老师 would give you a star.", "Solid. Like you never forgot."],
+  relaxedPerfect: ["Wah, steady lah!", "Shiok! Got it in one go.", "Your 老师 would give you a star.", "Solid. Like you never forgot."],
   good: ["Not bad leh, a few wobbles only.", "Nice one!", "Got it. Next time smoother."],
   ok: ["Can, can. Hints are for learning.", "Getting there. It'll come back again soon.", "Slowly remembering already."],
   again: ["Never mind, you'll see this one again later.", "No stress. Watch, then we try again.", "That's what practice is for."]

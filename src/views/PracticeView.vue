@@ -92,7 +92,7 @@ function renderCard() {
   finalWriters = [];
   stampStyle.value = {};
   const again = session.requeued.has(w.id) && session.results.length > session.idx - 0 && session.idx >= session.total;
-  setMomo("happy", again ? "Round two for this one. You've seen it, now write it." : pick(LINES.start));
+  setMomo("happy", again ? "Round two for this one. You've seen it, now write it." : pick(app.meta.relaxed === true ? LINES.relaxedStart : LINES.start));
   mountWriter();
 }
 
@@ -255,7 +255,7 @@ async function finishWord(skipped = false) {
       : anyOrder ? `Correct! Only the stroke order in ${chars} was different.`
       : `Correct! A stroke in ${chars} went the other way.`;
   }
-  setMomo(g === "perfect" ? "wow" : g === "again" ? "hmm" : "happy", noteLine || pick(LINES[g]));
+  setMomo(g === "perfect" ? "wow" : g === "again" ? "hmm" : "happy", noteLine || pick(relaxed.value && g === "perfect" ? LINES.relaxedPerfect : LINES[g]));
   // Offer the usual stroke order when a stroke went its own way, and always after free writing.
   replayHidden.value = !c.notes.length && !relaxed.value;
   if (g === "perfect") confetti();
@@ -403,7 +403,7 @@ onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clea
         </div>
       </div>
       <div class="actions" id="next-wrap" :hidden="phase !== 'done'">
-        <button class="btn small" id="replay" :hidden="replayHidden" :disabled="replayBusy" @click="replay">▶ See the usual order</button>
+        <button class="btn small" id="replay" :hidden="replayHidden" :disabled="replayBusy" @click="replay">{{ relaxed ? "▶ Watch it written" : "▶ See the usual order" }}</button>
         <button class="btn primary" id="next" ref="nextBtn" @click="next">Next</button>
       </div>
     </div>
