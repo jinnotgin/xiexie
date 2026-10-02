@@ -60,7 +60,10 @@ function undo(): boolean {
   return true;
 }
 
-defineExpose({ strokes, clear, undo });
+/** Puts back ink saved from an earlier pad (the box was resized and the pad remounted). */
+function load(ink: Pt[][]) { strokes.value = ink; }
+
+defineExpose({ strokes, clear, undo, load });
 </script>
 
 <template>

@@ -296,6 +296,7 @@ h2{font-size:1.05rem;margin:0 0 10px}
 /* The buttons carry a 3px drop shadow, so give the card a little more room below them. */
 #practice .sheet{padding-bottom:20px}
 @media (max-width:340px){.actions.split .btn-set{gap:6px}.actions.split .icon-btn{width:40px;height:40px}.actions.split #showme{padding-inline:.7em}.actions.split #skip{padding-inline:.4em}}
+@media (max-width:300px){.actions.split,.actions .btn-set{flex-wrap:wrap;justify-content:center}}
 .actions .icon-btn{width:44px;height:44px;padding:0}
 .actions .icon-btn .icon{width:1.25em;height:1.25em}
 .actions .icon-btn .lbl{display:none}

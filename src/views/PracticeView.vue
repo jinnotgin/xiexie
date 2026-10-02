@@ -11,6 +11,7 @@ import posthog from "posthog-js";
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import type { Grade, Mood } from "../types";
+import type { Pt } from "../lib/relaxed";
 import { LINES, pick } from "../lib/momo";
 import { STAMPS, gradeOf } from "../lib/srs";
 import { confetti, cssVar, reduceMotion, writerColors } from "../lib/dom";
@@ -52,7 +53,10 @@ const hugMomo = () => {
   const rects = [...range.getClientRects()];
   if (!rects.length) return;
   const right = Math.max(...rects.map(r => r.right));
-  el.style.width = `${Math.ceil(right - el.getBoundingClientRect().left)}px`;
+  // A nudge pops in from a smaller scale; measure in layout pixels, not the shrunken on-screen ones.
+  const box = el.getBoundingClientRect();
+  const scale = box.width / el.offsetWidth || 1;
+  el.style.width = `${Math.ceil((right - box.left) / scale)}px`;
 };
 watch(() => momo.seq, hugMomo, { flush: "post" });
 // Re-measure whenever the card changes width (window resize, rotation, text size), not just on resize events.
@@ -61,7 +65,7 @@ const sheet = ref<HTMLElement>();
 let sheetW = 0;
 const sheetObserver = new ResizeObserver(([e]) => {
   const w = e.contentRect.width;
-  if (w !== sheetW) { sheetW = w; hugMomo(); }
+  if (w !== sheetW) { sheetW = w; hugMomo(); scheduleRefit(); }
 });
 
 const cur = computed(() => session.cur);
@@ -118,9 +122,52 @@ const slotClass = (i: number) => {
   return "slot han" + (i < f ? " done" : i === f ? " now" : "");
 };
 
+// The square fills the card up to 320px. The floor is only a guard against nonsense widths:
+// a floor bigger than the card is what pushed the square out of it on narrow screens.
 function stageSize() {
   const avail = stageEl.value!.parentElement!.clientWidth - 36;
-  return Math.max(220, Math.min(320, avail));
+  return Math.max(160, Math.min(320, avail));
+}
+
+// The card changed width (rotation, split view, window resize): fit the square to it again once it settles.
+let refitTimer: ReturnType<typeof setTimeout> | undefined;
+function scheduleRefit() {
+  if (refitTimer) { clearTimeout(refitTimer); timers.delete(refitTimer); }
+  refitTimer = later(() => { refitTimer = undefined; refit(); }, 150);
+}
+
+function refit() {
+  const c = session.cur;
+  if (!c || !stageEl.value) return;
+  const size = stageSize();
+  if (phase.value === "done") {
+    if (size === finalSize.value) return;
+    // The finished word is just a drawing: lay it out again. A replay in progress is dropped.
+    if (replayBusy.value) { replayBusy.value = false; stampStyle.value = { animation: "none", opacity: "1" }; }
+    finalWriters = [];
+    layoutFinal(size);
+    mountId.value++;
+    return;
+  }
+  if (size === writerSize.value || c.done || charPassed) return;
+  if (relaxed.value) {
+    // Ink is kept, scaled to the new box. The checker normalises it, so its verdict doesn't change.
+    const k = size / writerSize.value;
+    const ink = (inkPad.value?.strokes ?? []).map(st => st.map(([x, y]): Pt => [x * k, y * k]));
+    const logged = stallLogged;
+    mountWriter();
+    stallLogged = logged;
+    if (ink.length) nextTick(() => inkPad.value?.load(ink));
+    return;
+  }
+  // Strict: the quiz tracks strokes against the old size, so a character in progress starts over.
+  const q = writer?._quiz;
+  if (q && !q._isActive) return;   // just finished; the next character mounts at the new size
+  const started = !!q && q._currentStrokeIndex > 0;
+  if (writer) { try { writer.cancelQuiz(); } catch (e) {} }
+  if (peekTimer) { clearTimeout(peekTimer); timers.delete(peekTimer); peekTimer = undefined; }
+  mountWriter();
+  if (started) setMomo("hmm", "The screen changed size. Start this one again.", { tone: "nudge" });
 }
 
 function renderCard() {
@@ -310,14 +357,7 @@ async function finishWord(skipped = false) {
   if (!alive) return;
 
   // Show the whole word in the box with a stamp.
-  const size = stageSize();
-  const n = c.word.w.length;
-  const cell = n === 1 ? size : Math.floor(Math.min(size * 0.92 / n, size * 0.5));
-  finalSize.value = size;
-  finalOpts.value = {
-    width: cell, height: cell, padding: Math.round(cell * 0.07), showOutline: true,
-    strokeAnimationSpeed: 1, delayBetweenStrokes: 220, ...writerColors(), outlineColor: cssVar("--grid"),
-  };
+  layoutFinal(stageSize());
   grade.value = g;
   phase.value = "done";
 
@@ -337,6 +377,16 @@ async function finishWord(skipped = false) {
   if (g === "again" && !session.requeued.has(c.word.id)) { session.requeued.add(c.word.id); session.queue.push(c.word); }
   await nextTick();
   nextBtn.value?.focus({ preventScroll: true });
+}
+
+function layoutFinal(size: number) {
+  const n = session.cur!.word.w.length;
+  const cell = n === 1 ? size : Math.floor(Math.min(size * 0.92 / n, size * 0.5));
+  finalSize.value = size;
+  finalOpts.value = {
+    width: cell, height: cell, padding: Math.round(cell * 0.07), showOutline: true,
+    strokeAnimationSpeed: 1, delayBetweenStrokes: 220, ...writerColors(), outlineColor: cssVar("--grid"),
+  };
 }
 
 async function replay() {
