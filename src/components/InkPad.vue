@@ -69,7 +69,9 @@ defineExpose({ strokes, clear, undo, load });
 
 <template>
   <svg ref="svg" class="ink" :class="{ fading: fading && !held, held }" :width="size" :height="size"
-    @pointerdown="down" @pointermove="move" @pointerup="up" @pointercancel="up">
+    @pointerdown="down" @pointermove="move" @pointerup="up" @pointercancel="up"
+    @touchstart.prevent @contextmenu.prevent>
+    <!-- Cancelling touchstart stops iOS from turning a held pen into a text selection / copy callout. -->
     <path v-for="(s, i) in strokes" :key="i" :d="d(s)" :stroke-width="width" />
   </svg>
 </template>

@@ -172,7 +172,7 @@ h2{font-size:1.05rem;margin:0 0 10px}
 .slot{width:40px;height:40px;border:2px dashed var(--grid);border-radius:8px;display:grid;place-items:center;font-size:1.7rem;color:var(--ink-soft)}
 .slot.now{border-style:solid;border-color:var(--ink);background:var(--marker);color:#1C2B3A}
 .slot.done{border-style:solid;border-color:var(--ink);color:var(--ink)}
-.stage{position:relative;margin:0 auto;border:2px solid var(--grid);border-radius:6px;background:var(--card);touch-action:none}
+.stage{position:relative;margin:0 auto;border:2px solid var(--grid);border-radius:6px;background:var(--card);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .stage svg{display:block}
 .stage .grid line{stroke:var(--grid);stroke-width:1;stroke-dasharray:6 6}
 .stage.shake{animation:shake .32s}
