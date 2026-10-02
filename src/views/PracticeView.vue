@@ -55,6 +55,7 @@ const relaxed = ref(false);
 const inkPad = ref<InstanceType<typeof InkPad>>();
 const inkWidth = ref(8);
 let charPassed = false;
+let stallLogged = false;   // one practice_relaxed_stall event per character
 const rivalChar = ref("");     // the look-alike the ink matched, drawn faintly over it for a moment
 const RIVAL_HOLD_MS = 1400;
 const rivalOpts = computed(() => ({
@@ -114,6 +115,7 @@ function mountWriter() {
   stageBox.value = size + 4;
   relaxed.value = app.meta.relaxed === true;
   charPassed = false;
+  stallLogged = false;
   rivalChar.value = "";
   cancelCheck();
   inkWidth.value = Math.max(8, Math.round(size / 26));
@@ -181,6 +183,17 @@ function checkInk() {
     posthog.capture("practice_relaxed_check", {
       accepted: v.ok, rank: v.rank, score: v.score, best_score: v.bestScore,
       ink_stroke_count: ink.length, character: ch, best_match: v.best,
+    });
+  }
+  // A full character's worth of ink that still doesn't pass: usually a look-alike edging it out.
+  // Sends the ink (rounded, thinned) so the miss can be replayed against the checker.
+  if (posthogEnabled && !v.ok && !stallLogged && ink.length >= relaxedChecker().strokeCount(ch)) {
+    stallLogged = true;
+    posthog.capture("practice_relaxed_stall", {
+      character: ch, rank: v.rank, score: v.score, best_match: v.best, best_score: v.bestScore,
+      score_ratio: v.score / v.bestScore, ink_stroke_count: ink.length,
+      ink: ink.map(s => s.filter((_, i) => i % Math.ceil(s.length / 16) === 0 || i === s.length - 1)
+        .map(([x, y]) => [Math.round(x), Math.round(y)])),
     });
   }
   if (v.ok) return passChar();
