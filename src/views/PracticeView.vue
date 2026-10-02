@@ -193,7 +193,7 @@ function checkInk() {
     stallLogged = true;
     posthog.capture("practice_relaxed_stall", {
       character: ch, rank: v.rank, score: v.score, best_match: v.best, best_score: v.bestScore,
-      score_ratio: v.score / v.bestScore, ink_stroke_count: ink.length,
+      score_ratio: v.score / v.bestScore, incomplete: v.incomplete, ink_stroke_count: ink.length,
       ink: ink.map(s => s.filter((_, i) => i % Math.ceil(s.length / 16) === 0 || i === s.length - 1)
         .map(([x, y]) => [Math.round(x), Math.round(y)])),
     });
