@@ -437,7 +437,7 @@ onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clea
         <HanziStage v-if="cur && phase === 'writing' && writerSize" :key="mountId" :char="cur.word.w[cur.ci] ?? ''"
           :size="writerSize" :options="writerOpts" @ready="onWriterReady" />
         <InkPad v-if="cur && phase === 'writing' && writerSize && relaxed" :key="'ink' + mountId" ref="inkPad"
-          :size="writerSize" :width="inkWidth" @start="cancelCheck" @end="onInkEnd" />
+          :size="writerSize" :width="Math.max(6, Math.round(inkWidth * 0.75))" @start="cancelCheck" @end="onInkEnd" />
         <template v-else-if="cur && phase === 'done'">
           <GridSvg :size="finalSize" />
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
