@@ -267,6 +267,21 @@ h2{font-size:1.05rem;margin:0 0 10px}
 .stage .ink{position:absolute;inset:0;touch-action:none;cursor:crosshair}
 .stage .ink path{fill:none;stroke:var(--ink);stroke-linecap:round;stroke-linejoin:round}
 .stage .ink.fading{opacity:0;transition:opacity .25s}
+.stage .ink.held{opacity:.3;cursor:default}
+/* Relaxed mode: the look-alike the ink matched, shown faintly over the dimmed ink */
+.rival-ghost{position:absolute;inset:0;pointer-events:none;opacity:.8}
+.rival-enter-active{transition:opacity .2s,transform .2s}
+.rival-leave-active{transition:opacity .25s}
+.rival-enter-from{opacity:0;transform:scale(1.06)}
+.rival-leave-to{opacity:0}
+/* Momo's nudge: a line asking the learner to change course (look-alike, stuck) */
+.momo-line.nudge{width:fit-content;max-width:100%;margin-inline:auto;padding:0 14px 0 6px;border-radius:999px;
+  background:color-mix(in srgb,var(--marker) 22%,var(--card));animation:pop .3s ease-out}
+.momo-line.nudge svg{animation:wiggle .45s ease-in-out}
+.momo-glyph{font-size:1.3rem;line-height:1;vertical-align:-.08em;margin:0 2px;padding:1px 4px;border-radius:5px;background:var(--marker);color:#1C2B3A}
+@keyframes pop{0%{transform:scale(.85);opacity:0}70%{transform:scale(1.04);opacity:1}100%{transform:scale(1)}}
+@keyframes wiggle{25%{transform:rotate(-12deg)}50%{transform:rotate(10deg)}75%{transform:rotate(-5deg)}}
+@media (prefers-reduced-motion: reduce){.momo-line.nudge,.momo-line.nudge svg{animation:none!important}.rival-enter-active,.rival-leave-active{transition:none}}
 .actions .btn-set{display:flex;gap:10px;justify-content:center}
 .actions #ink-actions .btn{display:inline-flex;align-items:center;gap:.35em}
 .actions #ink-actions .icon{width:1.05em;height:1.05em}

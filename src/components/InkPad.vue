@@ -12,6 +12,7 @@ const emit = defineEmits<{ start: []; end: [] }>();
 
 const strokes = ref<Pt[][]>([]);
 const fading = ref(false);
+const held = ref(false);
 const svg = ref<SVGSVGElement>();
 let active: number | null = null;
 
@@ -41,11 +42,15 @@ function up(e: PointerEvent) {
 
 const d = (s: Pt[]) => s.length === 1 ? `M${s[0][0]} ${s[0][1]}h0.1` : "M" + s.map(p => p[0].toFixed(1) + " " + p[1].toFixed(1)).join("L");
 
-/** Removes all ink, optionally fading it out first. */
-function clear(fade = false): Promise<void> {
+/** Removes all ink, optionally fading it out first. `hold` keeps it dimmed (and locked) that long before the fade. */
+function clear(fade = false, hold = 0): Promise<void> {
   if (!fade) { strokes.value = []; return Promise.resolve(); }
   fading.value = true;
-  return new Promise(res => setTimeout(() => { strokes.value = []; fading.value = false; res(); }, 260));
+  held.value = hold > 0;
+  return new Promise(res => setTimeout(() => {
+    held.value = false;
+    setTimeout(() => { strokes.value = []; fading.value = false; res(); }, 260);
+  }, hold));
 }
 
 /** Removes the last stroke. Returns false when there was nothing to undo. */
@@ -59,7 +64,7 @@ defineExpose({ strokes, clear, undo });
 </script>
 
 <template>
-  <svg ref="svg" class="ink" :class="{ fading }" :width="size" :height="size"
+  <svg ref="svg" class="ink" :class="{ fading: fading && !held, held }" :width="size" :height="size"
     @pointerdown="down" @pointermove="move" @pointerup="up" @pointercancel="up">
     <path v-for="(s, i) in strokes" :key="i" :d="d(s)" :stroke-width="width" />
   </svg>

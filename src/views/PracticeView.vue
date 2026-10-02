@@ -30,8 +30,14 @@ const router = useRouter();
 
 const stageEl = ref<HTMLDivElement>();
 const nextBtn = ref<HTMLButtonElement>();
-const momo = reactive<{ mood: Mood; text: string }>({ mood: "happy", text: "" });
-const setMomo = (mood: Mood, text: string) => { momo.mood = mood; momo.text = text; };
+// Most lines are ambient; a "nudge" (you need to change what you're doing) gets the pill and a pop-in.
+// `glyph` is highlighted wherever it appears in the text. `seq` re-keys the line so each nudge pops in again.
+type MomoOpts = { tone?: "nudge"; glyph?: string };
+const momo = reactive<{ mood: Mood; text: string; tone: string; glyph: string; seq: number }>({ mood: "happy", text: "", tone: "", glyph: "", seq: 0 });
+const setMomo = (mood: Mood, text: string, { tone, glyph = "" }: MomoOpts = {}) => {
+  momo.mood = mood; momo.text = text; momo.tone = tone ?? ""; momo.glyph = glyph; momo.seq++;
+};
+const momoParts = computed(() => momo.glyph ? momo.text.split(momo.glyph) : [momo.text]);
 
 const cur = computed(() => session.cur);
 const phase = ref<"writing" | "done">("writing");
@@ -49,6 +55,12 @@ const relaxed = ref(false);
 const inkPad = ref<InstanceType<typeof InkPad>>();
 const inkWidth = ref(8);
 let charPassed = false;
+const rivalChar = ref("");     // the look-alike the ink matched, drawn faintly over it for a moment
+const RIVAL_HOLD_MS = 1400;
+const rivalOpts = computed(() => ({
+  width: writerSize.value, height: writerSize.value, padding: Math.round(writerSize.value * 0.07),
+  showCharacter: true, showOutline: false, strokeColor: cssVar("--marker"),
+}));
 let checkTimer: ReturnType<typeof setTimeout> | undefined;
 const CHECK_DELAY_MS = 120;   // let the stroke paint before the check runs
 const OVERSHOOT = 2;          // pen strokes past the character's own count, still no match = a miss
@@ -102,6 +114,7 @@ function mountWriter() {
   stageBox.value = size + 4;
   relaxed.value = app.meta.relaxed === true;
   charPassed = false;
+  rivalChar.value = "";
   cancelCheck();
   inkWidth.value = Math.max(8, Math.round(size / 26));
   writerOpts.value = {
@@ -126,7 +139,7 @@ function onWriterReady(w: any) {
       c.mistakes++;
       const stage = stageEl.value;
       if (!reduceMotion && stage) { stage.classList.remove("shake"); void stage.offsetWidth; stage.classList.add("shake"); }
-      if (d && d.mistakesOnStroke >= 3) setMomo("hmm", "Watch the stroke light up, then draw it the same way.");
+      if (d && d.mistakesOnStroke >= 3) setMomo("hmm", "Watch the stroke light up, then draw it the same way.", { tone: "nudge" });
       else setMomo("hmm", pick(LINES.mistake));
     },
     onCorrectStroke: () => {
@@ -175,9 +188,15 @@ function checkInk() {
   c.mistakes++;
   const stage = stageEl.value;
   if (!reduceMotion && stage) { stage.classList.remove("shake"); void stage.offsetWidth; stage.classList.add("shake"); }
-  // Name the look-alike only when the ink really is a good fit for it.
-  if (v.best && v.best !== ch && v.bestScore < 0.09) setMomo("hmm", `Hmm, that looks more like ${v.best}. Try again?`);
-  else if (c.mistakes >= 3) setMomo("hmm", "Stuck? Tap Show me for a peek.");
+  // Name the look-alike only when the ink really is a good fit for it, and show it over the ink.
+  if (v.best && v.best !== ch && v.bestScore < 0.09) {
+    setMomo("wow", `That's ${v.best}, not this one.`, { tone: "nudge", glyph: v.best });
+    rivalChar.value = v.best;
+    const id = mountId.value;
+    inkPad.value.clear(true, RIVAL_HOLD_MS).then(() => { if (mountId.value === id) rivalChar.value = ""; });
+    return;
+  }
+  if (c.mistakes >= 3) setMomo("hmm", "Stuck? Tap Show me for a peek.", { tone: "nudge" });
   else setMomo("hmm", pick(LINES.relaxedMiss));
   inkPad.value.clear(true);
 }
@@ -219,7 +238,10 @@ async function finishWord(skipped = false) {
   c.done = true;
   if (writer) { try { writer.cancelQuiz(); } catch (e) {} }
   if (skipped) { c.revealed = true; c.filled = [...c.word.w].length; }
-  const g = gradeOf(c);
+  // A word only comes back once per round: peeking on its second try counts as "ok", not another "again".
+  const secondTry = session.requeued.has(c.word.id);
+  let g = gradeOf(c);
+  if (g === "again" && secondTry && !skipped) g = "ok";
   session.results[session.idx] = { word: c.word, grade: g, notes: c.notes };
   if (posthogEnabled) {
     posthog.capture("practice_word_completed", {
@@ -389,8 +411,18 @@ onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clea
           </div>
           <div :class="['stamp', grade]" :style="stampStyle"><span class="han">{{ STAMPS[grade].ch }}</span><small>{{ STAMPS[grade].label }}</small></div>
         </template>
+        <Transition name="rival">
+          <div v-if="rivalChar && phase === 'writing'" :key="rivalChar + mountId" class="rival-ghost">
+            <HanziStage :grid="false" :char="rivalChar" :options="rivalOpts" />
+          </div>
+        </Transition>
       </div>
-      <div class="momo-line"><Momo id="momo-small" :mood="momo.mood" /><span id="momo-say">{{ momo.text }}</span></div>
+      <div class="momo-line" :class="momo.tone" :key="momo.seq">
+        <Momo id="momo-small" :mood="momo.mood" />
+        <span id="momo-say" role="status">
+          <template v-for="(part, i) in momoParts" :key="i"><b v-if="i" class="momo-glyph">{{ momo.glyph }}</b>{{ part }}</template>
+        </span>
+      </div>
       <div class="actions" id="actions" :hidden="phase === 'done'">
         <div v-if="relaxed" class="btn-set" id="ink-actions">
           <button class="btn small" id="undo" @click="undoInk"><Icon name="undo" />Undo</button>
