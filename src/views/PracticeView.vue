@@ -458,15 +458,15 @@ onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clea
           <template v-for="(part, i) in momoParts" :key="i"><b v-if="i" class="momo-glyph">{{ momo.glyph }}</b>{{ part }}</template>
         </span>
       </div>
-      <div class="actions" id="actions" :hidden="phase === 'done'">
+      <div class="actions" id="actions" :class="{ split: relaxed }" :hidden="phase === 'done'">
         <div v-if="relaxed" class="btn-set" id="ink-actions">
-          <button class="btn small" id="undo" @click="undoInk"><Icon name="undo" />Undo</button>
-          <button class="btn small" id="clear" @click="clearInk"><Icon name="clear" />Clear</button>
+          <button class="btn small icon-btn" id="undo" aria-label="Undo" title="Undo" @click="undoInk"><Icon name="undo" /><span class="lbl">Undo</span></button>
+          <button class="btn small icon-btn" id="clear" aria-label="Clear" title="Clear" @click="clearInk"><Icon name="clear" /><span class="lbl">Clear</span></button>
         </div>
         <div class="btn-set">
           <button v-if="!relaxed" class="btn small" id="hint" @click="hint">Hint</button>
           <button class="btn small" id="showme" @click="showMe">Show me</button>
-          <button class="btn small" id="skip" @click="skip">Skip</button>
+          <button class="btn small ghost" id="skip" @click="skip">Skip</button>
         </div>
       </div>
       <div class="actions" id="next-wrap" :hidden="phase !== 'done'">

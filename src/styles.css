@@ -177,9 +177,11 @@ h2{font-size:1.05rem;margin:0 0 10px}
 .stage .grid line{stroke:var(--grid);stroke-width:1;stroke-dasharray:6 6}
 .stage.shake{animation:shake .32s}
 @keyframes shake{20%{transform:translateX(-6px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
-.momo-line{display:flex;align-items:center;gap:8px;justify-content:center;min-height:44px;margin:12px 0 6px;font-size:.98rem}
-.momo-line svg{width:34px;height:34px;flex:none}
-#momo-say{text-wrap:balance}
+/* Momo hugs its words: the line is left-aligned and capped, so a wrapped line doesn't leave a gap between Momo and the text.
+   Two lines of height are always reserved so the buttons below don't jump when the line changes length. */
+.momo-line{display:flex;align-items:center;gap:10px;justify-content:center;min-height:3em;margin:14px auto 16px;font-size:.98rem;line-height:1.4}
+.momo-line svg{width:40px;height:40px;flex:none}
+#momo-say{text-align:left;text-wrap:pretty;max-width:26ch}
 .actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:6px}
 .stamp{
   position:absolute;right:-10px;top:-14px;width:92px;height:92px;border-radius:14px;
@@ -286,6 +288,19 @@ h2{font-size:1.05rem;margin:0 0 10px}
 @keyframes pop{0%{transform:scale(.85);opacity:0}70%{transform:scale(1.04);opacity:1}100%{transform:scale(1)}}
 @keyframes wiggle{25%{transform:rotate(-12deg)}50%{transform:rotate(10deg)}75%{transform:rotate(-5deg)}}
 @media (prefers-reduced-motion: reduce){.momo-line.nudge,.momo-line.nudge svg{animation:none!important}.rival-enter-active,.rival-leave-active{transition:none}}
-.actions .btn-set{display:flex;gap:10px;justify-content:center}
-.actions #ink-actions .btn{display:inline-flex;align-items:center;gap:.35em}
-.actions #ink-actions .icon{width:1.05em;height:1.05em}
+.actions .btn-set{display:flex;gap:10px;justify-content:center;align-items:center}
+/* Relaxed: pad tools on the left, help on the right, one row even on a narrow phone. */
+.actions.split{justify-content:space-between;flex-wrap:nowrap;gap:8px}
+.actions.split .btn-set{gap:8px}
+.actions .btn{white-space:nowrap}
+/* The buttons carry a 3px drop shadow, so give the card a little more room below them. */
+#practice .sheet{padding-bottom:20px}
+@media (max-width:340px){.actions.split .btn-set{gap:6px}.actions.split .icon-btn{width:40px;height:40px}.actions.split #showme{padding-inline:.7em}.actions.split #skip{padding-inline:.4em}}
+.actions .icon-btn{width:44px;height:44px;padding:0}
+.actions .icon-btn .icon{width:1.25em;height:1.25em}
+.actions .icon-btn .lbl{display:none}
+@media (min-width:440px){
+  .actions .icon-btn{width:auto;height:auto;padding:.48em .9em}
+  .actions .icon-btn .icon{width:1.05em;height:1.05em}
+  .actions .icon-btn .lbl{display:inline}
+}
