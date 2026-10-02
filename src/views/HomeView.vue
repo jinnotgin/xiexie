@@ -52,6 +52,9 @@ const stage = computed(() => STAGES.find(S => S.levels.some(L => app.meta.levels
 function pickStage(S: typeof STAGES[number]) {
   if (S !== stage.value) app.setLevel(S.levels[0].id);
 }
+// Phones hide the captions inside the mode buttons, so the chosen one is spelt out below them.
+const MODE_NOTES = { strict: "Each stroke checked, in the right order.", relaxed: "Any order, joined-up strokes and all." };
+const modeNote = computed(() => app.meta.relaxed === false ? MODE_NOTES.strict : MODE_NOTES.relaxed);
 const levelNote = computed(() =>
   `${LEVELS.filter(L => app.meta.levels.includes(L.id)).map(L => L.sub).join(" + ")} · ${levelWords.value.length} words`);
 
@@ -168,15 +171,16 @@ async function signOut() {
           <circle cx="12" cy="8" r="7" fill="var(--seal)" /><text x="12" y="11.6" fill="var(--seal-ink)">1</text>
           <circle cx="39.5" cy="0" r="7" fill="var(--seal)" /><text x="39.5" y="3.6" fill="var(--seal-ink)">2</text>
         </svg>
-        Stroke by stroke<small>Each stroke checked, in order.</small>
+        Stroke by stroke<small>{{ MODE_NOTES.strict }}</small>
       </button>
       <button class="mode" id="mode-relaxed" :aria-pressed="app.meta.relaxed !== false" @click="app.setStrict(false)">
         <svg viewBox="-3 -7 56 49" aria-hidden="true">
           <path d="M12 18C24 16 40 16 48 18C40 22 32 6 30 1C30 15 31 30 30 40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
-        Relaxed<small>Any order, joined-up strokes and all.</small>
+        Relaxed<small>{{ MODE_NOTES.relaxed }}</small>
       </button>
     </div>
+    <p class="mode-note" id="mode-note">{{ modeNote }}</p>
 
     <div class="start-row">
       <button class="btn primary" id="start" @click="startSession()">Start 10 words</button>

@@ -115,11 +115,14 @@ h2{font-size:1.05rem;margin:0 0 10px}
 .mode small{font-weight:400;color:var(--ink-soft);font-size:.78rem;margin-top:2px}
 .mode[aria-pressed="true"]{background:var(--marker);color:#1C2B3A}
 .mode[aria-pressed="true"] small{color:#3b4a5a}
-/* Phones: icon beside the label, no captions, so the pair sits about as tall as the stage picker. */
+.mode-note{display:none}
+/* Phones: icon beside the label, the chosen mode's caption in one line below, so the pair sits about as tall as the stage picker. */
 @media (max-width:480px){
   .mode{flex-direction:row;align-items:center;gap:5px;padding:5px 7px;font-size:.82rem;border-radius:12px}
   .mode svg{width:34px;height:30px;margin:0;flex:none}
   .mode small{display:none}
+  .modes{margin-bottom:0}
+  .mode-note{display:block;margin:6px 0 20px;color:var(--ink-soft);font-size:.85rem}
 }
 .start-row{display:flex;flex-direction:column;align-items:stretch;gap:12px}
 .due-note{color:var(--ink-soft);font-size:.92rem;text-align:center;margin:0}
