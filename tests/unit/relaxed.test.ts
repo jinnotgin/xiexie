@@ -29,6 +29,25 @@ const XI = {
   hengZhe: [[110, 155], [215, 152], [320, 150], [323, 195], [325, 240]] as Pt[],
 };
 
+// Fills in a traced polyline with points ~6px apart, the way the InkPad samples a real pen.
+const dense = (s: Pt[]): Pt[] => s.flatMap((b, i) => {
+  if (!i) return [b];
+  const a = s[i - 1], n = Math.max(1, Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) / 6));
+  return Array.from({ length: n }, (_, k): Pt => [a[0] + (b[0] - a[0]) * (k + 1) / n, a[1] + (b[1] - a[1]) * (k + 1) / n]);
+});
+
+// 她 from a phone: a squat 女 with its 一 running on into a tall, narrow 也, and the 𠃌's hook
+// written as a stroke of its own. Seven pen strokes for six. 他 fits it closely too.
+const TA = {
+  nv: [[255, 90], [200, 210], [145, 340], [240, 420], [330, 510]] as Pt[],
+  pie: [[295, 235], [190, 400], [75, 565]] as Pt[],
+  heng: [[60, 355], [200, 335], [340, 320]] as Pt[],
+  hengZheGou: [[350, 330], [450, 250], [550, 180], [640, 120], [650, 260], [665, 400]] as Pt[],
+  shu: [[545, 60], [525, 200], [505, 340]] as Pt[],
+  shuWanGou: [[425, 100], [400, 220], [385, 330], [395, 470], [470, 500], [630, 495], [790, 490], [800, 395]] as Pt[],
+  hook: [[570, 245], [615, 320], [660, 400]] as Pt[],
+};
+
 describe("relaxed checker", () => {
   it("accepts real cursive writing with joined strokes", () => {
     const v = checker.check(CURSIVE_ZI, "字");
@@ -55,6 +74,17 @@ describe("relaxed checker", () => {
     expect(checker.check([pie, inR, hengZhe, leftBottom, top], "西").ok).toBe(true);
     // a whole character's strokes reversed in order
     for (const c of "你我国写") expect(checker.check(asInk([...DATA[c].medians].reverse()), c).ok, c).toBe(true);
+  });
+
+  it("keeps a stroke's legs together when sorting handwriting into order", () => {
+    // the 𡿨 of 女 splits at its corner; sorted as pieces, its legs fell either side of the 丿
+    // and 他 won, unless 也 happened to be written in the usual order
+    const { nv, pie, heng, hengZheGou, shu, shuWanGou, hook } = TA;
+    for (const ye of [[hengZheGou, shu, shuWanGou, hook], [shuWanGou, hengZheGou, shu, hook], [shu, hook, shuWanGou, hengZheGou]]) {
+      const v = checker.check([nv, pie, heng, ...ye].map(dense), "她");
+      expect(v.ok).toBe(true);
+      expect(v.rank).toBe(1);
+    }
   });
 
   it("ignores stroke direction", () => {

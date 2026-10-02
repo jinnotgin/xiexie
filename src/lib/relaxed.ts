@@ -222,9 +222,12 @@ export function makeChecker(data: Record<string, CharMedians>) {
     // Each candidate is scored on the ink as written and on the ink put into its own stroke
     // order, keeping the better: joined-up writing follows the usual order and lines up as
     // written, while strokes written in another order or direction line up once sorted.
-    const norm = normalize(strokes, true), pieces = splitCorners(norm);
+    // Sorting is tried on the strokes split at their corners and on the strokes whole: a
+    // split can send the two legs of one stroke (女's 𡿨) to either side of another stroke.
+    const norm = normalize(strokes, true), pieces = splitCorners(norm), split = pieces.length > norm.length;
     const asWritten = toPath(norm, N, false), asWrittenCoarse = toPath(norm, N_COARSE, false);
-    const fitPath = (r: Path) => Math.min(dtw(asWritten, r), dtw(toPath(canonicalize(pieces, r), N, false), r));
+    const sortedFit = (s: Pt[][], r: Path) => dtw(toPath(canonicalize(s, r), N, false), r);
+    const fitPath = (r: Path) => Math.min(dtw(asWritten, r), sortedFit(pieces, r), split ? sortedFit(norm, r) : Infinity);
     const fit = (c: string) => fitPath(ref(c, N));
     // Sweep every character cheaply (as written, and order-free), then score a shortlist properly.
     const top = (d: (r: Path) => number) =>
