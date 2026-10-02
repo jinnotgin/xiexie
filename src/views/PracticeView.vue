@@ -83,7 +83,7 @@ let writer: any = null;
 const relaxed = ref(false);
 const inkPad = ref<InstanceType<typeof InkPad>>();
 const inkWidth = ref(8);
-let charPassed = false;
+const charPassed = ref(false);   // also locks the ink pad until the next character replaces it
 let stallLogged = false;   // one practice_relaxed_stall event per character
 const rivalChar = ref("");     // the look-alike the ink matched, drawn faintly over it for a moment
 const RIVAL_HOLD_MS = 1400;
@@ -149,7 +149,7 @@ function refit() {
     mountId.value++;
     return;
   }
-  if (size === writerSize.value || c.done || charPassed) return;
+  if (size === writerSize.value || c.done || charPassed.value) return;
   if (relaxed.value) {
     // Ink is kept, scaled to the new box. The checker normalises it, so its verdict doesn't change.
     const k = size / writerSize.value;
@@ -186,7 +186,7 @@ function mountWriter() {
   writerSize.value = size;
   stageBox.value = size + 4;
   relaxed.value = session.relaxed;
-  charPassed = false;
+  charPassed.value = false;
   stallLogged = false;
   rivalChar.value = "";
   cancelCheck();
@@ -245,7 +245,7 @@ function onInkEnd() { cancelCheck(); checkTimer = later(() => { checkTimer = und
  */
 function checkInk() {
   const c = session.cur;
-  if (!c || c.done || charPassed || !inkPad.value) return;
+  if (!c || c.done || charPassed.value || !inkPad.value) return;
   const ink = inkPad.value.strokes;
   const ch = c.word.w[c.ci];
   if (!ink.length) return;
@@ -287,20 +287,20 @@ function checkInk() {
 }
 
 function undoInk() {
-  if (charPassed || !inkPad.value?.undo()) return;
+  if (charPassed.value || !inkPad.value?.undo()) return;
   // What's left may now be close enough (an extra stray stroke was in the way).
   onInkEnd();
 }
 
 function clearInk() {
-  if (charPassed) return;
+  if (charPassed.value) return;
   cancelCheck();
   inkPad.value?.clear();
 }
 
 function passChar() {
   const c = session.cur!;
-  charPassed = true;
+  charPassed.value = true;
   if (c.mistakes === 0 && !c.revealed) setMomo("happy", "Got it!");
   inkPad.value?.clear(true);
   try { writer.showCharacter({ duration: 300 }); } catch (e) {}
@@ -312,7 +312,7 @@ function setMode(v: boolean) {
   if (session.relaxed === v) return;
   session.relaxed = v;
   const c = session.cur;
-  if (!c || c.done || phase.value !== "writing" || charPassed) return;   // takes effect from the next character
+  if (!c || c.done || phase.value !== "writing" || charPassed.value) return;   // takes effect from the next character
   if (posthogEnabled) posthog.capture("practice_mode_switched", { mode: v ? "relaxed" : "strict" });
   if (writer) { try { writer.cancelQuiz(); } catch (e) {} }
   if (peekTimer) { clearTimeout(peekTimer); timers.delete(peekTimer); peekTimer = undefined; }
@@ -509,7 +509,7 @@ onBeforeUnmount(() => { sheetObserver.disconnect(); alive = false; timers.forEac
       <div class="stage" id="stage" ref="stageEl" :style="stageBox ? { width: stageBox + 'px', height: stageBox + 'px' } : undefined">
         <HanziStage v-if="cur && phase === 'writing' && writerSize" :key="mountId" :char="cur.word.w[cur.ci] ?? ''"
           :size="writerSize" :options="writerOpts" @ready="onWriterReady" />
-        <InkPad v-if="cur && phase === 'writing' && writerSize && relaxed" :key="'ink' + mountId" ref="inkPad"
+        <InkPad v-if="cur && phase === 'writing' && writerSize && relaxed" :key="'ink' + mountId" ref="inkPad" :locked="charPassed"
           :size="writerSize" :width="Math.max(6, Math.round(inkWidth * 0.75))" @start="cancelCheck" @end="onInkEnd" />
         <template v-else-if="cur && phase === 'done'">
           <GridSvg :size="finalSize" />

@@ -7,7 +7,8 @@
 import { ref } from "vue";
 import type { Pt } from "../lib/relaxed";
 
-defineProps<{ size: number; width: number }>();
+// `locked`: the character is done; take no more ink (it would only vanish when the next one mounts).
+const props = defineProps<{ size: number; width: number; locked?: boolean }>();
 const emit = defineEmits<{ start: []; end: [] }>();
 
 const strokes = ref<Pt[][]>([]);
@@ -22,7 +23,7 @@ const at = (e: PointerEvent): Pt => {
 };
 
 function down(e: PointerEvent) {
-  if (active !== null || fading.value) return;
+  if (active !== null || fading.value || props.locked) return;
   active = e.pointerId;
   svg.value!.setPointerCapture(e.pointerId);
   strokes.value.push([at(e)]);
