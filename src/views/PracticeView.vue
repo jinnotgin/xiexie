@@ -532,7 +532,7 @@ onBeforeUnmount(() => { sheetObserver.disconnect(); alive = false; timers.forEac
       <div class="momo-line" :class="momo.tone" :key="momo.seq">
         <Momo id="momo-small" :mood="momo.mood" />
         <span id="momo-say" ref="momoSay" role="status">
-          <template v-for="(part, i) in momoParts" :key="i"><b v-if="i" class="momo-glyph">{{ momo.glyph }}</b>{{ part }}</template>
+          <template v-for="(part, i) in momoParts" :key="i"><b v-if="i" class="momo-glyph han">{{ momo.glyph }}</b>{{ part }}</template>
         </span>
       </div>
       <div class="actions" id="actions" :class="{ split: relaxed }" :hidden="phase === 'done'">
