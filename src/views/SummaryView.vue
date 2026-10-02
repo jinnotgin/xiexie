@@ -55,7 +55,7 @@ onMounted(() => { if (allPerfect.value) confetti(); });
   <section id="summary">
     <div class="summary-head">
       <p class="big han" id="sum-title">{{ title }}</p>
-      <p id="sum-sub">{{ tally }}. {{ SUB[title] }}</p>
+      <p id="sum-sub">{{ tally }}. {{ session.counts ? SUB[title] : "Practice round, so your progress stays as it was." }}</p>
     </div>
     <div class="wall" id="wall">
       <div v-for="r in list" :key="r.word.id" class="wall-item">

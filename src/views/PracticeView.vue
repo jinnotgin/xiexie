@@ -3,7 +3,9 @@
  * The writing card. Session data lives in the session store; this view drives
  * one character at a time and shows the graded result. Strict mode runs the
  * HanziWriter quiz, stroke by stroke; relaxed mode collects free ink on an InkPad
- * and checks the whole character at once (lib/relaxed.ts).
+ * and checks the whole character at once (lib/relaxed.ts). Quiz rounds use the home
+ * page's mode and are recorded. Practice picked from the library is never recorded and
+ * can switch modes from the top bar without changing the home setting.
  */
 import posthog from "posthog-js";
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowRef } from "vue";
@@ -105,7 +107,7 @@ function renderCard() {
   finalWriters = [];
   stampStyle.value = {};
   const again = session.requeued.has(w.id) && session.results.length > session.idx - 0 && session.idx >= session.total;
-  setMomo("happy", again ? "Round two for this one. You've seen it, now write it." : pick(app.meta.relaxed === true ? LINES.relaxedStart : LINES.start));
+  setMomo("happy", again ? "Round two for this one. You've seen it, now write it." : pick(session.relaxed ? LINES.relaxedStart : LINES.start));
   mountWriter();
 }
 
@@ -113,7 +115,7 @@ function mountWriter() {
   const size = stageSize();
   writerSize.value = size;
   stageBox.value = size + 4;
-  relaxed.value = app.meta.relaxed === true;
+  relaxed.value = session.relaxed;
   charPassed = false;
   stallLogged = false;
   rivalChar.value = "";
@@ -235,6 +237,19 @@ function passChar() {
   later(charDone, 650);
 }
 
+/** Switches this round's mode. A character in progress starts over in the new mode; finished ones stay. */
+function setMode(v: boolean) {
+  if (session.relaxed === v) return;
+  session.relaxed = v;
+  const c = session.cur;
+  if (!c || c.done || phase.value !== "writing" || charPassed) return;   // takes effect from the next character
+  if (posthogEnabled) posthog.capture("practice_mode_switched", { mode: v ? "relaxed" : "strict" });
+  if (writer) { try { writer.cancelQuiz(); } catch (e) {} }
+  if (peekTimer) { clearTimeout(peekTimer); timers.delete(peekTimer); peekTimer = undefined; }
+  setMomo("happy", pick(v ? LINES.relaxedStart : LINES.start));
+  mountWriter();
+}
+
 function charDone() {
   const c = session.cur!;
   if (c.done) return;
@@ -264,9 +279,11 @@ async function finishWord(skipped = false) {
       hint_count: c.hints,
       was_revealed: c.revealed,
       was_skipped: skipped,
+      mode: relaxed.value ? "relaxed" : "strict",
+      counts_progress: session.counts,
     });
   }
-  await app.record(c.word, g);
+  if (session.counts) await app.record(c.word, g);
   if (!alive) return;
 
   // Show the whole word in the box with a stamp.
@@ -403,7 +420,12 @@ onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clea
   <section id="practice">
     <div class="topbar">
       <button class="btn ghost small" id="quit" aria-label="End session" @click="quit">✕ End</button>
-      <div class="dots" id="dots"><span v-for="(_, i) in session.queue" :key="i" :class="dotClass(i)"></span></div>
+      <!-- The dots are left empty (but keep their column) for a one-word round: there's no progress to show. -->
+      <div class="dots" id="dots"><template v-if="session.total > 1"><span v-for="(_, i) in session.queue" :key="i" :class="dotClass(i)"></span></template></div>
+      <div v-if="!session.counts" class="seg mode-switch" id="mode-switch" role="group" aria-label="Writing mode for this round">
+        <button id="round-strict" :aria-pressed="!session.relaxed" @click="setMode(false)">Strict</button>
+        <button id="round-relaxed" :aria-pressed="session.relaxed" @click="setMode(true)">Relaxed</button>
+      </div>
     </div>
     <div class="sheet">
       <div class="prompt-py"><span id="p-py">{{ cur?.word.p }}</span><button class="speak" id="p-speak" aria-label="Hear it" :hidden="!speechOk" @click="cur && speak(cur.word.w)"><Icon name="speaker" /></button></div>
@@ -452,6 +474,7 @@ onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clea
         <button class="btn primary" id="next" ref="nextBtn" @click="next">Next</button>
       </div>
     </div>
+    <p v-if="!session.counts" class="tip practice-note" id="practice-note">Practice round: this won't change your progress.</p>
     <p class="tip" id="tip">{{ relaxed ? "Write it your way, joined-up strokes are fine. It fills in once it's close enough." : "Write with a finger, stylus or mouse." }}</p>
   </section>
 </template>
