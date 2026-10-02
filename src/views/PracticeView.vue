@@ -8,7 +8,7 @@
  * can switch modes from the top bar without changing the home setting.
  */
 import posthog from "posthog-js";
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowRef } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import type { Grade, Mood } from "../types";
 import { LINES, pick } from "../lib/momo";
@@ -40,6 +40,29 @@ const setMomo = (mood: Mood, text: string, { tone, glyph = "" }: MomoOpts = {}) 
   momo.mood = mood; momo.text = text; momo.tone = tone ?? ""; momo.glyph = glyph; momo.seq++;
 };
 const momoParts = computed(() => momo.glyph ? momo.text.split(momo.glyph) : [momo.text]);
+// A wrapped line's box stays at its max-width, so Momo + text would sit left of center.
+// Shrink the box to its longest rendered line so the pair centers whether it wraps or not.
+const momoSay = ref<HTMLElement>();
+const hugMomo = () => {
+  const el = momoSay.value;
+  if (!el) return;
+  el.style.width = "";
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const rects = [...range.getClientRects()];
+  if (!rects.length) return;
+  const right = Math.max(...rects.map(r => r.right));
+  el.style.width = `${Math.ceil(right - el.getBoundingClientRect().left)}px`;
+};
+watch(() => momo.seq, hugMomo, { flush: "post" });
+// Re-measure whenever the card changes width (window resize, rotation, text size), not just on resize events.
+// Only width matters; hugMomo can change the card's height, which must not trigger another pass.
+const sheet = ref<HTMLElement>();
+let sheetW = 0;
+const sheetObserver = new ResizeObserver(([e]) => {
+  const w = e.contentRect.width;
+  if (w !== sheetW) { sheetW = w; hugMomo(); }
+});
 
 const cur = computed(() => session.cur);
 const phase = ref<"writing" | "done">("writing");
@@ -412,8 +435,8 @@ useKeydown(e => {
   if (e.key === "Enter" && phase.value === "done") { e.preventDefault(); next(); }
 });
 
-onMounted(renderCard);
-onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clear(); });
+onMounted(() => { renderCard(); if (sheet.value) sheetObserver.observe(sheet.value); document.fonts?.ready.then(hugMomo); });
+onBeforeUnmount(() => { sheetObserver.disconnect(); alive = false; timers.forEach(clearTimeout); timers.clear(); });
 </script>
 
 <template>
@@ -427,7 +450,7 @@ onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clea
         <button id="round-relaxed" :aria-pressed="session.relaxed" @click="setMode(true)">Relaxed</button>
       </div>
     </div>
-    <div class="sheet">
+    <div class="sheet" ref="sheet">
       <div class="prompt-py"><span id="p-py">{{ cur?.word.p }}</span><button class="speak" id="p-speak" aria-label="Hear it" :hidden="!speechOk" @click="cur && speak(cur.word.w)"><Icon name="speaker" /></button></div>
       <p class="prompt-en" id="p-en">{{ cur?.word.e }}</p>
       <div class="slots" id="slots" :hidden="!cur || cur.word.w.length === 1">
@@ -454,7 +477,7 @@ onBeforeUnmount(() => { alive = false; timers.forEach(clearTimeout); timers.clea
       </div>
       <div class="momo-line" :class="momo.tone" :key="momo.seq">
         <Momo id="momo-small" :mood="momo.mood" />
-        <span id="momo-say" role="status">
+        <span id="momo-say" ref="momoSay" role="status">
           <template v-for="(part, i) in momoParts" :key="i"><b v-if="i" class="momo-glyph">{{ momo.glyph }}</b>{{ part }}</template>
         </span>
       </div>
