@@ -163,16 +163,16 @@ async function signOut() {
     <h2>How to write</h2>
     <div class="modes" id="modes" role="group" aria-label="Writing mode">
       <button class="mode" id="mode-strict" :aria-pressed="app.meta.relaxed === false" @click="app.setStrict(true)">
-        <svg viewBox="2 0 48 42" aria-hidden="true">
-          <path d="M12 18H48M30 6V40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
-          <circle cx="9" cy="12" r="6.5" fill="var(--seal)" /><text x="9" y="15.5" fill="var(--seal-ink)">1</text>
-          <circle cx="38" cy="7" r="6.5" fill="var(--seal)" /><text x="38" y="10.5" fill="var(--seal-ink)">2</text>
+        <svg viewBox="-3 -7 56 49" aria-hidden="true">
+          <path d="M12 18H48M30 1V40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+          <circle cx="12" cy="8" r="7" fill="var(--seal)" /><text x="12" y="11.6" fill="var(--seal-ink)">1</text>
+          <circle cx="39.5" cy="0" r="7" fill="var(--seal)" /><text x="39.5" y="3.6" fill="var(--seal-ink)">2</text>
         </svg>
         Stroke by stroke<small>Each stroke checked, in order.</small>
       </button>
       <button class="mode" id="mode-relaxed" :aria-pressed="app.meta.relaxed !== false" @click="app.setStrict(false)">
-        <svg viewBox="2 0 48 42" aria-hidden="true">
-          <path d="M12 18C24 16 40 16 48 18C40 22 32 10 30 6C30 18 31 30 30 40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+        <svg viewBox="-3 -7 56 49" aria-hidden="true">
+          <path d="M12 18C24 16 40 16 48 18C40 22 32 6 30 1C30 15 31 30 30 40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
         Relaxed<small>Any order, joined-up strokes and all.</small>
       </button>
