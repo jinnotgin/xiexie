@@ -14,7 +14,7 @@ import { useRouter } from "vue-router";
 import { LEVELS } from "../data/levels";
 import { WORDS } from "../data/words";
 import { LINES, pick } from "../lib/momo";
-import { streakLive } from "../lib/srs";
+import { streakLive, writtenThisWeek } from "../lib/srs";
 import { useProgressStore } from "../stores/progress";
 import { useAccountStore } from "../stores/account";
 import { cloudError } from "../lib/cloud";
@@ -143,7 +143,7 @@ async function signOut() {
     <div class="bubble" id="home-bubble">{{ greeting }}</div>
     <div class="stats" id="stats">
       <span class="pill"><Icon name="flame" />{{ streakLive(app.meta) ? app.meta.streak : 0 }}-day streak</span>
-      <span class="pill"><Icon name="pen" />{{ app.meta.written }} written</span>
+      <span class="pill"><Icon name="pen" />{{ writtenThisWeek(app.meta) }} written this week</span>
       <span class="pill"><Icon name="award" />{{ levelMastered }} / {{ levelWords.length }} mastered in {{ levelLabel }}</span>
     </div>
 

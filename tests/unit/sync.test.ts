@@ -14,10 +14,10 @@ const sync = (s: Partial<SyncState> = {}): SyncState => ({ ...freshSync(), contr
 const cloud = (c: Partial<CloudDoc> = {}): CloudDoc => ({ ...emptyCloud("e1"), ...c });
 
 /** One full sync round, as stores/account.ts does it: push, then pull against the result. */
-function round(progress: Map<string, ProgressRec>, m: Meta, s: SyncState, c: CloudDoc | null) {
+function round(progress: Map<string, ProgressRec>, m: Meta, s: SyncState, c: CloudDoc | null, now = Date.now()) {
   const patch = pushPatch(progress, m, s, c);
   const after = applyPatch(c, patch, s.epoch!);
-  return { patch, after, pull: pullChanges(progress, m, s, after) };
+  return { patch, after, pull: pullChanges(progress, m, s, after, now) };
 }
 
 describe("progress records", () => {
@@ -99,7 +99,25 @@ describe("sync round", () => {
     const { patch, pull } = round(new Map(), meta({ written: 3 }), s, c);
     expect(patch!.counters).toEqual({ me: { written: 3 } });
     expect(pull.meta).toMatchObject({ written: 52 });
-    expect(pull.sync.others).toEqual({ written: 49 });
+    expect(pull.sync.others).toMatchObject({ written: 49 });
+  });
+
+  it("counts this week across devices, leaving out counts from earlier weeks", () => {
+    const now = new Date(2026, 9, 3, 12).getTime();   // Saturday; the week began Monday 2026-09-28
+    const c = cloud({ counters: {
+      phone: { written: 40, week: "2026-09-28", weekWritten: 12 },
+      tablet: { written: 9, week: "2026-09-21", weekWritten: 9 },
+    } });
+    const s = sync({ own: { written: 5, week: "2026-09-28", weekWritten: 5 } });
+    const { patch, pull } = round(new Map(), meta({ written: 5 }), s, c, now);
+    expect(patch!.counters).toEqual({ me: { written: 5, week: "2026-09-28", weekWritten: 5 } });
+    expect(pull.meta).toMatchObject({ written: 54, week: "2026-09-28", weekWritten: 17 });
+  });
+
+  it("starts the week at 0 when this device's own count is from last week", () => {
+    const now = new Date(2026, 9, 5, 9).getTime();    // Monday 2026-10-05
+    const s = sync({ own: { written: 5, week: "2026-09-28", weekWritten: 5 } });
+    expect(round(new Map(), meta({ written: 5 }), s, cloud(), now).pull.meta).toMatchObject({ week: "2026-10-05", weekWritten: 0 });
   });
 
   it("is idempotent: syncing twice writes nothing the second time", () => {
@@ -147,6 +165,8 @@ describe("normalizeCloud", () => {
     const c = normalizeCloud({ epoch: "e", progress: { 人: 3, 大: "1,2,3,4,,5" }, counters: { a: { xp: "x" } }, settings: { levels: "p1" } });
     expect(c.progress).toEqual({ 大: "1,2,3,4,,5" });
     expect(c.counters).toEqual({ a: { written: 0 } });
+    expect(normalizeCloud({ counters: { a: { written: 3, week: "2026-09-28", weekWritten: "x" } } }).counters)
+      .toEqual({ a: { written: 3, week: "2026-09-28", weekWritten: 0 } });
     expect(c.settings).toBeNull();
   });
 });

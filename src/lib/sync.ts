@@ -9,15 +9,17 @@
      progress  { wordId: "box,due,seen,perfect,last,updatedAt" }
                one string per word keeps all 3,000+ words under
                Firestore's per-document index limit; newest wins
-     counters  { contribId: { written } }, one entry per
-               device. Totals are the sum, so two devices never
-               overwrite each other's count, and a guest's adds
-               to the account's when they first sign in
+     counters  { contribId: { written, week, weekWritten } },
+               one entry per device. Totals are the sum, so two
+               devices never overwrite each other's count, and a
+               guest's adds to the account's when they first sign
+               in. This week's total only sums devices whose
+               count is from this week
      streak    { streak, lastDay }, merged as day ranges
      settings  { levels, relaxed, at }, newest wins
    ========================================================= */
 import type { Counts, Grade, Meta, ProgressRec, SyncState } from "../types";
-import { DAY, migrateLevels, type ProgressMap } from "./srs";
+import { DAY, migrateLevels, weekKey, writtenThisWeek, type ProgressMap } from "./srs";
 
 export interface Streak { streak: number; lastDay: string | null }
 export interface Settings { levels: string[]; relaxed: boolean; at: number }
@@ -44,7 +46,10 @@ export function normalizeCloud(d: any): CloudDoc {
   const obj = (v: unknown) => (v && typeof v === "object" ? v : {}) as Record<string, any>;
   const num = (v: unknown) => (typeof v === "number" && isFinite(v) ? v : 0);
   const counters: Record<string, Counts> = {};
-  for (const [k, c] of Object.entries(obj(d?.counters))) counters[k] = { written: num(c?.written) };
+  for (const [k, c] of Object.entries(obj(d?.counters))) {
+    counters[k] = { written: num(c?.written) };
+    if (typeof c?.week === "string") Object.assign(counters[k], { week: c.week, weekWritten: num(c.weekWritten) });
+  }
   const s = d?.settings;
   return {
     epoch: typeof d?.epoch === "string" ? d.epoch : "",
@@ -107,9 +112,14 @@ export function linkAction(sync: SyncState, uid: string, cloud: CloudDoc | null,
 
 export const cloudEmpty = (c: CloudDoc) => !Object.keys(c.progress).length && !sumCounts(c.counters).written;
 
-export function sumCounts(counters: Record<string, Counts>, except?: string): Counts {
-  const t = { written: 0 };
-  for (const [k, c] of Object.entries(counters)) if (k !== except) t.written += c.written;
+/** Totals over devices; with `now`, also this week's (counts from earlier weeks add nothing). */
+export function sumCounts(counters: Record<string, Counts>, except?: string, now?: number): Counts {
+  const t: Counts = { written: 0 };
+  if (now !== undefined) Object.assign(t, { week: weekKey(new Date(now)), weekWritten: 0 });
+  for (const [k, c] of Object.entries(counters)) if (k !== except) {
+    t.written += c.written;
+    if (now !== undefined) t.weekWritten! += writtenThisWeek(c, now);
+  }
   return t;
 }
 
@@ -129,7 +139,7 @@ export function pushPatch(progress: ProgressMap, meta: Meta, sync: SyncState, cl
 
   const mine = base.counters[sync.contrib];
   if (sync.own.written > (mine?.written || 0)) {
-    patch.counters = { [sync.contrib]: { written: sync.own.written } };
+    patch.counters = { [sync.contrib]: { ...sync.own } };
   }
 
   const streak = mergeStreak({ streak: meta.streak, lastDay: meta.lastDay }, base.streak);
@@ -156,7 +166,7 @@ export function applyPatch(cloud: CloudDoc | null, patch: CloudPatch | null, epo
 
 export interface Pull {
   save: ProgressRec[];   // records where the cloud is newer than this device
-  meta: Pick<Meta, "written" | "streak" | "lastDay"> & Partial<Pick<Meta, "levels" | "relaxed">>;
+  meta: Pick<Meta, "written" | "week" | "weekWritten" | "streak" | "lastDay"> & Partial<Pick<Meta, "levels" | "relaxed">>;
   sync: SyncState;
 }
 
@@ -164,19 +174,24 @@ export interface Pull {
  * Brings the cloud's state into this device's. Safe to run against local state that moved on
  * since the cloud was read (it only takes what is newer), so it is applied after the write commits.
  */
-export function pullChanges(progress: ProgressMap, meta: Meta, sync: SyncState, cloud: CloudDoc): Pull {
+export function pullChanges(progress: ProgressMap, meta: Meta, sync: SyncState, cloud: CloudDoc, now = Date.now()): Pull {
   const save: ProgressRec[] = [];
   for (const [id, s] of Object.entries(cloud.progress)) {
     const c = decodeRec(id, s), l = progress.get(id);
     if (c && (!l || compareRec(c, l) > 0)) save.push(c);
   }
   const mine = cloud.counters[sync.contrib];
-  const own = { written: Math.max(sync.own.written, mine?.written || 0) };
-  const others = sumCounts(cloud.counters, sync.contrib);
+  // This device's counter only grows, so the larger one is also the more recent, week and all.
+  const own = { ...(mine && mine.written > sync.own.written ? mine : sync.own) };
+  const others = sumCounts(cloud.counters, sync.contrib, now);
   const streak = mergeStreak({ streak: meta.streak, lastDay: meta.lastDay }, cloud.streak);
   const out: Pull = {
     save,
-    meta: { written: own.written + others.written, streak: streak.streak, lastDay: streak.lastDay },
+    meta: {
+      written: own.written + others.written,
+      week: others.week, weekWritten: writtenThisWeek(own, now) + others.weekWritten!,
+      streak: streak.streak, lastDay: streak.lastDay,
+    },
     sync: { ...sync, own, others, epoch: cloud.epoch },
   };
   if (cloud.settings && cloud.settings.at > sync.settingsAt) {

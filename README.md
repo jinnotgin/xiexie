@@ -67,7 +67,7 @@ after each word, when the tab is hidden or shown, and when the connection comes 
 The merge rules are pure functions in `src/lib/sync.ts`, tested in `tests/unit/sync.test.ts`:
 
 - **Words**: the most recently practised result wins.
-- **Characters written**: each device keeps its own counter and the total is the sum.
+- **Characters written**: each device keeps its own counter and the total is the sum. The home page shows this week's (from Monday), summing only devices whose count is from this week; the lifetime total is kept too.
 - **Streak**: day ranges from each device are joined, so 1 day on a new phone after a 10-day run elsewhere makes 11.
 - **First sign-in** with progress on both sides: the learner chooses to combine them or keep only the account's.
 - **Sign out** clears the device once everything has reached the account, so a shared computer starts fresh.

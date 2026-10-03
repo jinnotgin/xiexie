@@ -4,7 +4,7 @@ import type { Grade, Meta, ProgressRec, SyncState, Word } from "../types";
 import { WORDS } from "../data/words";
 import { Store } from "../lib/storage";
 import { loadCharData } from "../lib/chardata";
-import { DEFAULT_META, applyWritten, dueWords, migrateLevels, nextProgress, statusOf } from "../lib/srs";
+import { DEFAULT_META, addWritten, applyWritten, dueWords, migrateLevels, nextProgress, statusOf } from "../lib/srs";
 import { freshSync, type Pull } from "../lib/sync";
 
 /** The learner's saved state: per-word progress plus the profile (streak, settings). */
@@ -66,9 +66,8 @@ export const useProgressStore = defineStore("progress", () => {
     // All in-memory changes happen before the first await, so a sync landing mid-way can't drop any.
     const p = nextProgress(progress.get(word.id), word.id, grade);
     progress.set(p.id, p);
-    const written = meta.written;
     applyWritten(meta, word);
-    sync().own.written += meta.written - written;
+    addWritten(sync().own, word.w.length);
     await Store.putProgress(p);
     await saveMeta(); changed();
   }
