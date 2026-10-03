@@ -1,41 +1,6 @@
-/* eslint-disable */
-// @ts-nocheck
 /**
  * Hanzi Writer v3.7.3 | https://chanind.github.io/hanzi-writer
  */
-
-// =============================================================================
-// [xiexie patch] — vendored copy of Hanzi Writer, patched for 写写
-// -----------------------------------------------------------------------------
-// Upstream:  hanzi-writer@3.7.3, dist/hanzi-writer.js
-//            https://cdn.jsdelivr.net/npm/hanzi-writer@3.7.3/dist/hanzi-writer.js
-//            MIT licence, (c) 2014 David Chanin
-//            Unmodified copy kept alongside as hanzi-writer.orig.js (diff against it to see
-//            every change; diff it against a newer upstream release when upgrading).
-//
-// Every change lives inside a numbered block:
-//
-//   // >>> [xiexie patch N] BEGIN: <what>
-//   // original:              <- upstream code, commented out (omitted if purely additive)
-//   //   ...
-//   <patched code>
-//   // <<< [xiexie patch N] END
-//
-// To restore upstream behaviour for one patch: delete the patched code, uncomment the
-// "original:" lines, and remove the markers. Everything outside these blocks is
-// byte-for-byte upstream.
-//
-//   #0  ES module wrapper (eslint/ts directives above, `export default` at the bottom)
-//   #1  Tuning constants for the patches below
-//   #2  misplacedStrokeMatches(): right shape, wrong spot
-//   #3  Wider shape-fit rotations (±22.5° instead of ±11.25°)
-//   #4  getMatchData(): separate shape leniency; caller-supplied distance budget
-//   #5  Quiz.startQuiz(): per-quiz tracking state
-//   #6  Quiz.endUserStroke(): retry leniency, misplaced fallback, outcome flags
-//   #7  Quiz._getStrokeData(): isMisplaced / isForced in stroke callbacks
-//   #8  Quiz.nextStroke(): record drawn strokes
-//   #9  Quiz.nextStroke(): richer onComplete payload
-// =============================================================================
 
 var HanziWriter = (function () {
   'use strict';
@@ -665,24 +630,6 @@ var HanziWriter = (function () {
 
   const MIN_LEN_THRESHOLD = 0.35; // smaller = more lenient
 
-  // >>> [xiexie patch 1] BEGIN: tuning constants (additive; used by patches 2, 4, 6)
-  const MAX_LEN_RATIO = 1.9; // reject a stroke that badly overshoots the one it is matched to
-  // Adaptive leniency: first attempt at a stroke is judged normally, each miss on the same
-  // stroke loosens the thresholds a step (capped), so retries get easier without making a
-  // clean first attempt meaningless.
-  const RETRY_LENIENCY_STEP = 0.2;
-  const RETRY_LENIENCY_MAX_STEPS = 2;
-  const LATER_STROKE_DIST_MOD = 0.65; // distance budget after the first stroke / with outline (upstream: 0.5)
-  const SHAPE_LENIENCY = 1; // upstream default; retries never loosen shape
-  // Strict-mode placement fallback: the expected stroke, drawn the right shape but in the
-  // wrong spot, still counts (flagged as misplaced) as long as it isn't sitting where another
-  // stroke belongs.
-  const MISPLACED_DIST_MOD = 2.25; // distance budget multiplier over the normal one
-  const MISPLACED_MIN_LEN_RATIO = 0.6; // tighter than MIN_LEN_THRESHOLD so a flick can't pass as a long stroke
-  const MISPLACED_LONG_STROKE = 200; // ...applied only to strokes this long; dots and ticks keep the normal floor
-  const retryLeniency =(base, misses) => (base || 1) * (1 + RETRY_LENIENCY_STEP * Math.min(misses || 0, RETRY_LENIENCY_MAX_STEPS));
-  // <<< [xiexie patch 1] END
-
   function strokeMatches(userStroke, character, strokeNum, options = {}) {
     const strokes = character.strokes;
     const points = stripDuplicates(userStroke.points);
@@ -749,31 +696,7 @@ var HanziWriter = (function () {
     };
   }
 
-  // >>> [xiexie patch 2] BEGIN: misplacedStrokeMatches() (additive; called from patch 6)
-  // Shape, direction and length must all fit; location only has to be within a wide budget.
-  // Rejected if the stroke matches any other stroke where it was drawn, so drawing a later (or
-  // already drawn) stroke in its own place is still a mistake, not a misplaced pass.
-  function misplacedStrokeMatches(userStroke, character, strokeNum, options = {}) {
-    const points = stripDuplicates(userStroke.points);
-    if (points.length < 2) return false;
-    const stroke = character.strokes[strokeNum];
-    const {
-      leniency = 1,
-      averageDistanceThreshold = 350,
-      distModOverride = 1
-    } = options;
-    if (stroke.getAverageDistance(points) > averageDistanceThreshold * distModOverride * leniency * MISPLACED_DIST_MOD) return false;
-    const lenRatio = (length(points) + 25) / (stroke.getLength() + 25);
-    const minLenRatio = stroke.getLength() > MISPLACED_LONG_STROKE ? MISPLACED_MIN_LEN_RATIO : MIN_LEN_THRESHOLD;
-    if (lenRatio < minLenRatio || lenRatio > MAX_LEN_RATIO) return false;
-    if (!directionMatches(points, stroke) || !shapeFit(points, stroke.points, SHAPE_LENIENCY)) return false;
-    return !character.strokes.some((other, i) => i !== strokeNum && getMatchData(points, other, { ...options,
-      checkBackwards: false
-    }).isMatch);
-  }
-  // <<< [xiexie patch 2] END
-
-  const startAndEndMatches =(points, closestStroke, leniency) => {
+  const startAndEndMatches = (points, closestStroke, leniency) => {
     const startingDist = distance(closestStroke.getStartingPoint(), points[0]);
     const endingDist = distance(closestStroke.getEndingPoint(), points[points.length - 1]);
     return startingDist <= START_AND_END_DIST_THRESHOLD * leniency && endingDist <= START_AND_END_DIST_THRESHOLD * leniency;
@@ -819,12 +742,7 @@ var HanziWriter = (function () {
     return dedupedPoints;
   };
 
-  // >>> [xiexie patch 3] BEGIN: wider shape-fit rotations
-  // ±22.5° instead of ±11.25°, so slanted strokes drawn at a slightly different angle still fit.
-  // original:
-  //   const SHAPE_FIT_ROTATIONS = [Math.PI / 16, Math.PI / 32, 0, -1 * Math.PI / 32, -1 * Math.PI / 16];
-  const SHAPE_FIT_ROTATIONS = [Math.PI / 8, Math.PI / 16, Math.PI / 32, 0, -1 * Math.PI / 32, -1 * Math.PI / 16, -1 * Math.PI / 8];
-  // <<< [xiexie patch 3] END
+  const SHAPE_FIT_ROTATIONS = [Math.PI / 16, Math.PI / 32, 0, -1 * Math.PI / 32, -1 * Math.PI / 16];
 
   const shapeFit = (curve1, curve2, leniency) => {
     const normCurve1 = normalizeCurve(curve1);
@@ -841,35 +759,14 @@ var HanziWriter = (function () {
   };
 
   const getMatchData = (points, stroke, options) => {
-    // >>> [xiexie patch 4a] BEGIN: new options `shapeLeniency` and `distModOverride`
-    // Shape is judged separately from location: `leniency` loosens where the stroke is (average
-    // distance, start/end points); `shapeLeniency` loosens what it looks like (Fréchet shape
-    // fit, length). Keeping shape at 1 stops a plain 竖 passing as 竖钩.
-    // original:
-    //   const {
-    //     leniency = 1,
-    //     isOutlineVisible = false,
-    //     checkBackwards = true,
-    //     averageDistanceThreshold = 350
-    //   } = options;
     const {
       leniency = 1,
-      shapeLeniency = 1,
       isOutlineVisible = false,
       checkBackwards = true,
-      averageDistanceThreshold = 350,
-      distModOverride
+      averageDistanceThreshold = 350
     } = options;
-    // <<< [xiexie patch 4a] END
     const avgDist = stroke.getAverageDistance(points);
-    // >>> [xiexie patch 4b] BEGIN: caller can override the distance budget
-    // When scanning every stroke as a candidate, `stroke.strokeNum > 0` would hand stroke 0
-    // twice the distance budget of its rivals. The caller passes distModOverride so leniency
-    // tracks the character's progress, not the index.
-    // original:
-    //   const distMod = isOutlineVisible || stroke.strokeNum > 0 ? 0.5 : 1;
-    const distMod = distModOverride !== undefined ? distModOverride : isOutlineVisible || stroke.strokeNum > 0 ? 0.5 : 1;
-    // <<< [xiexie patch 4b] END
+    const distMod = isOutlineVisible || stroke.strokeNum > 0 ? 0.5 : 1;
     const withinDistThresh = avgDist <= averageDistanceThreshold * distMod * leniency; // short circuit for faster matching
 
     if (!withinDistThresh) {
@@ -884,13 +781,8 @@ var HanziWriter = (function () {
 
     const startAndEndMatch = startAndEndMatches(points, stroke, leniency);
     const directionMatch = directionMatches(points, stroke);
-    // >>> [xiexie patch 4c] BEGIN: shape and length use shapeLeniency, not leniency
-    // original:
-    //   const shapeMatch = shapeFit(points, stroke.points, leniency);
-    //   const lengthMatch = lengthMatches(points, stroke, leniency);
-    const shapeMatch = shapeFit(points, stroke.points, shapeLeniency);
-    const lengthMatch = lengthMatches(points, stroke, shapeLeniency);
-    // <<< [xiexie patch 4c] END
+    const shapeMatch = shapeFit(points, stroke.points, leniency);
+    const lengthMatch = lengthMatches(points, stroke, leniency);
     const isMatch = withinDistThresh && startAndEndMatch && directionMatch && shapeMatch && lengthMatch;
 
     if (checkBackwards && !isMatch) {
@@ -1313,13 +1205,6 @@ var HanziWriter = (function () {
       this._currentStrokeIndex = Math.min(startIndex, this._character.strokes.length - 1);
       this._mistakesOnStroke = 0;
       this._totalMistakes = 0;
-      // >>> [xiexie patch 5] BEGIN: per-quiz tracking state (additive; used by patches 6, 8, 9)
-      // Which strokes are done, in what order, and any direction/placement notes.
-      this._drawn = new Set();
-      this._drawOrder = [];
-      this._backwards = [];
-      this._misplaced = [];
-      // <<< [xiexie patch 5] END
       return this._renderState.run(startQuiz(this._character, options.strokeFadeDuration, this._currentStrokeIndex));
     }
 
@@ -1380,52 +1265,21 @@ var HanziWriter = (function () {
 
       const currentStroke = this._getCurrentStroke();
 
-      // >>> [xiexie patch 6] BEGIN: retry leniency, misplaced fallback, outcome flags
-      // - leniency grows with misses on this stroke (retryLeniency, patch 1); shape does not
-      // - distance budget is LATER_STROKE_DIST_MOD (0.65) instead of 0.5 after the first stroke
-      // - a right-shaped stroke in the wrong spot is accepted and flagged (patch 2)
-      // - accepted strokes are recorded as backwards / misplaced, and the success meta says
-      //   whether the stroke was only forced through by markStrokeCorrectAfterMisses
-      // original:
-      //   const {
-      //     isMatch,
-      //     meta
-      //   } = strokeMatches(this._userStroke, this._character, this._currentStrokeIndex, {
-      //     isOutlineVisible: this._renderState.state.character.outline.opacity > 0,
-      //     leniency: this._options.leniency,
-      //     averageDistanceThreshold: this._options.averageDistanceThreshold
-      //   }); // if markStrokeCorrectAfterMisses is passed, just force the stroke to count as correct after n tries
-      //
-      //   const isForceAccepted = markStrokeCorrectAfterMisses && this._mistakesOnStroke + 1 >= markStrokeCorrectAfterMisses;
-      //   const isAccepted = isMatch || isForceAccepted || meta.isStrokeBackwards && acceptBackwardsStrokes;
-      //
-      //   if (isAccepted) {
-      //     this._handleSuccess(meta);
-      //   } else {
-      const strictOpts = {
-        isOutlineVisible: this._renderState.state.character.outline.opacity > 0,
-        distModOverride: this._renderState.state.character.outline.opacity > 0 || this._currentStrokeIndex > 0 ? LATER_STROKE_DIST_MOD : 1,
-        leniency: retryLeniency(this._options.leniency, this._mistakesOnStroke),
-        shapeLeniency: SHAPE_LENIENCY,
-        averageDistanceThreshold: this._options.averageDistanceThreshold
-      };
       const {
         isMatch,
         meta
-      } = strokeMatches(this._userStroke, this._character, this._currentStrokeIndex, strictOpts);
-      const isBackwardsAccepted = meta.isStrokeBackwards && acceptBackwardsStrokes;
-      // right stroke, wrong spot: counted, but flagged
-      const isMisplaced = !isMatch && !isBackwardsAccepted && misplacedStrokeMatches(this._userStroke, this._character, this._currentStrokeIndex, strictOpts);
-      // if markStrokeCorrectAfterMisses is passed, just force the stroke to count as correct after n tries
+      } = strokeMatches(this._userStroke, this._character, this._currentStrokeIndex, {
+        isOutlineVisible: this._renderState.state.character.outline.opacity > 0,
+        leniency: this._options.leniency,
+        averageDistanceThreshold: this._options.averageDistanceThreshold
+      }); // if markStrokeCorrectAfterMisses is passed, just force the stroke to count as correct after n tries
+
       const isForceAccepted = markStrokeCorrectAfterMisses && this._mistakesOnStroke + 1 >= markStrokeCorrectAfterMisses;
-      const isAccepted = isMatch || isMisplaced || isForceAccepted || isBackwardsAccepted;
+      const isAccepted = isMatch || isForceAccepted || meta.isStrokeBackwards && acceptBackwardsStrokes;
 
       if (isAccepted) {
-        if (meta.isStrokeBackwards && !isMatch && this._backwards) this._backwards.push(this._currentStrokeIndex);
-        if (isMisplaced && this._misplaced) this._misplaced.push(this._currentStrokeIndex);
-        this._handleSuccess({ ...meta, isMisplaced, isForced: !isMatch && !isMisplaced && !isBackwardsAccepted });
+        this._handleSuccess(meta);
       } else {
-      // <<< [xiexie patch 6] END
         this._handleFailure(meta);
 
         const {
@@ -1461,13 +1315,7 @@ var HanziWriter = (function () {
         totalMistakes: this._totalMistakes,
         strokesRemaining: this._character.strokes.length - this._currentStrokeIndex - (isCorrect ? 1 : 0),
         drawnPath: getDrawnPath(this._userStroke),
-        // >>> [xiexie patch 7] BEGIN: isMisplaced / isForced in onCorrectStroke / onMistake data
-        // original:
-        //   isBackwards: meta.isStrokeBackwards
-        isBackwards: meta.isStrokeBackwards,
-        isMisplaced: !!meta.isMisplaced,
-        isForced: !!meta.isForced
-        // <<< [xiexie patch 7] END
+        isBackwards: meta.isStrokeBackwards
       };
     }
 
@@ -1486,9 +1334,6 @@ var HanziWriter = (function () {
         strokeHighlightDuration
       } = this._options;
       let animation = showStroke('main', this._currentStrokeIndex, strokeFadeDuration);
-      // >>> [xiexie patch 8] BEGIN: record drawn strokes (additive)
-      if (this._drawn) { this._drawn.add(this._currentStrokeIndex); this._drawOrder.push(this._currentStrokeIndex); }
-      // <<< [xiexie patch 8] END
       this._mistakesOnStroke = 0;
       this._currentStrokeIndex += 1;
       const isComplete = this._currentStrokeIndex === strokes.length;
@@ -1497,12 +1342,7 @@ var HanziWriter = (function () {
         this._isActive = false;
         onComplete === null || onComplete === void 0 ? void 0 : onComplete({
           character: symbol,
-          // >>> [xiexie patch 9] BEGIN: backwards / misplaced / drawOrder in onComplete data
-          // original:
-          //   totalMistakes: this._totalMistakes
-          totalMistakes: this._totalMistakes,
-          backwards: (this._backwards || []).slice(), misplaced: (this._misplaced || []).slice(), drawOrder: (this._drawOrder || []).slice()
-          // <<< [xiexie patch 9] END
+          totalMistakes: this._totalMistakes
         });
 
         if (highlightOnComplete) {
@@ -2942,7 +2782,3 @@ var HanziWriter = (function () {
   return HanziWriter;
 
 }());
-
-// >>> [xiexie patch 0] BEGIN: ES module export (additive)
-export default HanziWriter;
-// <<< [xiexie patch 0] END
