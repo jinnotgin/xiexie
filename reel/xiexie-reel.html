@@ -27,7 +27,9 @@ body{font-family:"Bricolage Grotesque",ui-rounded,system-ui,sans-serif;color:var
 #night{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,#16211c 0%,var(--night) 70%)}
 #vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(20,40,30,.16) 100%)}
 #world{position:absolute;inset:0;perspective:2200px;perspective-origin:50% 48%;transform-style:preserve-3d}
-.obj{position:absolute;left:50%;top:50%;transform-style:preserve-3d;will-change:transform}
+/* No will-change here: it would freeze the raster scale and blur the zoomed-in opening.
+   Never fade an .obj itself either: opacity flattens a preserve-3d group, so fades go on the children. */
+.obj{position:absolute;left:50%;top:50%;transform-style:preserve-3d}
 
 /* ---------- Practice card (mirrors the app's .sheet) ---------- */
 #pcard{width:380px;height:620px;margin:-310px 0 0 -190px}
@@ -62,46 +64,59 @@ body{font-family:"Bricolage Grotesque",ui-rounded,system-ui,sans-serif;color:var
 .gbtn{font-weight:700;font-size:15.5px;padding:8px 12px}
 .stamp{position:absolute;right:-14px;top:-18px;width:96px;height:96px;border-radius:14px;background:var(--jade);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;
   box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--jade);backface-visibility:hidden}
+.stamp.good{background:var(--marker);color:#1C2B3A;box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--marker)}
 .stamp .han{font-size:44px;line-height:1}
 .stamp small{font-size:11.5px;font-weight:700;margin-top:2px}
 .ring{position:absolute;right:-50px;top:-54px;width:168px;height:168px;border-radius:50%;border:4px solid var(--jade);opacity:0}
+.ring.good{border-color:var(--marker)}
 
 /* Annotation tags beside each exploded layer */
 .plate{position:absolute;inset:0;border-radius:22px;border:2px solid rgba(28,43,58,.45);background:rgba(251,253,251,.28);opacity:0}
-.tag{position:absolute;left:100%;display:flex;align-items:center;white-space:nowrap;font-size:15px;font-weight:700}
-.tag i{display:block;width:46px;height:2px;background:var(--ink);position:relative;margin-left:-6px}
+.tag{position:absolute;left:100%;display:flex;align-items:center;white-space:nowrap;font-size:17px;font-weight:700}
+.tag i{display:block;width:56px;height:2px;background:var(--ink);position:relative;margin-left:-6px}
 .tag i::before{content:"";position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--ink)}
-.tag b{background:var(--card);border:2px solid var(--ink);border-radius:999px;padding:5px 12px;box-shadow:3px 3px 0 var(--ink)}
-.tag b.han{font-weight:400;font-size:17px}
+.tag b{background:var(--card);border:2px solid var(--ink);border-radius:999px;padding:6px 14px;box-shadow:3px 3px 0 var(--ink)}
 .tag em{font-style:normal;font-family:"Ma Shan Zheng",serif;font-weight:400}
+
+/* ---------- Mode switch beside the card ---------- */
+#modes{position:absolute;left:130px;top:292px;display:flex;gap:12px;opacity:0}
+.mbtn{display:flex;align-items:center;gap:10px;border:2.5px solid var(--ink);border-radius:16px;padding:12px 20px;font-size:24px;font-weight:700;background:var(--card)}
+.mbtn svg{width:28px;height:28px}
 
 /* ---------- Levels ring ---------- */
 #ring{width:0;height:0}
-.lvl{position:absolute;width:250px;height:178px;margin:-89px 0 0 -125px;border:2.5px solid var(--ink);border-radius:18px;background:var(--card);box-shadow:5px 5px 0 var(--ink);
-  padding:16px 18px;display:flex;flex-direction:column;justify-content:space-between}
+.lvl{position:absolute;width:260px;height:186px;margin:-93px 0 0 -130px;border:2.5px solid var(--ink);border-radius:18px;background:var(--card);box-shadow:5px 5px 0 var(--ink);
+  padding:14px 18px 14px;display:flex;flex-direction:column;justify-content:space-between}
 .lvl .top{display:flex;justify-content:space-between;align-items:baseline}
-.lvl b{font-size:28px;font-weight:800}
-.lvl .sub{font-size:22px;color:var(--ink-soft)}
-.lvl .w{font-size:62px;line-height:1;text-align:center}
-.lvl small{font-size:14px;color:var(--ink-soft);font-weight:600}
+.lvl b{font-size:34px;font-weight:800;line-height:1}
+.lvl .sub{font-size:24px;color:var(--ink-soft)}
+.lvl .num{font-size:40px;font-weight:800;line-height:1}
+.lvl .num span{font-size:20px;font-weight:600;color:var(--ink-soft);margin-left:6px}
+.lvl .ex{font-size:21px;color:var(--ink-soft);white-space:nowrap;letter-spacing:.02em}
 .lvl.on{background:var(--marker)}
-.lvl.on small,.lvl.on .sub{color:#3b4a5a}
+.lvl.on .sub,.lvl.on .num span,.lvl.on .ex{color:#3b4a5a}
 
 /* ---------- Review timeline ---------- */
 #track{width:0;height:0}
-.floor{position:absolute;left:-500px;top:-260px;width:4600px;height:520px;transform:rotateX(90deg);
+.floor{position:absolute;left:-500px;top:-260px;width:3600px;height:520px;transform:rotateX(90deg);
   background-image:linear-gradient(rgba(28,43,58,.09) 2px,transparent 2px),linear-gradient(90deg,rgba(28,43,58,.09) 2px,transparent 2px);background-size:54px 54px;
-  -webkit-mask-image:radial-gradient(ellipse at 30% 50%,#000 30%,transparent 72%);mask-image:radial-gradient(ellipse at 30% 50%,#000 30%,transparent 72%)}
-.floor .lane{position:absolute;left:500px;top:256px;width:3500px;height:0;border-top:4px dashed var(--ink);opacity:.5}
-.spot{position:absolute;top:220px;width:150px;height:72px;margin-left:-75px;border-radius:50%;border:3px solid var(--ink);background:rgba(242,207,59,.0)}
+  -webkit-mask-image:radial-gradient(ellipse at 35% 50%,#000 30%,transparent 72%);mask-image:radial-gradient(ellipse at 35% 50%,#000 30%,transparent 72%)}
+.floor .lane{position:absolute;left:500px;top:256px;width:2500px;height:0;border-top:4px dashed var(--ink);opacity:.5}
+.spot{position:absolute;top:220px;width:150px;height:72px;margin-left:-75px;border-radius:50%;border:3px solid var(--ink)}
 .spot.hit{background:var(--marker)}
 .dlabel{position:absolute;width:300px;margin-left:-150px;text-align:center;font-weight:800;font-size:38px}
-.dlabel small{display:block;font-weight:600;font-size:24px;color:var(--ink-soft)}
-.wcard{position:absolute;width:290px;height:128px;margin-left:-145px;top:-140px;background:var(--card);border:2.5px solid var(--ink);border-radius:18px;box-shadow:5px 5px 0 var(--ink);
+.dlabel small{display:block;font-weight:700;font-size:24px;color:var(--ink-soft)}
+.wcard{position:absolute;width:340px;height:128px;margin-left:-170px;top:-140px;background:var(--card);border:2.5px solid var(--ink);border-radius:18px;box-shadow:5px 5px 0 var(--ink);
   display:flex;align-items:center;gap:14px;padding:14px 18px;transform-origin:50% 100%}
-.wcard .w{font-size:56px;line-height:1}
-.wcard small{display:block;color:var(--ink-soft);font-size:16px;line-height:1.3}
-.wcard .mini{width:52px;height:52px;border-radius:10px;background:var(--jade);color:#fff;display:grid;place-items:center;font-size:32px;transform:rotate(-10deg);flex:none;margin-left:auto}
+.wcard .w{font-size:56px;line-height:1;white-space:nowrap;flex:none}
+.wcard small{display:block;color:var(--ink-soft);font-size:18px;line-height:1.3;white-space:nowrap}
+.wcard small b{color:var(--ink)}
+.mini{width:54px;height:54px;border-radius:10px;background:var(--jade);color:#fff;display:grid;place-items:center;font-size:33px;transform:rotate(-10deg);flex:none;margin-left:auto}
+.mini.ok{background:var(--seal);opacity:.8}
+.mini.good{background:var(--marker);color:#1C2B3A}
+.badge{position:absolute;left:50%;top:-34px;display:flex;align-items:center;gap:8px;white-space:nowrap;background:var(--jade);color:#fff;font-weight:800;font-size:22px;
+  border:2.5px solid var(--ink);border-radius:999px;padding:6px 16px 6px 12px;box-shadow:3px 3px 0 var(--ink);opacity:0}
+.badge svg{width:24px;height:24px}
 
 /* ---------- End card ---------- */
 #endg{width:0;height:0}
@@ -111,8 +126,10 @@ body{font-family:"Bricolage Grotesque",ui-rounded,system-ui,sans-serif;color:var
 .ebox .cb{position:absolute;inset:20px}
 .ebox .cb svg{overflow:visible}
 #emomo{position:absolute;width:150px;height:150px;margin:-75px 0 0 -75px}
-.etag{position:absolute;width:1400px;margin-left:-700px;text-align:center;font-size:44px;font-weight:600;color:var(--ink)}
-.eurl{position:absolute;margin-left:0;transform-origin:50% 50%;font-weight:800;font-size:34px;background:var(--seal);color:#fff;border:2.5px solid var(--ink);border-radius:999px;padding:14px 34px;box-shadow:5px 5px 0 var(--ink);white-space:nowrap}
+/* The closing lines sit outside the 3D world so they stay crisp. */
+#etag{position:absolute;left:0;right:0;top:690px;text-align:center;font-size:52px;font-weight:600;opacity:0}
+#eurl{position:absolute;left:50%;top:790px;font-weight:800;font-size:40px;background:var(--seal);color:#fff;border:3px solid var(--ink);border-radius:999px;
+  padding:14px 40px;box-shadow:6px 6px 0 var(--ink);white-space:nowrap;opacity:0}
 
 /* ---------- Captions ---------- */
 .cap{position:absolute;opacity:0}
@@ -120,9 +137,10 @@ body{font-family:"Bricolage Grotesque",ui-rounded,system-ui,sans-serif;color:var
 .cap p{margin:22px 0 0;font-size:30px;line-height:1.38;color:var(--ink-soft);font-weight:500}
 .cap .wd{display:inline-block;white-space:pre}
 .cap .hl{color:var(--seal)}
-.cap.left{left:130px;top:50%;width:580px;transform:translateY(-50%)}
-.cap.top{left:0;right:0;top:92px;text-align:center}
-.cap.top p{max-width:1100px;margin-inline:auto}
+.cap.left{left:130px;top:50%;width:560px;transform:translateY(-50%)}
+.cap.left.low{top:56%}
+.cap.top{left:0;right:0;top:86px;text-align:center}
+.cap.top p{max-width:1180px;margin-inline:auto}
 .cap.mid{left:0;right:0;top:50%;text-align:center;transform:translateY(-50%);color:#EAF2EC}
 .cap.mid h2{font-size:92px;font-weight:600}
 
@@ -163,13 +181,11 @@ body.capture #ui{display:none}
           <div style="flex:1"></div>
           <div class="pbtn">Show me</div><div class="gbtn">Skip</div>
         </div>
-        <div class="tag" style="top:552px"><i></i><b>Undo, erase or get a hint</b></div>
       </div>
       <div class="L" id="lHead"><div class="plate"></div>
         <div class="py"><span id="pyT">xiě</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6"/><path d="M18.5 6.5a8 8 0 0 1 0 11"/></svg></div>
         <div class="en" id="enT">to write</div>
         <div class="slots" id="slots"></div>
-        <div class="tag" style="top:40px"><i></i><b>Pinyin and meaning, read aloud</b></div>
       </div>
       <div class="L" id="lMomo"><div class="plate"></div>
         <div class="momoline"><svg viewBox="0 0 100 100" class="momo-svg"></svg><span id="momoSay">Write it from memory. You can do it.</span></div>
@@ -178,9 +194,9 @@ body.capture #ui{display:none}
       <div class="L" id="lInk"><div class="plate"></div>
         <div class="charbox" id="charbox"><svg viewBox="0 0 1024 1024" id="charSvg"></svg></div>
         <div class="finalw" id="finalw"></div>
-        <div class="tag" style="top:400px"><i></i><b>Real stroke order, 3,500 characters</b></div>
+        <div class="tag" style="top:400px"><i></i><b>Real stroke order</b></div>
         <div class="ring" id="sring"></div>
-        <div class="stamp" id="stamp"><span class="han">优</span><small>Excellent</small></div>
+        <div class="stamp" id="stamp"><span class="han" id="stampCh">优</span><small id="stampLb">Excellent</small></div>
       </div>
     </div>
 
@@ -190,17 +206,24 @@ body.capture #ui{display:none}
   </div>
   <div id="vignette"></div>
 
+  <div id="modes">
+    <div class="mbtn" id="mStrict"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4.5 1.5L5 15Z"/><path d="M14.5 5.5l3 3"/></svg>Stroke by stroke</div>
+    <div class="mbtn" id="mRelaxed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15c3-6 5-6 6-3s2 5 4 1 3-7 5-6 2 4 3 4"/></svg>Relaxed</div>
+  </div>
   <div class="cap mid" id="c1"><h2>You studied Chinese for ten years.</h2></div>
   <div class="cap mid" id="c2"><h2>When did you last <span class="hl">write</span> it?</h2></div>
-  <div class="cap left" id="c3"><h2>Write it from memory.</h2><p>The real stroke order for every one of the 3,500 everyday characters, checked as you write.</p></div>
-  <div class="cap left" id="c4"><h2>Messy is fine.</h2><p>Relaxed mode takes any stroke order, even joined-up strokes. The character fills in once it's close enough.</p></div>
-  <div class="cap top" id="c5"><h2>Pick up where school left off.</h2><p>Primary levels follow the MOE 欢乐伙伴 lists. Secondary levels cover the rest of China's 3,500 everyday characters.</p></div>
-  <div class="cap top" id="c6"><h2>It comes back before you forget.</h2><p>Get a word right and the wait doubles. Miss it and it comes back sooner.</p></div>
+  <div class="cap left" id="c3"><h2>Words you already know.</h2><p>Start with the characters you learnt in P1 to P6, and write each one from memory.</p></div>
+  <div class="cap left low" id="c4"><h2>Stroke by stroke.</h2><p>Each stroke is checked as you write it, in the right order. Wrong stroke? Just try again.</p></div>
+  <div class="cap left low" id="c5"><h2>Or just write it.</h2><p>Relaxed mode takes any stroke order, even joined-up strokes. The character fills in once it's close enough.</p></div>
+  <div class="cap top" id="c6"><h2>Start with what you learnt in P1 to P6.</h2><p>Primary levels follow the MOE 欢乐伙伴 lists. When you're ready, Secondary goes on to all 3,500 everyday characters.</p></div>
+  <div class="cap top" id="c7"><h2>Practise until it sticks.</h2><p>Words you struggle with come back sooner. Get them right and the wait grows, until they're mastered.</p></div>
+  <div id="etag">Remember how to write Chinese, one stroke at a time.</div>
+  <div id="eurl">xiexie.web.app</div>
 </div>
 
 <div id="ui" class="paused">
   <button id="play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5Z"/></svg><span>Play with sound</span></button>
-  <div id="bar"><button id="pp">Play</button><div id="track-ui"><div id="fill"></div></div><div id="time">0:00 / 0:41</div></div>
+  <div id="bar"><button id="pp">Play</button><div id="track-ui"><div id="fill"></div></div><div id="time">0:00 / 0:46</div></div>
 </div>
 
 <script>
@@ -210,7 +233,7 @@ const DATA = {"写":{"strokes":["M 306 718 Q 306 719 306 720 Q 293 745 279 755 Q
    Timeline basics. Everything on screen is a pure function of t,
    so the page can play live or be rendered frame by frame.
    ========================================================= */
-const DUR = 41;
+const DUR = 46;
 const BEAT = 60 / 96, BAR = BEAT * 4;   // 96 BPM, every scene sits on a bar line
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const seg = (t, a, b) => clamp((t - a) / (b - a));
@@ -241,17 +264,21 @@ function svgEl(tag, attrs = {}, parent) { const e = document.createElementNS(NS,
 
 /* ---------- Scene timing (shared by picture and music) ---------- */
 const T = {
-  writeA: [5.3, 8.6],          // 写 drawn on the dark open
-  reveal: [9.2, 10.6],         // pull back to the card
-  explode: [11.0, 12.3], collapse: [15.3, 16.2],
-  flip: [16.5, 17.6],
-  inkA: [17.95, 19.45], fillA: [19.5, 19.95],   // 下
-  inkB: [20.05, 21.95], fillB: [22.0, 22.4],    // 雨
-  stamp: 22.5,
-  cardOut: [24.1, 25.0],
-  ringIn: [24.7, 25.8], ringLand: 28.6, ringOut: [29.5, 30.3],
-  trackIn: [29.9, 30.8], hops: [31.25, 32.5, 33.75], hopAir: .62, trackOut: [34.55, 35.2],
-  endA: [35.7, 36.85], endB: [36.75, 37.9], momo: 37.75, tag: 38.15, url: 38.55,
+  writeA: [5.3, 8.6],            // 写 drawn on the dark open
+  reveal: [9.2, 10.6],           // pull back to the card
+  explode: [10.9, 12.0], collapse: [14.0, 14.9],
+  // Stroke by stroke: 写 again, with one stroke out of order
+  strict: [[15.6, 16.1], [16.3, 17.0], [18.4, 19.0], [19.2, 19.7], [19.9, 20.6]],
+  wrong: [17.3, 17.75], wrongIdx: 3, stampA: 21.25,
+  flip: [22.4, 23.5],
+  // Relaxed: 下雨
+  inkA: [23.9, 25.4], fillA: [25.45, 25.85],
+  inkB: [26.0, 27.9], fillB: [27.95, 28.35],
+  stampB: 28.75,
+  cardOut: [29.6, 30.4],
+  ringIn: [30.0, 31.0], ringLand: 33.6, ringOut: [34.5, 35.2],
+  trackIn: [34.9, 35.7], hops: [36.25, 37.5, 38.75], hopAir: .62, trackOut: [40.0, 40.6],
+  endIn: 40.05, endA: [40.7, 41.85], endB: [41.75, 42.9], momo: 42.75, tag: 43.15, url: 43.55,
 };
 
 /* ---------- Momo, the ink-drop mascot (from src/lib/momo.ts) ---------- */
@@ -313,15 +340,16 @@ function schedule(ch, t0, t1, gap = .1) {
 }
 const strokeP = (t, sched) => sched.map(([s, e]) => E.sine(seg(t, s, e)));
 
-/** Free-hand ink: the medians, wobbled, as a learner might write them. */
-function makeInk(svg, ch, seed) {
+/** Free-hand ink: the medians, nudged a little, as a learner might write them. */
+function makeInk(svg, ch, seed, { idx = null, shift = 28, wob = 7, rot = .05 } = {}) {
   const r = rng(seed);
   const g = svgEl("g", { transform: "translate(0,900) scale(1,-1)" }, svg);
-  const paths = DATA[ch].medians.map(pts => {
-    const dx = (r() - .5) * 70, dy = (r() - .5) * 60, rot = (r() - .5) * .14;
+  const list = DATA[ch].medians.map((pts, i) => [pts, i]).filter(([, i]) => idx === null || idx.includes(i));
+  const paths = list.map(([pts]) => {
+    const dx = (r() - .5) * shift * 2, dy = (r() - .5) * shift * 2, a = (r() - .5) * rot * 2;
     const P = pts.map(([x, y]) => {
       const cx = x - 512, cy = y - 388;
-      return [512 + cx * Math.cos(rot) - cy * Math.sin(rot) + dx + (r() - .5) * 40, 388 + cx * Math.sin(rot) + cy * Math.cos(rot) + dy + (r() - .5) * 40];
+      return [512 + cx * Math.cos(a) - cy * Math.sin(a) + dx + (r() - .5) * wob, 388 + cx * Math.sin(a) + cy * Math.cos(a) + dy + (r() - .5) * wob];
     });
     let d = `M${P[0][0]} ${P[0][1]}`;
     for (let i = 1; i < P.length; i++) {          // Catmull-Rom through the points
@@ -335,7 +363,7 @@ function makeInk(svg, ch, seed) {
   });
   const nib = svgEl("circle", { r: 26, fill: "var(--seal)", opacity: 0 }, g);
   return {
-    g, set(ps) {
+    g, paths, set(ps) {
       let tip = null;
       paths.forEach((s, i) => {
         const p = ps[i];
@@ -352,36 +380,47 @@ function makeInk(svg, ch, seed) {
 /* ---------- Build the practice card content ---------- */
 const charSvg = $("charSvg");
 const cXie = makeChar(charSvg, "写");
+const cStrict = makeChar(charSvg, "写");
+const iStrict = makeInk(charSvg, "写", 3, { shift: 12, wob: 5, rot: .03 });
+const iWrong = makeInk(charSvg, "写", 5, { idx: [T.wrongIdx], shift: 16, wob: 5, rot: .03 });
 const cXia = makeChar(charSvg, "下");
 const cYu = makeChar(charSvg, "雨");
 const iXia = makeInk(charSvg, "下", 7);
 const iYu = makeInk(charSvg, "雨", 21);
-const finSvgs = ["下", "雨"].map(ch => { const s = svgEl("svg", { viewBox: "0 0 1024 1024" }, $("finalw")); const c = makeChar(s, ch); c.set(1); return s; });
+["下", "雨"].forEach(ch => { const s = svgEl("svg", { viewBox: "0 0 1024 1024" }, $("finalw")); makeChar(s, ch).set(1); });
 const sXie = schedule("写", ...T.writeA, .16);
 const sXia = schedule("下", ...T.inkA, .18), sYu = schedule("雨", ...T.inkB, .1);
 const fXia = schedule("下", ...T.fillA, 0), fYu = schedule("雨", ...T.fillB, 0);
+const fStrict = T.strict.map(([, e]) => [e + .04, e + .24]);   // each accepted stroke snaps into shape
 
 /* ---------- Levels ring ---------- */
 const LEVELS = [
-  ["P1", "小一", "一起", "240"], ["P2", "小二", "着急", "279"], ["P3", "小三", "如果", "253"], ["P4", "小四", "终于", "272"],
-  ["P5", "小五", "控制", "317"], ["P6", "小六", "社会", "236"], ["Sec 1", "中一", "偶尔", "350"], ["Sec 2", "中二", "呵护", "387"],
-  ["Sec 3", "中三", "迄今", "417"], ["Sec 4", "中四", "抽屉", "430"], ["Business", "商务", "开会", "103"],
+  ["P1", "小一", "240", "一起 没有 我们"], ["P2", "小二", "279", "国家 时候 可能"], ["P3", "小三", "253", "所以 方法 如果"],
+  ["P4", "小四", "272", "终于 之后 其他"], ["P5", "小五", "317", "战斗 产生 控制"], ["P6", "小六", "236", "政府 道德 克服"],
+  ["Sec 1", "中一", "350", "斯文 偶尔 经济"], ["Sec 2", "中二", "387", "庞大 耕地 呵护"], ["Sec 3", "中三", "417", "腐朽 雇佣 迄今"],
+  ["Sec 4", "中四", "430", "抽屉 云霄 绽放"], ["Business", "商务", "103", "公司 会议 开会"],
 ];
-const chips = LEVELS.map(([n, s, w, c]) => {
+const chips = LEVELS.map(([n, s, c, ex]) => {
   const d = document.createElement("div"); d.className = "lvl";
-  d.innerHTML = `<div class="top"><b>${n}</b><span class="sub han">${s}</span></div><div class="w han">${w}</div><small>${c} words</small>`;
+  d.innerHTML = `<div class="top"><b>${n}</b><span class="sub han">${s}</span></div><div class="num">${c}<span>words</span></div><div class="ex han">${ex.split(" ").join(" · ")} …</div>`;
   $("ring").appendChild(d); return d;
 });
 
-/* ---------- Review timeline ---------- */
-const POS = [0, 430, 960, 1620, 2420, 3380];
-const DAYS = [["Today", "first try"], ["+1 day", "review"], ["+2 days", "review"], ["+4 days", "review"], ["+8 days", ""], ["+16 days", ""]];
+/* ---------- Review timeline ----------
+   The real schedule (src/lib/srs.ts): Improving puts a word in box 1 (back tomorrow), Good keeps it there,
+   Excellent moves it up a box (2 days, then 4). Box 3 counts as mastered. */
+const POS = [0, 420, 760, 1300, 2050];
+const DAYS = ["Today", "Day 1", "Day 2", "Day 4", "Day 8"];
+const TIERS = [["进", "Improving", "ok"], ["好", "Good", "good"], ["优", "Excellent", "perfect"], ["优", "Mastered", "perfect"]];
 const trackEl = $("track");
 trackEl.innerHTML = `<div class="floor"><div class="lane"></div>${POS.map(x => `<div class="spot" style="left:${x + 500}px"></div>`).join("")}</div>`
-  + POS.map((x, i) => `<div class="dlabel" style="transform:translate3d(${x}px,26px,150px)">${DAYS[i][0]}<small>${DAYS[i][1] || "&nbsp;"}</small></div>`).join("");
-const wcardHTML = `<div class="w han">下雨</div><div><small>xià yǔ</small><small>to rain</small></div><div class="mini han">优</div>`;
-const ghosts = [0, 1, 2].map(() => { const d = document.createElement("div"); d.className = "wcard"; d.innerHTML = wcardHTML; trackEl.appendChild(d); return d; });
-const wcard = document.createElement("div"); wcard.className = "wcard"; wcard.innerHTML = wcardHTML; trackEl.appendChild(wcard);
+  + POS.map((x, i) => `<div class="dlabel" style="transform:translate3d(${x}px,26px,150px)">${DAYS[i]}<small>review</small></div>`).join("");
+const wcardHTML = k => `<div class="w han">下雨</div><div><small>xià yǔ</small><small><b>${TIERS[k][1]}</b></small></div><div class="mini han ${TIERS[k][2]}">${TIERS[k][0]}</div>`;
+const ghosts = [0, 1, 2].map(k => { const d = document.createElement("div"); d.className = "wcard"; d.innerHTML = wcardHTML(k); trackEl.appendChild(d); return d; });
+const wcard = document.createElement("div"); wcard.className = "wcard"; trackEl.appendChild(wcard);
+const badge = document.createElement("div"); badge.className = "badge";
+badge.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6.5"/><path d="m9.2 9 2 2 3.6-3.8"/><path d="M8.3 14.3 7 21.5l5-2.6 5 2.6-1.3-7.2"/></svg>Mastered`;
+const floorEl = trackEl.querySelector(".floor");
 const spots = [...trackEl.querySelectorAll(".spot")];
 const dlabels = [...trackEl.querySelectorAll(".dlabel")];
 
@@ -395,8 +434,6 @@ const eboxes = [-165, 165].map(x => {
 const eChars = eboxes.map(b => makeChar(b.querySelector(".cb svg"), "写"));
 const sEndA = schedule("写", ...T.endA, .12), sEndB = schedule("写", ...T.endB, .12);
 const emomo = document.createElement("div"); emomo.id = "emomo"; emomo.innerHTML = `<svg viewBox="0 0 100 100">${momoSVG("happy")}</svg>`; endg.appendChild(emomo);
-const etag = document.createElement("div"); etag.className = "etag"; etag.textContent = "Remember how to write Chinese, one stroke at a time."; endg.appendChild(etag);
-const eurl = document.createElement("div"); eurl.className = "eurl"; eurl.textContent = "xiexie.web.app"; endg.appendChild(eurl);
 
 /* ---------- Captions: split words so they rise one after another ---------- */
 document.querySelectorAll(".cap h2").forEach(h => {
@@ -409,7 +446,7 @@ document.querySelectorAll(".cap h2").forEach(h => {
   });
   walk(h);
 });
-const CAPS = [["c1", .45, 2.45], ["c2", 2.75, 4.85], ["c3", 11.1, 16.3], ["c4", 18.0, 24.1], ["c5", 25.3, 29.7], ["c6", 30.5, 34.7]];
+const CAPS = [["c1", .45, 2.45], ["c2", 2.75, 4.85], ["c3", 11.0, 14.6], ["c4", 15.3, 22.3], ["c5", 22.8, 29.5], ["c6", 30.3, 34.6], ["c7", 35.4, 39.95]];
 function caption(t, id, tin, tout) {
   const el = $(id), out = E.in(seg(t, tout - .45, tout));
   el.style.opacity = t < tin - .05 || t > tout ? 0 : 1;
@@ -431,19 +468,23 @@ function caption(t, id, tin, tout) {
 /* =========================================================
    render(t): the whole film
    ========================================================= */
-let lastWord = null;
-function setWord(w) {
-  if (w === lastWord) return; lastWord = w;
-  if (w === "写") { $("pyT").textContent = "xiě"; $("enT").textContent = "to write"; $("momoSay").textContent = "Write it from memory. You can do it."; }
-  else { $("pyT").textContent = "xià yǔ"; $("enT").textContent = "to rain"; $("momoSay").textContent = "Write it your way. Just get the shape right."; }
-}
+const cache = {};
+const setText = (id, s) => { if (cache[id] !== s) { cache[id] = s; $(id).textContent = s; } };
 function setSlots(chars, filled, active) {
   const key = chars + filled + active;
-  if ($("slots").dataset.k === key) return; $("slots").dataset.k = key;
+  if (cache.slots === key) return; cache.slots = key;
   $("slots").innerHTML = [...chars].map((c, i) => `<div class="slot han ${i < filled ? "done" : i === active ? "now" : ""}">${i < filled ? c : ""}</div>`).join("");
+}
+function momoLine(t) {
+  if (t < T.wrong[1] + .05) return "Write it from memory. You can do it.";
+  if (t < T.stampA) return "Hmm, check the stroke order leh.";
+  if (t < T.flip[0] + .55) return "Not bad leh, a few wobbles only.";
+  if (t < T.stampB) return "Write it your way. Just get the shape right.";
+  return "Shiok! Got it in one go.";
 }
 const mix = (a, b, p) => `rgb(${a.map((v, i) => Math.round(lerp(v, b[i], p))).join(",")})`;
 const PAPER = [232, 240, 234], INK = [28, 43, 58];
+const shake = (t, t0) => { const p = seg(t, t0, t0 + .32); return p > 0 && p < 1 ? Math.sin(p * Math.PI * 5) * 9 * (1 - p) : 0; };
 
 function render(t) {
   /* ----- light: ink-dark open, paper after the reveal ----- */
@@ -454,30 +495,28 @@ function render(t) {
 
   /* ----- practice card ----- */
   const pc = $("pcard");
-  const onCard = t < T.cardOut[1] + .1;
+  const onCard = t > 4.7 && t < T.cardOut[1] + .1;
   pc.style.display = onCard ? "" : "none";
   if (onCard) {
-    const rv = E.io5(seg(t, ...T.reveal));
-    let s = lerp(3.25, 1.42, rv);
-    let x = 0, y = 0, rx = 0, ry = 0, rz = 0, z = 0;
-    rx = lerp(0, 14, rv); ry = lerp(0, -30, rv);
+    let s = 3.25, x = 0, y = 0, rx = 0, ry = 0, rz = 0, z = 0;
     if (t > T.reveal[0]) {
-      x = kf(t, [[10.0, 0], [11.4, 250, "io"], [16.3, 250], [17.6, 300, "io"], [24.1, 300], [25.0, -1500, "in"]]);
-      ry = kf(t, [[9.2, 0], [10.6, -30, "io5"], [12.4, -44, "io"], [15.3, -30, "sine"], [16.3, -12, "io"], [17.6, 352, "io"], [24.1, 346, "lin"], [25.0, 290, "in"]]);
-      rx = kf(t, [[9.2, 0], [10.6, 14, "io5"], [12.4, 30, "io"], [15.3, 24, "sine"], [16.3, 12, "io"], [17.6, 5, "io"], [24.1, 3]]);
-      s = kf(t, [[9.2, 3.25], [10.6, 1.42, "io5"], [11.6, 1.2, "io"], [16.2, 1.2], [17.6, 1.36, "io"], [24.1, 1.38, "lin"]]);
-      y = kf(t, [[11, 0], [12.2, 125, "io"], [15.5, 125], [16.3, 0, "io"]]);
-      z = kf(t, [[16.5, 0], [17.05, -380, "out"], [17.6, 0, "in"]]);
-      rz = kf(t, [[22.45, 0], [22.52, -1.6, "out"], [22.75, 0, "out"]]);
+      x = kf(t, [[10.0, 0], [11.4, 420, "io"], [14.3, 420], [15.4, 330, "io"], [29.6, 330], [30.4, -1500, "in"]]);
+      ry = kf(t, [[9.2, 0], [10.6, -30, "io5"], [12.0, -44, "io"], [14.2, -32, "sine"], [15.4, -10, "io"], [22.4, -6, "lin"], [23.5, 354, "io"], [29.6, 346, "lin"], [30.4, 290, "in"]]);
+      rx = kf(t, [[9.2, 0], [10.6, 14, "io5"], [12.0, 30, "io"], [14.2, 24, "sine"], [15.4, 6, "io"], [22.4, 4], [23.5, 5], [29.6, 3]]);
+      s = kf(t, [[9.2, 3.25], [10.6, 1.42, "io5"], [11.4, 1.2, "io"], [14.3, 1.2], [15.4, 1.38, "io"], [29.6, 1.4, "lin"]]);
+      y = kf(t, [[11, 0], [12.0, 125, "io"], [14.0, 125], [15.0, 0, "io"]]);
+      z = kf(t, [[T.flip[0], 0], [22.95, -380, "out"], [T.flip[1], 0, "in"]]);
+      rz = kf(t, [[T.stampA - .05, 0], [T.stampA + .02, -1.4, "out"], [T.stampA + .25, 0, "out"]]) + kf(t, [[T.stampB - .05, 0], [T.stampB + .02, -1.6, "out"], [T.stampB + .25, 0, "out"]]);
+      x += shake(t, T.wrong[1] + .02);
     }
-    pc.style.opacity = E.sine(seg(t, 4.75, 5.4));
     pc.style.transform = `translate3d(${x}px,${y}px,${z}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg) scale(${s})`;
     $("sheen").style.background = `linear-gradient(${105 + ry * .8}deg, rgba(255,255,255,0) 30%, rgba(255,255,255,${.35 * day}) 48%, rgba(255,255,255,0) 66%)`;
 
-    // Card chrome appears with daylight
+    // The grid fades up in the dark; the card's chrome appears with daylight
+    const gridIn = E.sine(seg(t, 4.75, 5.4));
+    $("lGrid").style.opacity = gridIn; $("lInk").style.opacity = gridIn;
     const chrome = E.sine(seg(t, 9.6, 10.4));
-    $("lBase").style.opacity = chrome;
-    for (const id of ["lHead", "lMomo", "lAct"]) $(id).style.opacity = chrome;
+    for (const id of ["lBase", "lHead", "lMomo", "lAct"]) $(id).style.opacity = chrome;
     $("stagebox").style.background = `rgba(251,253,251,${chrome})`;
 
     // Exploded view
@@ -486,49 +525,75 @@ function render(t) {
     for (const id in Z) $(id).style.transform = `translateZ(${ex * Z[id]}px)`;
     pc.querySelectorAll(".plate").forEach(pl => pl.style.opacity = clamp(ex) * .9);
     pc.querySelectorAll(".tag").forEach((tg, i) => {
-      const p = E.out(seg(t, 11.9 + i * .16, 12.5 + i * .16)) * (1 - E.in(seg(t, 14.9, 15.4)));
+      const p = E.out(seg(t, 11.6 + i * .2, 12.2 + i * .2)) * (1 - E.in(seg(t, 13.6, 14.0)));
       tg.style.opacity = p; tg.style.transform = `translateX(${(1 - p) * -20}px)`;
     });
 
     // Which word is on the card
-    const second = t > 17.06;
-    setWord(second ? "下雨" : "写");
-    if (!second) setSlots("写", t > T.writeA[1] + .2 && t > 10.4 ? 1 : 0, 0);
+    const second = t > 22.95;
+    setText("pyT", second ? "xià yǔ" : "xiě"); setText("enT", second ? "to rain" : "to write");
+    setText("momoSay", momoLine(t));
+    if (!second) setSlots("写", t > 10.4 && (t < 15.0 || t > T.strict[4][1] + .25) ? 1 : 0, 0);
     else setSlots("下雨", t > T.fillA[1] ? (t > T.fillB[1] ? 2 : 1) : 0, t > T.fillA[1] ? 1 : 0);
 
-    // Ink
-    const inkCol = mix(PAPER, INK, E.sine(seg(t, 9.6, 10.3)));
-    cXie.color(inkCol);
-    cXie.g.style.display = second ? "none" : "";
+    // The opening 写, faded out before the stroke-by-stroke round
+    cXie.color(mix(PAPER, INK, E.sine(seg(t, 9.6, 10.3))));
+    cXie.g.style.display = t < 15.3 ? "" : "none";
+    cXie.g.style.opacity = 1 - seg(t, 14.85, 15.25);
     cXie.set(strokeP(t, sXie));
-    const writingB = second && t < T.stamp;
-    cXia.g.style.display = writingB && t < 20.0 ? "" : "none";
-    iXia.g.style.display = writingB && t < 20.0 ? "" : "none";
-    cYu.g.style.display = writingB && t >= 20.0 ? "" : "none";
-    iYu.g.style.display = writingB && t >= 20.0 ? "" : "none";
+
+    // Stroke by stroke: each stroke drawn in ink, then snapped into its true shape
+    const onStrict = t > 15.3 && !second;
+    for (const o of [cStrict, iStrict, iWrong]) o.g.style.display = onStrict ? "" : "none";
+    if (onStrict) {
+      iStrict.set(strokeP(t, T.strict));
+      iStrict.paths.forEach((s, i) => s.p.style.opacity = 1 - seg(t, T.strict[i][1] + .04, T.strict[i][1] + .2));
+      cStrict.set(strokeP(t, fStrict));
+      iWrong.set([E.sine(seg(t, ...T.wrong))]);
+      const bad = seg(t, T.wrong[1], T.wrong[1] + .08);
+      iWrong.paths[0].p.style.stroke = bad > 0 ? "var(--seal)" : "var(--ink)";
+      iWrong.paths[0].p.style.opacity = 1 - seg(t, T.wrong[1] + .35, T.wrong[1] + .6);
+    }
+
+    // Relaxed: 下雨 in free ink
+    const writingB = second && t < T.stampB;
+    cXia.g.style.display = iXia.g.style.display = writingB && t < 25.95 ? "" : "none";
+    cYu.g.style.display = iYu.g.style.display = writingB && t >= 25.95 ? "" : "none";
     if (writingB) {
       iXia.set(strokeP(t, sXia)); iYu.set(strokeP(t, sYu));
       iXia.g.style.opacity = 1 - seg(t, T.fillA[0], T.fillA[0] + .3);
       iYu.g.style.opacity = 1 - seg(t, T.fillB[0], T.fillB[0] + .3);
       cXia.set(strokeP(t, fXia)); cYu.set(strokeP(t, fYu));
-      const outA = seg(t, 19.82, 20.0);
-      cXia.g.style.opacity = 1 - outA;
+      cXia.g.style.opacity = 1 - seg(t, 25.75, 25.95);
     }
-    const fin = E.out(seg(t, T.stamp - .05, T.stamp + .3));
-    $("finalw").style.opacity = t >= T.stamp - .05 ? fin : 0;
+    const fin = E.out(seg(t, T.stampB - .05, T.stampB + .3));
+    $("finalw").style.opacity = t >= T.stampB - .05 ? fin : 0;
     $("finalw").style.transform = `scale(${lerp(.9, 1, fin)})`;
-    if (t >= T.stamp && t < T.stamp + .05) $("momoSay").textContent = "Shiok! Got it in one go.";
-    if (t >= T.stamp) $("momoSay").textContent = "Shiok! Got it in one go.";
 
-    // The stamp thumps down (same curve as the app's .stamp)
-    const st = seg(t, T.stamp - .2, T.stamp + .22);
+    // Stamps thump down (same curve as the app's .stamp): 好 after strict, 优 after relaxed
+    const stampT = second ? T.stampB : T.stampA;
+    const good = !second;
+    $("stamp").classList.toggle("good", good); $("sring").classList.toggle("good", good);
+    setText("stampCh", good ? "好" : "优"); setText("stampLb", good ? "Good" : "Excellent");
+    const st = seg(t, stampT - .2, stampT + .22);
     const sp = E.back(st);
-    $("stamp").style.opacity = st > 0 ? clamp(st * 3) : 0;
+    const gone = good && t > T.flip[0] + .3;
+    $("stamp").style.opacity = st > 0 && !gone ? clamp(st * 3) : 0;
     $("stamp").style.transform = `translateZ(${lerp(240, 30, clamp(sp))}px) rotate(${lerp(-34, -12, sp)}deg) scale(${lerp(2.2, 1, sp)})`;
-    const rp = seg(t, T.stamp, T.stamp + .7);
+    const rp = seg(t, stampT, stampT + .7);
     $("sring").style.opacity = rp > 0 && rp < 1 ? (1 - rp) * .9 : 0;
     $("sring").style.transform = `translateZ(20px) scale(${lerp(.5, 1.25, E.out(rp))})`;
   }
+
+  /* ----- mode switch ----- */
+  const mIn = E.out(seg(t, 15.2, 15.8)) * (1 - E.in(seg(t, 29.2, 29.7)));
+  $("modes").style.opacity = mIn;
+  $("modes").style.transform = `translateY(${(1 - mIn) * 20}px)`;
+  const toRelaxed = E.io(seg(t, 22.6, 23.0));
+  $("mStrict").style.background = `rgba(242,207,59,${1 - toRelaxed})`;
+  $("mRelaxed").style.background = `rgba(242,207,59,${toRelaxed})`;
+  $("mStrict").style.opacity = .55 + .45 * (1 - toRelaxed);
+  $("mRelaxed").style.opacity = .55 + .45 * toRelaxed;
 
   /* ----- levels ring ----- */
   const ring = $("ring");
@@ -536,16 +601,15 @@ function render(t) {
   ring.style.display = onRing ? "" : "none";
   if (onRing) {
     const pin = E.out(seg(t, ...T.ringIn)), pout = E.in(seg(t, ...T.ringOut));
-    const A = lerp(-560, 0, E.expo(seg(t, T.ringIn[0], T.ringLand)));
-    ring.style.transform = `translate3d(0, ${-20 + (1 - pin) * 500 - pout * 900}px, ${-300 + pin * 300}px) rotateX(${lerp(-38, -9, pin)}deg)`;
-    ring.style.opacity = pin;
+    const A = lerp(-420, 0, E.expo(seg(t, T.ringIn[0], T.ringLand)));
+    ring.style.transform = `translate3d(0, ${60 - pout * 700}px, ${lerp(-1600, 0, pin)}px) rotateX(-9deg)`;
     const land = seg(t, T.ringLand, T.ringLand + .35);
     chips.forEach((c, i) => {
       const a = i * 360 / chips.length + A;
       const front = Math.cos(a * Math.PI / 180);
       const pop = i === 0 ? Math.sin(Math.PI * land) * .14 + (land > 0 ? .06 : 0) : 0;
       c.style.transform = `rotateY(${a}deg) translateZ(760px) scale(${1 + pop})`;
-      c.style.opacity = front > 0 ? clamp(.45 + .55 * front) : clamp(.18 + front * .18);
+      c.style.opacity = (front > 0 ? clamp(.45 + .55 * front) : clamp(.16 + front * .16)) * pin * (1 - pout);
       c.classList.toggle("on", i === 0 && land > 0);
     });
   }
@@ -557,31 +621,41 @@ function render(t) {
     let cx = 0, cy = 0, sq = 1, tilt = 0, at = 0;
     T.hops.forEach((land, i) => {
       const p = seg(t, land - T.hopAir, land);
-      if (p > 0) { at = i + (p >= 1 ? 1 : 0); }
+      if (p >= 1) at = i + 1;
       if (p > 0 && p < 1) { cx = lerp(POS[i], POS[i + 1], E.sine(p)); cy = -Math.sin(Math.PI * p) * (200 + i * 50); tilt = Math.sin(Math.PI * 2 * p) * -10; }
       const after = seg(t, land, land + .3);
       if (after > 0 && after < 1) sq = 1 - Math.sin(Math.PI * after) * .14;
     });
     if (!(cy < 0)) cx = POS[at];
-    const camX = kf(t, [[30.6, 0], [31.25, 230], [32.5, 700], [33.75, 1250], [35.2, 1500]].map(([a, b], i) => [a, b, i ? "sine" : undefined]));
+    if (cache.tier !== at) { cache.tier = at; wcard.innerHTML = wcardHTML(at); wcard.appendChild(badge); }
+    const camX = kf(t, [[35.6, 0], [36.25, 230, "sine"], [37.5, 560, "sine"], [38.75, 1000, "sine"], [40.6, 1150, "sine"]]);
     const pin = E.out(seg(t, ...T.trackIn)), pout = E.in(seg(t, ...T.trackOut));
-    trackEl.style.transform = `translate3d(${-camX - 330 + (1 - pin) * 900 - pout * 600}px, ${-10}px, ${-pout * 600}px) rotateX(-17deg) rotateY(${-22 + (1 - pin) * 30}deg)`;
-    trackEl.style.opacity = pin * (1 - pout);
+    const f = pin * (1 - pout);
+    trackEl.style.transform = `translate3d(${-camX - 330 + (1 - pin) * 900 - pout * 600}px, -10px, ${-pout * 600}px) rotateX(-17deg) rotateY(${-22 + (1 - pin) * 30}deg)`;
+    floorEl.style.opacity = f;
+    wcard.style.opacity = f;
     wcard.style.transform = `translate3d(${cx}px, ${cy}px, 0) rotate(${tilt}deg) scale(${2 - sq}, ${sq})`;
-    ghosts.forEach((g, i) => { g.style.opacity = at > i ? .32 : 0; g.style.transform = `translate3d(${POS[i]}px,0,0)`; });
+    const bp = E.back(seg(t, T.hops[2] + .05, T.hops[2] + .5));
+    badge.style.opacity = bp > 0 ? 1 : 0;
+    badge.style.transform = `translateX(-50%) scale(${bp})`;
+    ghosts.forEach((g, i) => { g.style.opacity = (at > i ? .32 : 0) * f; g.style.transform = `translate3d(${POS[i]}px,0,0)`; });
     spots.forEach((s, i) => s.classList.toggle("hit", i <= at));
-    dlabels.forEach((d, i) => d.style.opacity = i <= at + 2 ? (i <= at ? 1 : .45) : .2);
+    dlabels.forEach((d, i) => {
+      d.style.opacity = (i <= at ? 1 : i <= at + 2 ? .45 : .2) * f;
+      const sub = i < at ? TIERS[i][1] : i === at ? (i === 3 ? "Mastered" : TIERS[i][1]) : "review";
+      const sm = d.querySelector("small"); if (sm.textContent !== sub) sm.textContent = sub;
+    });
   }
 
   /* ----- end card ----- */
-  const onEnd = t > 35.0;
+  const onEnd = t > T.endIn - .05;
   endg.style.display = onEnd ? "" : "none";
   if (onEnd) {
-    const drift = seg(t, 35, DUR);
-    endg.style.transform = `translate3d(0,-60px,0) scale(1.22) rotateX(${lerp(6, 0, E.out(drift))}deg) rotateY(${lerp(-10, 4, E.sine(drift))}deg)`;
+    const drift = seg(t, T.endIn, DUR);
+    endg.style.transform = `translate3d(0,-110px,0) scale(1.22) rotateX(${lerp(6, 0, E.out(drift))}deg) rotateY(${lerp(-10, 4, E.sine(drift))}deg)`;
     eboxes.forEach((b, i) => {
-      const p = E.back(seg(t, 35.05 + i * .2, 35.85 + i * .2));
-      b.style.opacity = clamp(seg(t, 35.05 + i * .2, 35.35 + i * .2));
+      const p = E.back(seg(t, T.endIn + i * .2, T.endIn + .8 + i * .2));
+      b.style.opacity = clamp(seg(t, T.endIn + i * .2, T.endIn + .3 + i * .2));
       b.style.transform = `translate3d(${b.dataset.x}px, ${(1 - p) * 160 - 60}px, ${(1 - p) * -400}px) rotateX(${(1 - p) * -70}deg)`;
     });
     eChars[0].set(strokeP(t, sEndA)); eChars[1].set(strokeP(t, sEndB));
@@ -589,13 +663,12 @@ function render(t) {
     const bob = Math.sin((t - T.momo) * 3.2) * 6 * clamp(seg(t, T.momo + .5, T.momo + 1));
     emomo.style.opacity = mp > 0 ? 1 : 0;
     emomo.style.transform = `translate3d(300px, ${-200 + bob}px, 60px) rotate(${lerp(-30, 10, E.back(mp))}deg) scale(${E.back(mp)})`;
-    const tp = E.out(seg(t, T.tag, T.tag + .8));
-    etag.style.opacity = tp; etag.style.transform = `translate3d(0, ${150 + (1 - tp) * 30}px, 0)`;
-    const up = E.back(seg(t, T.url, T.url + .6));
-    eurl.style.opacity = clamp(seg(t, T.url, T.url + .2));
-    eurl.style.transform = `translate3d(-50%, ${232 + (1 - up) * 40}px, 0) scale(${lerp(.7, 1, up)})`;
-    // Fade to the same paper at the very end so a loop doesn't jump
   }
+  const tp = E.out(seg(t, T.tag, T.tag + .8));
+  $("etag").style.opacity = tp; $("etag").style.transform = `translateY(${(1 - tp) * 30}px)`;
+  const up = seg(t, T.url, T.url + .6);
+  $("eurl").style.opacity = clamp(up * 4);
+  $("eurl").style.transform = up >= 1 ? "translateX(-50%)" : `translateX(-50%) translateY(${(1 - E.out(up)) * 30}px) scale(${lerp(.75, 1, E.back(up))})`;
 
   /* ----- captions ----- */
   for (const c of CAPS) caption(t, ...c);
@@ -610,8 +683,9 @@ const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
 const CHORDS = {   // pad voicing, bass
   Bm: [[59, 62, 66, 69], 47], G: [[55, 59, 62, 66], 43], D: [[57, 62, 66, 69], 38], A: [[57, 61, 64, 69], 45], Dm: [[62, 66, 69, 74], 38],
 };
-const PROG = ["Bm", "G", "D", "A", "Bm", "G", "D", "A", "Bm", "G", "D", "A", "G", "A", "Dm", "Dm", "Dm"];
+const PROG = ["Bm", "G", "D", "A", "Bm", "G", "D", "A", "Bm", "G", "D", "A", "Bm", "G", "G", "A"];
 const PENTA = [62, 64, 66, 69, 71, 74, 76, 78, 81, 83, 86];
+const LAST = PROG.length;   // the end card starts on this bar (40s)
 
 function buildMusic(ctx, dest, offset = 0, base = 0) {
   const at = t => t - offset + base;          // film time -> context time
@@ -703,6 +777,12 @@ function buildMusic(ctx, dest, offset = 0, base = 0) {
     o.start(at(t)); o.stop(at(t) + 1.6);
     noiseHit(t, "lowpass", 900, .6, v * .45, .22, .35);
   }
+  function thud(t) {             // the wrong stroke: a dull knock and a sour note
+    if (!live(t)) return;
+    const o = ctx.createOscillator(); o.type = "triangle"; o.frequency.setValueAtTime(180, at(t)); o.frequency.exponentialRampToValueAtTime(90, at(t) + .2);
+    const g = ctx.createGain(); env(g, t, .003, .35, .3); o.connect(g); g.connect(master); o.start(at(t)); o.stop(at(t) + .4);
+    pluck(t + .02, 63, .1, .5, .2, false); pluck(t + .02, 64, .08, .5, .2, false);
+  }
   function sweep(t0, t1, f0, f1, v) {   // risers and whooshes
     if (t1 < offset) return;
     const s = ctx.createBufferSource(); s.buffer = noise; s.loop = true;
@@ -718,11 +798,11 @@ function buildMusic(ctx, dest, offset = 0, base = 0) {
   // Pads and bass, bar by bar
   PROG.forEach((name, b) => {
     const t = b * BAR, [notes, root] = CHORDS[name];
-    if (b < 14) pad(t, notes, BAR, b < 4 ? .035 : .045, b < 4 ? 1.4 : .5);
-    if (b >= 4 && b < 14) { bass(t, root, BEAT * 1.4); bass(t + BEAT * 1.5, root, BEAT * .9); bass(t + BEAT * 2.5, root, BEAT * 1.4, .22); }
+    pad(t, notes, BAR, b < 4 ? .035 : .045, b < 4 ? 1.4 : .5);
+    if (b >= 4) { bass(t, root, BEAT * 1.4); bass(t + BEAT * 1.5, root, BEAT * .9); bass(t + BEAT * 2.5, root, BEAT * 1.4, .22); }
   });
-  pad(14 * BAR, CHORDS.Dm[0].concat([78]), DUR - 14 * BAR - 1.4, .05, .25);
-  bass(14 * BAR, 38, 4.5, .3);
+  pad(LAST * BAR, CHORDS.Dm[0].concat([78]), DUR - LAST * BAR - 1.4, .05, .25);
+  bass(LAST * BAR, 38, 4.5, .3);
 
   // The open: a few notes in the dark, then one note per stroke of 写
   [[0, 78], [.94, 76], [1.88, 74], [2.81, 69], [3.75, 71], [4.4, 66]].forEach(([t, m]) => pluck(t, m, .16, 2.6, .55));
@@ -731,34 +811,40 @@ function buildMusic(ctx, dest, offset = 0, base = 0) {
   sweep(8.0, 10.0, 220, 5200, .16);
   boom(10.0, 1.1);
 
-  // Arpeggios through the middle
-  for (let b = 4; b < 14; b++) {
+  // Arpeggios through the middle, softer while someone is writing
+  for (let b = 4; b < LAST; b++) {
     const notes = CHORDS[PROG[b]][0].map(m => m + 12);
     const pat = [0, 2, 1, 3, 2, 1, 3, 2];
-    const quiet = b >= 7 && b <= 8;     // leave room for the stroke notes while writing
-    pat.forEach((k, i) => pluck(b * BAR + i * BEAT / 2, notes[k], (i % 2 ? .07 : .1) * (quiet ? .55 : 1), .9, .25, false));
+    const quiet = b >= 6 && b <= 11;
+    pat.forEach((k, i) => pluck(b * BAR + i * BEAT / 2, notes[k], (i % 2 ? .07 : .1) * (quiet ? .5 : 1), .9, .25, false));
   }
   // Drums: half-time groove from the reveal to the end card
-  for (let b = 4; b < 14; b++) {
+  for (let b = 4; b < LAST; b++) {
     const t = b * BAR;
     kick(t, .85); kick(t + BEAT * 1.5, .6); kick(t + BEAT * 2.5, .7);
     clap(t + BEAT, b < 6 ? .3 : .42); clap(t + BEAT * 3, b < 6 ? .3 : .42);
     if (b >= 6) for (let i = 0; i < 8; i++) hat(t + i * BEAT / 2, i % 2 ? .09 : .05);
-    if (b === 13) { clap(t + BEAT * 3.5, .3); clap(t + BEAT * 3.75, .35); }
+    if (b === LAST - 1) { clap(t + BEAT * 3.5, .3); clap(t + BEAT * 3.75, .35); }
   }
-  // Writing 下雨: a high note on every pen stroke, then a chord when each character fills in
+  // Stroke by stroke: a note as each stroke starts, a brighter one as it snaps in, a sour knock for the wrong one
+  T.strict.forEach(([s, e], i) => { pluck(s, [69, 71, 74, 76, 78][i], .1, .9, .3); pluck(e + .04, [81, 83, 86, 88, 90][i], .1, 1.2, .45); });
+  pluck(T.wrong[0], 66, .08, .6, .2, false);
+  thud(T.wrong[1]);
+  boom(T.stampA, .8); pluck(T.stampA, 78, .1, 1.6, .5); pluck(T.stampA + .06, 83, .09, 1.6, .5);
+  // Relaxed 下雨: a high note on every pen stroke, then a chord when each character fills in
   [...sXia, ...sYu].forEach(([s], i) => pluck(s, PENTA[(i * 2 + 5) % PENTA.length], .13, 1.1, .4));
   pluck(T.fillA[0], 86, .12, 1.6, .5); pluck(T.fillA[0] + .06, 81, .1, 1.6, .5);
   pluck(T.fillB[0], 88, .12, 1.6, .5); pluck(T.fillB[0] + .06, 83, .1, 1.6, .5);
-  boom(T.stamp, 1.2);
+  boom(T.stampB, 1.2);
   // Whooshes on camera moves
   whoosh(T.explode[0] - .1, .08); whoosh(T.collapse[0], .06); whoosh(T.flip[0], .1);
   whoosh(T.cardOut[0], .1); whoosh(T.ringOut[0], .08); whoosh(T.trackOut[0], .08);
-  // Levels land, review hops ping
+  // Levels land; review hops climb, and mastery gets a flourish
   [74, 78, 81, 86].forEach((m, i) => pluck(T.ringLand + i * .05, m, .1, 1.8, .5));
-  T.hops.forEach((l, i) => { pluck(l, [81, 83, 86][i], .16, 1.4, .45); pluck(l - T.hopAir, [69, 71, 74][i], .06, .5, .2, false); });
+  T.hops.forEach((l, i) => { pluck(l, [78, 81, 83][i], .15, 1.4, .45); pluck(l - T.hopAir, [69, 71, 74][i], .06, .5, .2, false); });
+  [86, 90, 93, 98].forEach((m, i) => pluck(T.hops[2] + .12 + i * .07, m, .08, 1.8, .6));
   // End: 写写 written again, then the final chord rings out
-  boom(14 * BAR, 1.0);
+  boom(LAST * BAR, 1.0);
   [...sEndA, ...sEndB].forEach(([s], i) => pluck(s, [74, 76, 78, 81, 83, 76, 78, 81, 83, 86][i], .13, 2, .55));
   pluck(T.momo, 90, .12, 2.4, .6); pluck(T.url, 86, .1, 3, .7); pluck(T.url + .09, 81, .08, 3, .7);
   return master;
@@ -790,11 +876,12 @@ function fit() {
 addEventListener("resize", fit); fit();
 
 const fontsReady = Promise.all([
-  document.fonts.load('400 80px "Ma Shan Zheng"', "写写优下雨小一二三四五六中商务一起着急如果终于控制社会偶尔呵护迄今抽屉开会米字格墨"),
-  document.fonts.load('800 80px "Bricolage Grotesque"', "Aa"), document.fonts.load('600 80px "Bricolage Grotesque"', "Aa"), document.fonts.load('500 80px "Bricolage Grotesque"', "Aa"),
+  document.fonts.load('400 80px "Ma Shan Zheng"', "写写优好进下雨小一二三四五六中商务一起没有我们国家时候可能所以方法如果终于之后其他战斗产生控制政府道德克服斯文偶尔经济庞大耕地呵护腐朽雇佣迄今抽屉云霄绽放公司会议开会米字格墨"),
+  document.fonts.load('800 80px "Bricolage Grotesque"', "Aa"), document.fonts.load('700 80px "Bricolage Grotesque"', "Aa"), document.fonts.load('600 80px "Bricolage Grotesque"', "Aa"), document.fonts.load('500 80px "Bricolage Grotesque"', "Aa"),
 ]).then(() => document.fonts.ready);
 
 const params = new URLSearchParams(location.search);
+const POSTER = 45;
 if (params.has("capture")) {
   document.body.classList.add("capture");
   window.__ready = fontsReady.then(() => { render(0); return true; });
@@ -824,12 +911,12 @@ if (params.has("capture")) {
   (function loop() {
     const t = now();
     if (playing && t >= DUR) { playing = false; ended = true; offset = DUR; ui.classList.add("paused"); $("pp").textContent = "Replay"; }
-    render(ctx ? t : (params.has("t") ? +params.get("t") : 39.5));
+    render(ctx ? t : (params.has("t") ? +params.get("t") : POSTER));
     $("fill").style.width = (t / DUR * 100) + "%";
     $("time").textContent = `${fmt(t)} / ${fmt(DUR)}`;
     requestAnimationFrame(loop);
   })();
-  fontsReady.then(() => render(39.5));
+  fontsReady.then(() => render(POSTER));
 }
 </script>
 </body>
