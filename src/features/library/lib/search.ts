@@ -1,4 +1,4 @@
-import type { Word } from "../types";
+import type { Word } from "../../../types";
 
 /** Lower-case, drop tone marks and spaces, so "nǐ hǎo", "ni hao" and "nihao" all match. "v" stands for "ü". */
 export const foldPinyin = (s: string) =>

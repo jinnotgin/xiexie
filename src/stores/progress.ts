@@ -1,11 +1,12 @@
 import { defineStore } from "pinia";
-import { computed, reactive, ref } from "vue";
+import { reactive, ref } from "vue";
 import type { Grade, Meta, ProgressRec, SyncState, Word } from "../types";
 import { WORDS } from "../data/words";
 import { Store } from "../lib/storage";
 import { loadCharData } from "../lib/chardata";
-import { DEFAULT_META, applyWritten, dueWords, migrateLevels, nextProgress, statusOf } from "../lib/srs";
+import { DEFAULT_META, addWritten, applyWritten, dueWords, migrateLevels, nextProgress, statusOf } from "../lib/srs";
 import { freshSync, type Pull } from "../lib/sync";
+import { trackError } from "../lib/analytics";
 
 /** The learner's saved state: per-word progress plus the profile (streak, settings). */
 export const useProgressStore = defineStore("progress", () => {
@@ -18,8 +19,7 @@ export const useProgressStore = defineStore("progress", () => {
   /** Bumped on every local change, so the account store knows there is something to sync. */
   const rev = ref(0);
 
-  const masteredCount = computed(() => WORDS.filter(w => statusOf(progress, w.id) === "mastered").length);
-  const status_ = (id: string) => statusOf(progress, id);
+  const statusOfWord = (id: string) => statusOf(progress, id);
   const due = (levels = meta.levels) => dueWords(WORDS, progress, levels);
   const sync = () => meta.sync!;
   const isEmpty = () => !progress.size && !meta.written;
@@ -29,17 +29,24 @@ export const useProgressStore = defineStore("progress", () => {
     catch (e) { status.value = "error"; return; }
     await Store.init();
     persistent.value = Store.persistent;
+    Store.onWriteError = e => { persistent.value = false; trackError(e); };
     await load();
     status.value = "ready";
+  }
+
+  /** Replaces the whole profile, so nothing from the old one (like this week's count) lingers. */
+  function replaceMeta(next: Partial<Meta>) {
+    for (const k of Object.keys(meta)) delete (meta as Record<string, unknown>)[k];
+    Object.assign(meta, DEFAULT_META, { levels: [...DEFAULT_META.levels] }, next);
   }
 
   /** (Re)reads everything from IndexedDB, e.g. after another tab signed in or out. */
   async function load() {
     const recs = await Store.allProgress();
+    const saved = (await Store.getMeta()) || {};
     progress.clear();
     recs.forEach(p => progress.set(p.id, p));
-    for (const k of Object.keys(meta)) delete (meta as Record<string, unknown>)[k];
-    Object.assign(meta, DEFAULT_META, (await Store.getMeta()) || {});
+    replaceMeta(saved);
     delete (meta as Partial<Meta> & { id?: string }).id;
     delete (meta as Partial<Meta> & { tracing?: boolean }).tracing; // retired setting
     delete (meta as Partial<Meta> & { xp?: number }).xp;            // retired XP counter
@@ -66,9 +73,8 @@ export const useProgressStore = defineStore("progress", () => {
     // All in-memory changes happen before the first await, so a sync landing mid-way can't drop any.
     const p = nextProgress(progress.get(word.id), word.id, grade);
     progress.set(p.id, p);
-    const written = meta.written;
     applyWritten(meta, word);
-    sync().own.written += meta.written - written;
+    addWritten(sync().own, word.w.length);
     await Store.putProgress(p);
     await saveMeta(); changed();
   }
@@ -77,10 +83,9 @@ export const useProgressStore = defineStore("progress", () => {
   async function wipe(link: Pick<SyncState, "uid" | "epoch"> = { uid: null, epoch: null }) {
     await Store.reset();
     progress.clear();
-    Object.assign(meta, DEFAULT_META, { levels: [...DEFAULT_META.levels], sync: { ...freshSync(), ...link } });
+    replaceMeta({ sync: { ...freshSync(), ...link } });
     await saveMeta(); changed();
   }
-  const reset = () => wipe();
 
   /** Takes in what a sync brought down from the cloud (see pullChanges in lib/sync.ts). */
   async function applyPull(pull: Pull) {
@@ -98,7 +103,7 @@ export const useProgressStore = defineStore("progress", () => {
   }
 
   return {
-    status, loaded, persistent, progress, meta, rev, masteredCount, statusOf: status_, due, sync, isEmpty,
-    init, load, setLevel, setStrict, record, reset, wipe, applyPull, setLink,
+    status, loaded, persistent, progress, meta, rev, statusOf: statusOfWord, due, sync, isEmpty,
+    init, load, setLevel, setStrict, record, wipe, applyPull, setLink,
   };
 });

@@ -6,26 +6,26 @@
  * component to start over with a fresh writer.
  */
 import { markRaw, onBeforeUnmount, onMounted, ref } from "vue";
-import HanziWriter from "../vendor/hanzi-writer.js";
-import { loader } from "../lib/chardata";
+import { createWriter, safely, type Writer, type WriterOptions } from "../lib/writer";
 import GridSvg from "./GridSvg.vue";
 
-const props = withDefaults(defineProps<{ char: string; options: Record<string, unknown>; grid?: boolean; size?: number }>(), { grid: true, size: 0 });
-const emit = defineEmits<{ ready: [writer: any] }>();
+const props = withDefaults(defineProps<{ char: string; options: WriterOptions; grid?: boolean; size?: number }>(), { grid: true, size: 0 });
+const emit = defineEmits<{ ready: [writer: Writer] }>();
 
 const gridRef = ref<InstanceType<typeof GridSvg>>();
 const divRef = ref<HTMLDivElement>();
-let writer: any = null;
+let writer: Writer | null = null;
 
 onMounted(() => {
   const el = props.grid ? gridRef.value!.$el : divRef.value;
   // markRaw: Vue must never wrap the writer in a reactive proxy.
-  writer = markRaw(HanziWriter.create(el, props.char, { ...props.options, charDataLoader: loader }));
-  emit("ready", writer);
+  const w = markRaw(createWriter(el, props.char, props.options));
+  writer = w;
+  emit("ready", w);
 });
 onBeforeUnmount(() => {
-  try { writer.cancelQuiz(); } catch (e) {}
-  try { writer.pauseAnimation(); } catch (e) {}
+  safely(() => writer?.cancelQuiz());
+  safely(() => writer?.pauseAnimation());
 });
 </script>
 

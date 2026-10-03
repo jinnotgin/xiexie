@@ -1,12 +1,11 @@
 import { defineStore } from "pinia";
-import posthog from "posthog-js";
-import { posthogEnabled } from "../lib/posthog";
+import { identify, track } from "../../../lib/analytics";
 import { computed, ref, watch } from "vue";
-import { useProgressStore } from "./progress";
+import { useProgressStore } from "../../../stores/progress";
 import { cloudEnabled, loadCloud, type Cloud, type CloudUser } from "../lib/cloud";
 import {
   applyPatch, emptyCloud, linkAction, newId, pullChanges, pushPatch, summarizeCloud, summarizeLocal,
-} from "../lib/sync";
+} from "../../../lib/sync";
 
 export type Choice = "merge" | "account" | "cancel";
 export interface Conflict { device: { words: number }; account: { words: number } }
@@ -17,7 +16,7 @@ export interface Conflict { device: { words: number }; account: { words: number 
  * again, and when the connection comes back. Merge rules are in lib/sync.ts.
  */
 export const useAccountStore = defineStore("account", () => {
-  const app = useProgressStore();
+  const learner = useProgressStore();
   const user = ref<CloudUser | null>(null);
   const state = ref<"idle" | "busy" | "synced" | "offline" | "error">("idle");
   const conflict = ref<Conflict | null>(null);
@@ -25,32 +24,14 @@ export const useAccountStore = defineStore("account", () => {
   let cloud: Cloud | null = null;
   let connecting: Promise<Cloud> | null = null;
   let answer: ((c: Choice) => void) | null = null;
-  let syncedRev = -1;  // app.rev as of the last successful sync; -1 until the first one
+  let syncedRev = -1;  // learner.rev as of the last successful sync; -1 until the first one
   let timer: ReturnType<typeof setTimeout> | undefined;
   let queued = false;
-  let identifiedUserId: string | null = null;
-
-  function syncPosthogIdentity(nextUser: CloudUser | null) {
-    if (!posthogEnabled) return;
-
-    if (!nextUser) {
-      if (identifiedUserId) posthog.reset();
-      identifiedUserId = null;
-      return;
-    }
-
-    if (identifiedUserId && identifiedUserId !== nextUser.uid) posthog.reset();
-    posthog.identify(nextUser.uid, {
-      ...(nextUser.email ? { email: nextUser.email } : {}),
-      ...(nextUser.name ? { name: nextUser.name } : {}),
-    });
-    identifiedUserId = nextUser.uid;
-  }
 
   /** Signed in, and this device's progress belongs to that account. */
-  const signedIn = computed(() => !!user.value && user.value.uid === app.meta.sync?.uid);
+  const signedIn = computed(() => !!user.value && user.value.uid === learner.meta.sync?.uid);
   /** Linked to an account, but the Google session is gone (signed out elsewhere or expired). */
-  const lapsed = computed(() => !user.value && !!app.meta.sync?.uid);
+  const lapsed = computed(() => !user.value && !!learner.meta.sync?.uid);
 
   // Linking, syncing, signing out and resetting run one at a time.
   let chain: Promise<unknown> = Promise.resolve();
@@ -62,18 +43,18 @@ export const useAccountStore = defineStore("account", () => {
 
   async function start() {
     if (!cloudEnabled) return;
-    watch(() => app.rev, () => schedule());
+    watch(() => learner.rev, () => schedule());
     window.addEventListener("online", () => schedule(0));
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") flush(); else schedule(0);
     });
-    if (app.meta.sync?.uid) await connect(); // signed in before: pick the Google session back up
+    if (learner.meta.sync?.uid) await connect(); // signed in before: pick the Google session back up
   }
 
   /** Loads Firebase ahead of time, so the sign-in popup opens straight from the click (browsers block it otherwise). */
   function prepare() {
     if (!cloudEnabled || cloud || connecting) return;
-    const idle = (window as any).requestIdleCallback || ((f: () => void) => setTimeout(f, 1500));
+    const idle = "requestIdleCallback" in window ? window.requestIdleCallback : (f: () => void) => setTimeout(f, 1500);
     idle(() => connect().catch(() => {}));
   }
 
@@ -83,10 +64,10 @@ export const useAccountStore = defineStore("account", () => {
       let first = true;
       c.onUser(u => {
         const reload = !first; first = false;
-        syncPosthogIdentity(u);
+        identify(u);
         user.value = u;
         exclusive(async () => {
-          if (reload) await app.load(); // another tab may have signed in, out, or reset
+          if (reload) await learner.load(); // another tab may have signed in, out, or reset
           if (u) await link(u); else state.value = "idle";
         }).catch(() => {});
       });
@@ -112,15 +93,15 @@ export const useAccountStore = defineStore("account", () => {
     state.value = "busy";
     try {
       const doc = await cloud!.read(u.uid);
-      const action = linkAction(app.sync(), u.uid, doc, app.isEmpty());
+      const action = linkAction(learner.sync(), u.uid, doc, learner.isEmpty());
       if (action === "ask") {
-        const choice = await ask({ device: summarizeLocal(app.progress, app.meta), account: summarizeCloud(doc!) });
+        const choice = await ask({ device: summarizeLocal(learner.progress), account: summarizeCloud(doc!) });
         if (choice === "cancel") { await cloud!.signOut(); return; }
-        if (choice === "account") await app.wipe();
+        if (choice === "account") await learner.wipe();
       } else if (action === "adopt") {
-        await app.wipe();
+        await learner.wipe();
       }
-      await app.setLink(u.uid, doc?.epoch || app.sync().epoch || newId());
+      await learner.setLink(u.uid, doc?.epoch || learner.sync().epoch || newId());
       await syncOnce();
     } catch (e) {
       state.value = navigator.onLine ? "error" : "offline";
@@ -139,21 +120,21 @@ export const useAccountStore = defineStore("account", () => {
   /** One round trip: push what the cloud lacks (atomically), then take in what it has. True on success. */
   async function syncOnce(): Promise<boolean> {
     const u = user.value;
-    if (!cloud || !u || app.sync().uid !== u.uid) return false;
-    const rev = app.rev;
+    if (!cloud || !u || learner.sync().uid !== u.uid) return false;
+    const rev = learner.rev;
     state.value = "busy";
     try {
       const r = await cloud.transact(u.uid, doc =>
-        doc && doc.epoch !== app.sync().epoch
+        doc && doc.epoch !== learner.sync().epoch
           ? { patch: null, reset: true }
-          : { patch: pushPatch(app.progress, app.meta, app.sync(), doc), reset: false });
+          : { patch: pushPatch(learner.progress, learner.meta, learner.sync(), doc), reset: false });
       if (r.reset) {
         // Progress was reset on another device: drop this copy rather than re-uploading it.
-        await app.wipe({ uid: u.uid, epoch: r.cloud!.epoch });
+        await learner.wipe({ uid: u.uid, epoch: r.cloud!.epoch });
         return syncOnce();
       }
-      const after = applyPatch(r.cloud, r.patch, app.sync().epoch!);
-      await app.applyPull(pullChanges(app.progress, app.meta, app.sync(), after));
+      const after = applyPatch(r.cloud, r.patch, learner.sync().epoch!);
+      await learner.applyPull(pullChanges(learner.progress, learner.meta, learner.sync(), after));
       syncedRev = rev;
       state.value = "synced";
       return true;
@@ -179,7 +160,7 @@ export const useAccountStore = defineStore("account", () => {
   }
 
   /** True when everything on this device has reached the account. */
-  const upToDate = () => app.rev === syncedRev;
+  const upToDate = () => learner.rev === syncedRev;
 
   /**
    * Signs out and clears this device, so the next person starts fresh. Returns false
@@ -188,9 +169,9 @@ export const useAccountStore = defineStore("account", () => {
   async function signOut(force = false) {
     if (!(await flush()) || !upToDate()) { if (!force) return false; }
     await exclusive(async () => {
-      if (posthogEnabled) posthog.capture("account_signed_out");
+      track("account_signed_out");
       await cloud!.signOut();
-      await app.wipe();
+      await learner.wipe();
       syncedRev = -1;
       state.value = "idle";
     });
@@ -202,8 +183,8 @@ export const useAccountStore = defineStore("account", () => {
     return exclusive(async () => {
       const uid = user.value!.uid, epoch = newId();
       await cloud!.replace(uid, emptyCloud(epoch));
-      await app.wipe({ uid, epoch });
-      syncedRev = app.rev;
+      await learner.wipe({ uid, epoch });
+      syncedRev = learner.rev;
       state.value = "synced";
     });
   }

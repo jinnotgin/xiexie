@@ -3,9 +3,9 @@
    Imported on demand, so guests never download Firebase.
    Uses Firestore Lite (no offline cache or live listeners):
    IndexedDB stays the source of truth on each device, and
-   stores/account.ts syncs it with a transaction when online.
+   the account store syncs it with a transaction when online.
    ========================================================= */
-import { normalizeCloud, type CloudDoc, type CloudPatch } from "./sync";
+import { normalizeCloud, type CloudDoc, type CloudPatch } from "../../../lib/sync";
 
 const config = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,

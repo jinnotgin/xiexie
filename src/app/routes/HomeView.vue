@@ -7,23 +7,23 @@ setTimeout(() => { splashHeld.value = false; }, SPLASH_MIN_MS);
 </script>
 
 <script setup lang="ts">
-import posthog from "posthog-js";
-import { posthogEnabled } from "../lib/posthog";
+import { track } from "../../lib/analytics";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { LEVELS } from "../data/levels";
-import { WORDS } from "../data/words";
-import { LINES, pick } from "../lib/momo";
-import { streakLive } from "../lib/srs";
-import { useProgressStore } from "../stores/progress";
-import { useAccountStore } from "../stores/account";
-import { cloudError } from "../lib/cloud";
-import { useStartSession } from "../composables/useStartSession";
-import Momo from "../components/Momo.vue";
-import Icon from "../components/Icon.vue";
-import InstallButton from "../components/InstallButton.vue";
+import { LEVELS } from "../../data/levels";
+import { wordsIn } from "../../data/words";
+import { LINES, pick } from "../../lib/momo";
+import { streakLive, writtenThisWeek } from "../../lib/srs";
+import { useProgressStore } from "../../stores/progress";
+import { useAccountStore } from "../../features/account/stores/account";
+import { cloudError } from "../../features/account/lib/cloud";
+import { ask, tell } from "../../lib/dialog";
+import { useStartSession } from "../../features/practice/composables/useStartSession";
+import Momo from "../../components/Momo.vue";
+import Icon from "../../components/Icon.vue";
+import InstallButton from "../../components/InstallButton.vue";
 
-const app = useProgressStore();
+const learner = useProgressStore();
 const account = useAccountStore();
 const router = useRouter();
 const startSession = useStartSession();
@@ -32,14 +32,14 @@ const greeting = ref(pick(LINES.home));
 // Rotate through Momo's loading lines, starting from a random one.
 const loadingIdx = ref(Math.floor(Math.random() * LINES.loading.length));
 const loadingLine = computed(() => LINES.loading[loadingIdx.value % LINES.loading.length]);
-const rotate = setInterval(() => { ready.value ? clearInterval(rotate) : loadingIdx.value++; }, 1800);
+const rotate = setInterval(() => { if (ready.value) clearInterval(rotate); else loadingIdx.value++; }, 1800);
 onUnmounted(() => clearInterval(rotate));
-const ready = computed(() => app.status === "ready" && !splashHeld.value);
-const failed = computed(() => app.status === "error");
-const pct = computed(() => app.loaded === null ? null : Math.round(app.loaded * 100));
+const ready = computed(() => learner.status === "ready" && !splashHeld.value);
+const failed = computed(() => learner.status === "error");
+const pct = computed(() => learner.loaded === null ? null : Math.round(learner.loaded * 100));
 const unpacking = computed(() => pct.value === null || pct.value >= 100);
 
-const levelCount = (id: string) => WORDS.filter(w => w.l === id).length;
+const levelCount = (id: string) => wordsIn(id).length;
 
 // Phones: levels grouped by stage: pick a stage, then a number within it.
 const STAGES = [
@@ -47,68 +47,85 @@ const STAGES = [
   { id: "sec", name: "Secondary", levels: LEVELS.filter(L => L.id.startsWith("sec")) },
   { id: "biz", name: "Business", levels: LEVELS.filter(L => L.id === "biz") },
 ];
-const stage = computed(() => STAGES.find(S => S.levels.some(L => app.meta.levels.includes(L.id))) ?? STAGES[0]);
+const stage = computed(() => STAGES.find(S => S.levels.some(L => learner.meta.levels.includes(L.id))) ?? STAGES[0]);
 // Switching stage starts at its first level; tapping the current stage keeps the choice.
 function pickStage(S: typeof STAGES[number]) {
-  if (S !== stage.value) app.setLevel(S.levels[0].id);
+  if (S !== stage.value) learner.setLevel(S.levels[0].id);
 }
 // Phones hide the captions inside the mode buttons, so the chosen one is spelt out below them.
 const MODE_NOTES = { strict: "Each stroke checked, in the right order.", relaxed: "Any order, joined-up strokes and all." };
-const modeNote = computed(() => app.meta.relaxed === false ? MODE_NOTES.strict : MODE_NOTES.relaxed);
+const modeNote = computed(() => learner.meta.relaxed === false ? MODE_NOTES.strict : MODE_NOTES.relaxed);
 const levelNote = computed(() =>
-  `${LEVELS.filter(L => app.meta.levels.includes(L.id)).map(L => L.sub).join(" + ")} · ${levelWords.value.length} words`);
+  `${LEVELS.filter(L => learner.meta.levels.includes(L.id)).map(L => L.sub).join(" + ")} · ${levelWords.value.length} words`);
 
 // Mastery counted within the chosen levels, so a new learner sees a goal they can reach.
-const levelWords = computed(() => WORDS.filter(w => app.meta.levels.includes(w.l)));
-const levelMastered = computed(() => levelWords.value.filter(w => app.statusOf(w.id) === "mastered").length);
+const levelWords = computed(() => learner.meta.levels.flatMap(wordsIn));
+const levelMastered = computed(() => levelWords.value.filter(w => learner.statusOf(w.id) === "mastered").length);
 const levelLabel = computed(() => {
-  const names = LEVELS.filter(L => app.meta.levels.includes(L.id)).map(L => L.name);
+  const names = LEVELS.filter(L => learner.meta.levels.includes(L.id)).map(L => L.name);
   return names.length <= 2 ? names.join(" + ") : `${names.length} levels`;
 });
-const dueCount = computed(() => app.due().length);
+const dueCount = computed(() => learner.due().length);
 const dueNote = computed(() =>
   `${dueCount.value} word${dueCount.value > 1 ? "s" : ""} due for review. They'll come up first.`);
 
 async function reset() {
   if (account.signedIn) {
-    if (!confirm("Clear all progress and streak in your account and on all your devices?")) return;
+    if (!(await ask({
+      title: "Reset all your progress?",
+      message: "This clears your progress and streak in your Google account and on all your devices. It can't be undone.",
+      confirm: "Reset everywhere", danger: true,
+    }))) return;
     try { await account.resetAll(); }
-    catch (e) { alert(cloudError(e) || "Couldn't reset your account. Please try again."); return; }
+    catch (e) { await tell("Couldn't reset your account", cloudError(e) || "Please try again."); return; }
   } else {
-    if (!confirm("Clear all progress and streak on this device?")) return;
-    await app.reset();
+    if (!(await ask({
+      title: "Reset your progress?",
+      message: "This clears your progress and streak on this device. It can't be undone.",
+      confirm: "Reset", danger: true,
+    }))) return;
+    await learner.wipe();
   }
-  if (posthogEnabled) {
-    posthog.capture("progress_reset", { reset_scope: account.signedIn ? "account" : "device" });
-  }
+  track("progress_reset", { reset_scope: account.signedIn ? "account" : "device" });
   greeting.value = pick(LINES.home);
 }
 
 onMounted(() => { if (!account.signedIn) account.prepare(); });
 
+// A short status line, plus a quieter detail line (the account's email, or a hint).
 const storageNote = computed(() => {
   if (account.signedIn) {
     const who = account.user!.email || account.user!.name || "your Google account";
-    return {
-      idle: `Signed in as ${who}.`, busy: `Signed in as ${who}. Saving…`, synced: `Progress is saved to ${who}.`,
-      offline: `Signed in as ${who}. You're offline, so progress is kept on this device until you reconnect.`,
-      error: `Signed in as ${who}. Couldn't reach your account just now, will try again.`,
+    const title = {
+      idle: "Signed in", busy: "Saving…", synced: "Progress saved",
+      offline: "Offline, will try again later", error: "Couldn't save, will try again",
     }[account.state];
+    return { title, detail: who };
   }
-  if (account.state === "busy") return "Signing in…";
-  if (account.lapsed) return "You've been signed out. Sign in again to keep syncing.";
-  return app.persistent ? "Progress is saved on this browser." : "Storage is unavailable here, so progress lasts until you close this page.";
+  if (account.state === "busy") return { title: "Signing in…", detail: "" };
+  if (account.lapsed) return { title: "You've been signed out", detail: "Sign in again to keep your progress." };
+  if (!learner.persistent) return { title: "Storage is unavailable here", detail: "Progress lasts until you close this page." };
+  return { title: "Saved on this browser", detail: account.enabled ? "Sign in to keep it on all your devices." : "" };
 });
+const syncHealthy = computed(() => account.signedIn && account.state !== "offline" && account.state !== "error");
 
 async function signIn() {
   try { await account.signIn(); }
-  catch (e) { const msg = cloudError(e); if (msg) alert(msg); }
+  catch (e) { const msg = cloudError(e); if (msg) await tell("Couldn't sign in", msg); }
 }
 
 async function signOut() {
-  if (!confirm("Sign out? Your progress stays in your Google account, and this device starts fresh.")) return;
+  if (!(await ask({
+    title: "Sign out?",
+    message: "Your progress stays in your Google account, and this device starts fresh.",
+    confirm: "Sign out",
+  }))) return;
   if (await account.signOut()) return;
-  if (confirm("Some progress from this device hasn't reached your account yet (you may be offline). Sign out anyway and lose it?")) await account.signOut(true);
+  if (await ask({
+    title: "Some progress hasn't been saved",
+    message: "Progress from this device hasn't reached your account yet (you may be offline). If you sign out now, it's lost.",
+    confirm: "Sign out and lose it", cancel: "Stay signed in", danger: true,
+  })) await account.signOut(true);
 }
 </script>
 
@@ -142,30 +159,30 @@ async function signOut() {
     </div>
     <div class="bubble" id="home-bubble">{{ greeting }}</div>
     <div class="stats" id="stats">
-      <span class="pill"><Icon name="flame" />{{ streakLive(app.meta) ? app.meta.streak : 0 }}-day streak</span>
-      <span class="pill"><Icon name="pen" />{{ app.meta.written }} written</span>
+      <span class="pill"><Icon name="flame" />{{ streakLive(learner.meta) ? learner.meta.streak : 0 }}-day streak</span>
+      <span class="pill"><Icon name="pen" />{{ writtenThisWeek(learner.meta) }} written this week</span>
       <span class="pill"><Icon name="award" />{{ levelMastered }} / {{ levelWords.length }} mastered in {{ levelLabel }}</span>
     </div>
 
     <h2>Practise from</h2>
     <div class="levels" id="levels" role="group" aria-label="Levels">
-      <button v-for="L in LEVELS" :key="L.id" class="chip" :aria-pressed="app.meta.levels.includes(L.id)"
-        @click="app.setLevel(L.id)">{{ L.name }}<small>{{ L.sub }}, {{ levelCount(L.id) }}</small></button>
+      <button v-for="L in LEVELS" :key="L.id" class="chip" :aria-pressed="learner.meta.levels.includes(L.id)"
+        @click="learner.setLevel(L.id)">{{ L.name }}<small>{{ L.sub }}, {{ levelCount(L.id) }}</small></button>
     </div>
     <div class="stage-picker">
       <div class="seg" role="group" aria-label="Stage">
         <button v-for="S in STAGES" :key="S.id" :aria-pressed="S === stage" @click="pickStage(S)">{{ S.name }}</button>
       </div>
       <div v-if="stage.levels.length > 1" class="level-nums" role="group" :aria-label="`${stage.name} level`">
-        <button v-for="L in stage.levels" :key="L.id" :aria-label="L.name" :aria-pressed="app.meta.levels.includes(L.id)"
-          @click="app.setLevel(L.id)">{{ L.name.replace(/\D/g, "") }}</button>
+        <button v-for="L in stage.levels" :key="L.id" :aria-label="L.name" :aria-pressed="learner.meta.levels.includes(L.id)"
+          @click="learner.setLevel(L.id)">{{ L.name.replace(/\D/g, "") }}</button>
       </div>
       <p class="level-note">{{ levelNote }}</p>
     </div>
 
     <h2>How to write</h2>
     <div class="modes" id="modes" role="group" aria-label="Writing mode">
-      <button class="mode" id="mode-strict" :aria-pressed="app.meta.relaxed === false" @click="app.setStrict(true)">
+      <button class="mode" id="mode-strict" :aria-pressed="learner.meta.relaxed === false" @click="learner.setStrict(true)">
         <svg viewBox="-3 -7 56 49" aria-hidden="true">
           <path d="M12 18H48M30 1V40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
           <circle cx="12" cy="8" r="7" fill="var(--seal)" /><text x="12" y="11.6" fill="var(--seal-ink)">1</text>
@@ -173,7 +190,7 @@ async function signOut() {
         </svg>
         Stroke by stroke<small>{{ MODE_NOTES.strict }}</small>
       </button>
-      <button class="mode" id="mode-relaxed" :aria-pressed="app.meta.relaxed !== false" @click="app.setStrict(false)">
+      <button class="mode" id="mode-relaxed" :aria-pressed="learner.meta.relaxed !== false" @click="learner.setStrict(false)">
         <svg viewBox="-3 -7 56 49" aria-hidden="true">
           <path d="M12 18C24 16 40 16 48 18C40 22 32 6 30 1C30 15 31 30 30 40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
@@ -188,11 +205,11 @@ async function signOut() {
       <button class="btn" id="open-library" @click="router.push({ name: 'library' })">Browse all words</button>
     </div>
 
-    <div class="sync-card" :class="{ synced: account.signedIn }">
+    <div class="sync-card" :class="{ synced: syncHealthy, 'has-link': account.enabled && account.signedIn }">
       <Icon :name="account.signedIn ? 'cloud' : 'device'" class="sync-icon" />
       <p class="sync-text">
-        <span id="storage-note">{{ storageNote }}</span>
-        <small v-if="account.enabled && !account.signedIn">Sign in to keep it on all your devices.</small>
+        <strong id="storage-note">{{ storageNote.title }}</strong>
+        <small v-if="storageNote.detail" :class="{ 'sync-who': account.signedIn }" :title="storageNote.detail">{{ storageNote.detail }}</small>
       </p>
       <template v-if="account.enabled">
         <button v-if="account.signedIn" class="linkish" id="sign-out" @click="signOut">Sign out</button>

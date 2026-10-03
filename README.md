@@ -22,26 +22,12 @@ Built with [Hanzi Writer](https://hanziwriter.org), Vue 3, Pinia, Vue Router and
 ```bash
 npm install
 npm run dev          # http://localhost:5173
-npm test             # unit tests for spaced repetition, grading, search and sync
+npm test             # unit tests for spaced repetition, grading, relaxed checking, search and sync
+npm run lint         # ESLint, including the import boundaries between src/app, src/features and shared code
 npm run build        # static site in dist/, hostable anywhere
 ```
 
 The live site is on Firebase Hosting: `npm run build`, then `firebase deploy --only hosting`.
-
-## Project layout
-
-```
-src/
-  main.ts, App.vue, router.ts   app shell; screens are routes (/, /practice, /summary, /library)
-  views/                        HomeView, PracticeView, SummaryView, LibraryView
-  components/                   HanziStage (one HanziWriter), InkPad (free-writing layer), GridSvg, Momo, Icon, WordModal, SyncConflict
-  stores/                       progress (saved state), session (current round), ui (popup, library tab), account (sign-in, sync)
-  lib/                          srs, sync and relaxed (pure rules; relaxed checks free handwriting), storage (IndexedDB), search, cloud (Firebase), handwriting (Google second opinion for relaxed mode, off by default), chardata, speech, momo, dom
-  data/                         levels.ts, words.json (word bank), chardata.json.gz (stroke data)
-  vendor/hanzi-writer.js        Hanzi Writer 3.7.3, patched for leniency and misplaced strokes
-docs/sources/                   MOE character lists the primary levels are based on
-archived/xiexie.html            the original single-file app; progress in IndexedDB (xiexie-db) carries over from it
-```
 
 ## Word bank
 
@@ -67,7 +53,7 @@ after each word, when the tab is hidden or shown, and when the connection comes 
 The merge rules are pure functions in `src/lib/sync.ts`, tested in `tests/unit/sync.test.ts`:
 
 - **Words**: the most recently practised result wins.
-- **Characters written**: each device keeps its own counter and the total is the sum.
+- **Characters written**: each device keeps its own counter and the total is the sum. The home page shows this week's (from Monday), summing only devices whose count is from this week; the lifetime total is kept too.
 - **Streak**: day ranges from each device are joined, so 1 day on a new phone after a 10-day run elsewhere makes 11.
 - **First sign-in** with progress on both sides: the learner chooses to combine them or keep only the account's.
 - **Sign out** clears the device once everything has reached the account, so a shared computer starts fresh.
@@ -79,6 +65,21 @@ To turn it on:
 2. Create a Firestore database and publish the rules and indexes with `firebase deploy --only firestore`.
 3. Register a web app, copy `.env.example` to `.env.local`, fill in its values and rebuild.
    These values are public by design: the Firestore rules control access.
+
+## Google handwriting recognition in relaxed mode (optional, off by default)
+
+Relaxed mode checks handwriting on the device. It can also ask Google's handwriting recognizer for a second opinion
+on ink that looks finished but doesn't pass: if Google reads the character asked for, it passes (without full marks),
+and if Google and the local checker both read the same other character, Momo names that look-alike straight away.
+
+This uses the endpoint behind Google Translate's and Google Input Tools' handwriting input
+(`inputtools.google.com/request?ime=handwriting`). **It is not a public or documented API**: there are no terms,
+keys or guarantees, and it can change or disappear without notice. The app treats every failure (offline, a 1.5 s
+timeout, an unexpected reply) as "no opinion" and falls back to the local checker. Turning it on also **sends the
+learner's ink to Google**.
+
+To turn it on, set `VITE_GOOGLE_HANDWRITING=1` in `.env.local` and rebuild. The code is in
+`src/features/practice/lib/handwriting.ts`, and the rules for when ink is sent in `src/features/practice/lib/inkCheck.ts`.
 
 ## Credits and sources
 
@@ -92,6 +93,7 @@ To turn it on:
 | Stroke drawing and checking | [Hanzi Writer](https://hanziwriter.org) 3.7.3 by David Chanin, patched in `src/vendor/` | MIT |
 | App framework | [Vue](https://vuejs.org), [Pinia](https://pinia.vuejs.org), [Vue Router](https://router.vuejs.org), [Vite](https://vite.dev) | MIT |
 | Optional sign-in and sync | [Firebase](https://firebase.google.com) JavaScript SDK | Apache 2.0 |
+| Optional second opinion in relaxed mode | Google's handwriting recognizer, from Google Translate and Input Tools (unofficial, undocumented endpoint; nothing bundled) | Google's service, no published terms for this use |
 
 The MOE lists are the 2015 edition for P1 to P6 ([Chinese](https://www.moe.gov.sg/media/files/primary/f607087e-d909-4581-82ac-9c3867c617ee.pdf), [Higher Chinese](https://www.moe.gov.sg/media/files/primary/e055a4ab-c7f4-42b2-96a1-e2b96a370477.pdf)),
 which the levels follow, and 欢乐伙伴 2.0 for P1 and P2 ([Chinese](https://www.moe.gov.sg/api/media/6c0f68ed-a8bf-471c-9f32-b5ea75831910/2024-Character-List-Primary-One-to-Two-Chinese.pdf), [Higher Chinese](https://www.moe.gov.sg/api/media/394e06b1-f4f3-4e90-adb4-a33efd9e1c5e/2024-Character-List-Primary-One-to-Two-Higher-Chinese.pdf)).

@@ -28,7 +28,7 @@ export function toRequestInk(ink: Pt[][]): number[][][] {
 /** The single Han characters in a reply, best first. Null if the reply isn't a success. */
 export function parseCandidates(reply: unknown): string[] | null {
   if (!Array.isArray(reply) || reply[0] !== "SUCCESS") return null;
-  const list = (reply as any)[1]?.[0]?.[1];
+  const list: unknown = reply[1]?.[0]?.[1];
   return Array.isArray(list) ? list.filter((c): c is string => typeof c === "string" && HAN.test(c)) : null;
 }
 

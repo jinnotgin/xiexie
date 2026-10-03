@@ -3,7 +3,7 @@ import type { Meta, ProgressRec, Word } from "../../src/types";
 import { WORDS } from "../../src/data/words";
 import {
   DAY, DEFAULT_META, INTERVALS, applyWritten, buildSession, dueWords, gradeOf, migrateLevels,
-  nextProgress, statusOf, streakLive, todayKey,
+  nextProgress, statusOf, streakLive, todayKey, weekKey, writtenThisWeek,
 } from "../../src/lib/srs";
 
 const word = (w: string, l = "p1"): Word => ({ w, p: "", e: "", l, id: w });
@@ -112,6 +112,21 @@ describe("streak and written count", () => {
   it("starts a streak at 1 and counts characters", () => {
     const m = applyWritten(fresh(), word("你好"), NOW);
     expect(m).toMatchObject({ streak: 1, lastDay: todayKey(new Date(NOW)), written: 2 });
+  });
+  it("weeks start on Monday", () => {
+    expect(weekKey(new Date(2026, 9, 1))).toBe("2026-09-28");   // Thursday
+    expect(weekKey(new Date(2026, 8, 28))).toBe("2026-09-28");  // Monday itself
+    expect(weekKey(new Date(2026, 9, 4))).toBe("2026-09-28");   // Sunday
+    expect(weekKey(new Date(2027, 0, 1))).toBe("2026-12-28");   // across the year end
+  });
+  it("counts this week's characters, starting afresh each week, while the total keeps growing", () => {
+    const m = applyWritten(applyWritten(fresh(), word("你好"), NOW), word("人"), NOW);
+    expect(writtenThisWeek(m, NOW)).toBe(3);
+    const nextWeek = NOW + 7 * DAY;
+    expect(writtenThisWeek(m, nextWeek)).toBe(0);
+    applyWritten(m, word("大"), nextWeek);
+    expect(writtenThisWeek(m, nextWeek)).toBe(1);
+    expect(m.written).toBe(4);
   });
   it("extends the streak on consecutive days, resets after a gap, and holds within a day", () => {
     const yesterday = { ...fresh(), streak: 4, lastDay: todayKey(new Date(NOW - DAY)) };

@@ -25,10 +25,13 @@ export interface Meta {
   levels: string[];
   relaxed: boolean;
   written: number;
+  week?: string;           // Monday of the week weekWritten counts (see weekKey)
+  weekWritten?: number;
   sync?: SyncState;
 }
 
-export interface Counts { written: number }
+/** Characters written in total, and in the week `week` (a week with nothing written leaves both week fields as they were). */
+export interface Counts { written: number; week?: string; weekWritten?: number }
 
 /** What this device knows about its link to a Google account (see lib/sync.ts). */
 export interface SyncState {
@@ -36,7 +39,7 @@ export interface SyncState {
   epoch: string | null;    // the account's reset generation this device last synced with
   contrib: string;         // this device's key in the cloud counters map
   own: Counts;             // characters written on this device
-  others: Counts;          // the account's totals from all other devices, as of the last sync
+  others: Counts;          // the account's totals from all other devices (this week's as of the last sync)
   settingsAt: number;      // when levels or strict mode last changed here
 }
 

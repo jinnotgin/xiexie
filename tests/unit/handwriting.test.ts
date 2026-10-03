@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { agreedRival, parseCandidates, toRequestInk } from "../../src/lib/handwriting";
-import type { Pt } from "../../src/lib/relaxed";
+import { agreedRival, parseCandidates, toRequestInk } from "../../src/features/practice/lib/handwriting";
+import type { Pt } from "../../src/features/practice/lib/relaxed";
 
 describe("toRequestInk", () => {
   it("turns strokes into rounded [xs, ys] pairs and drops empty strokes", () => {

@@ -3,7 +3,7 @@
    Pure functions: progress and meta are passed in, so the
    rules can be unit-tested without a browser.
    ========================================================= */
-import type { CardState, Grade, Meta, ProgressRec, Status, Word } from "../types";
+import type { CardState, Counts, Grade, Meta, ProgressRec, Status, StrokeNote, Word } from "../types";
 import { LEVEL_MIGRATION, LEVELS } from "../data/levels";
 
 export const DAY = 86400000;
@@ -14,6 +14,24 @@ export const DEFAULT_META: Meta = { streak: 0, lastDay: null, levels: ["p1"], re
 export type ProgressMap = Map<string, ProgressRec>;
 
 export function todayKey(d = new Date()) { return d.toLocaleDateString("en-CA"); }
+
+/** The Monday a week starts on, in local time, as a day key. */
+export function weekKey(d = new Date()) {
+  return todayKey(new Date(d.getFullYear(), d.getMonth(), d.getDate() - (d.getDay() + 6) % 7));
+}
+
+/** Adds n characters to a counter (in place), starting this week's count afresh on a new week. */
+export function addWritten(c: Counts, n: number, now = Date.now()) {
+  const w = weekKey(new Date(now));
+  if (c.week !== w) { c.week = w; c.weekWritten = 0; }
+  c.weekWritten = (c.weekWritten || 0) + n;
+  c.written += n;
+  return c;
+}
+
+/** Characters written this week by a counter, 0 if its count is from an earlier week. */
+export const writtenThisWeek = (c: Counts, now = Date.now()) =>
+  c.week === weekKey(new Date(now)) ? c.weekWritten || 0 : 0;
 
 export function statusOf(progress: ProgressMap, id: string): Status {
   const p = progress.get(id);
@@ -67,7 +85,7 @@ export function applyWritten(meta: Meta, word: Word, now = Date.now()) {
     meta.streak = meta.lastDay === y ? meta.streak + 1 : 1;
     meta.lastDay = t;
   }
-  meta.written += word.w.length;
+  addWritten(meta, word.w.length, now);
   return meta;
 }
 
@@ -88,6 +106,13 @@ export function gradeOf(c: Pick<CardState, "revealed" | "word" | "mistakes" | "h
   if (c.mistakes === 0 && c.hints === 0 && !c.notes.length && !c.shaky) return "perfect";
   if (c.hints === 0 && c.mistakes <= n * 2) return "good";   // includes "correct, but order/direction differs"
   return "ok";
+}
+
+/** How a correctly written word's strokes went their own way, or null if they didn't. */
+export function noteKind(notes: StrokeNote[]): "both" | "order" | "backwards" | null {
+  if (!notes.length) return null;
+  const order = notes.some(n => n.order), back = notes.some(n => n.backwards);
+  return order && back ? "both" : order ? "order" : "backwards";
 }
 
 export const STAMPS: Record<Grade, { ch: string; label: string }> = {

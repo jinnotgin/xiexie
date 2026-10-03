@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import type { Grade, Result } from "../types";
-import { STAMPS } from "../lib/srs";
-import { confetti } from "../lib/dom";
-import { useSessionStore } from "../stores/session";
-import { useStartSession } from "../composables/useStartSession";
+import type { Grade, Result } from "../../types";
+import { STAMPS, noteKind } from "../../lib/srs";
+import { confetti } from "../../lib/dom";
+import { useSessionStore } from "../../features/practice/stores/session";
+import { useStartSession } from "../../features/practice/composables/useStartSession";
 
 const session = useSessionStore();
 const router = useRouter();
@@ -38,10 +38,10 @@ const tally = computed(() => {
 
 // A short note only for words whose strokes differed from the usual order or direction
 function reason(r: Result): string | null {
-  if (!r.notes.length) return null;
+  const kind = noteKind(r.notes);
+  if (!kind) return null;
   const chars = r.word.w.length > 1 ? " in " + [...new Set(r.notes.map(n => n.ch))].join(" ") : "";
-  const order = r.notes.some(n => n.order), back = r.notes.some(n => n.backwards);
-  return (order && back ? "strokes differed" : order ? "stroke order differed" : "a stroke went backwards") + chars;
+  return { both: "strokes differed", order: "stroke order differed", backwards: "a stroke went backwards" }[kind] + chars;
 }
 
 // A round picked from the library offers the same words again and a way back to them.
