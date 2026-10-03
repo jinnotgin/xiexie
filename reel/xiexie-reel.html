@@ -32,7 +32,10 @@ body{font-family:"Bricolage Grotesque",ui-rounded,system-ui,sans-serif;color:var
 .obj{position:absolute;left:50%;top:50%;transform-style:preserve-3d}
 
 /* ---------- Practice card (mirrors the app's .sheet) ---------- */
-#pcard{width:380px;height:620px;margin:-310px 0 0 -190px}
+#pcard{width:0;height:0}
+/* The card is laid out ZOOM times larger and only ever scaled down. Scaling a small layer up is what blurs:
+   while a transform animates, Chrome keeps the layer's old raster instead of redrawing it at the new size. */
+.zoomer{position:absolute;left:-190px;top:-310px;width:380px;height:620px;zoom:3.4;transform-style:preserve-3d}
 .L{position:absolute;inset:0;transform-style:preserve-3d;backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .base{background:var(--card);border:2px solid var(--ink);border-radius:22px;box-shadow:5px 5px 0 var(--ink),0 50px 90px -30px rgba(20,45,35,.45)}
 .sheen{position:absolute;inset:0;border-radius:22px;pointer-events:none}
@@ -42,6 +45,8 @@ body{font-family:"Bricolage Grotesque",ui-rounded,system-ui,sans-serif;color:var
 .back svg{width:110px;height:110px}
 .py{position:absolute;left:0;right:0;top:16px;display:flex;justify-content:center;align-items:center;gap:8px;font-size:30px;font-weight:800;line-height:1.15}
 .py svg{width:22px;height:22px;color:var(--ink-soft)}
+/* Version B: marker swipes behind the bit being pointed out */
+.mk{background:linear-gradient(var(--marker),var(--marker)) no-repeat 0 88%/0% 42%;border-radius:3px}
 .en{position:absolute;left:0;right:0;top:60px;text-align:center;font-size:16px;font-weight:500;color:var(--ink-soft)}
 .slots{position:absolute;left:0;right:0;top:94px;display:flex;justify-content:center;gap:6px}
 .slot{width:40px;height:40px;border:2px dashed var(--grid);border-radius:8px;display:grid;place-items:center;font-size:27px;color:var(--ink-soft);background:var(--card)}
@@ -75,7 +80,7 @@ body{font-family:"Bricolage Grotesque",ui-rounded,system-ui,sans-serif;color:var
 .tag{position:absolute;left:100%;display:flex;align-items:center;white-space:nowrap;font-size:17px;font-weight:700}
 .tag i{display:block;width:56px;height:2px;background:var(--ink);position:relative;margin-left:-6px}
 .tag i::before{content:"";position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--ink)}
-.tag b{background:var(--card);border:2px solid var(--ink);border-radius:999px;padding:6px 14px;box-shadow:3px 3px 0 var(--ink)}
+.tag b{line-height:1.25;background:var(--card);border:2px solid var(--ink);border-radius:999px;padding:6px 14px;box-shadow:3px 3px 0 var(--ink)}
 .tag em{font-style:normal;font-family:"Ma Shan Zheng",serif;font-weight:400}
 
 /* ---------- Mode switch beside the card ---------- */
@@ -100,7 +105,7 @@ body{font-family:"Bricolage Grotesque",ui-rounded,system-ui,sans-serif;color:var
 #track{width:0;height:0}
 .floor{position:absolute;left:-500px;top:-260px;width:3600px;height:520px;transform:rotateX(90deg);
   background-image:linear-gradient(rgba(28,43,58,.09) 2px,transparent 2px),linear-gradient(90deg,rgba(28,43,58,.09) 2px,transparent 2px);background-size:54px 54px;
-  -webkit-mask-image:radial-gradient(ellipse at 35% 50%,#000 30%,transparent 72%);mask-image:radial-gradient(ellipse at 35% 50%,#000 30%,transparent 72%)}
+  -webkit-mask-image:radial-gradient(ellipse at 50% 50%,#000 34%,transparent 74%);mask-image:radial-gradient(ellipse at 50% 50%,#000 34%,transparent 74%)}
 .floor .lane{position:absolute;left:500px;top:256px;width:2500px;height:0;border-top:4px dashed var(--ink);opacity:.5}
 .spot{position:absolute;top:220px;width:150px;height:72px;margin-left:-75px;border-radius:50%;border:3px solid var(--ink)}
 .spot.hit{background:var(--marker)}
@@ -167,7 +172,7 @@ body.capture #ui{display:none}
   <div id="world">
 
     <!-- The practice card, built in layers so it can come apart -->
-    <div class="obj" id="pcard">
+    <div class="obj" id="pcard"><div class="zoomer">
       <div class="L back"><svg viewBox="0 0 100 100" class="momo-svg"></svg><div class="han">写写</div></div>
       <div class="L base" id="lBase"><div class="sheen" id="sheen"></div></div>
       <div class="L" id="lGrid"><div class="plate"></div>
@@ -183,22 +188,22 @@ body.capture #ui{display:none}
         </div>
       </div>
       <div class="L" id="lHead"><div class="plate"></div>
-        <div class="py"><span id="pyT">xiě</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6"/><path d="M18.5 6.5a8 8 0 0 1 0 11"/></svg></div>
+        <div class="py"><span id="pyT" class="mk">xiě</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="wv" d="M15.5 9a4.2 4.2 0 0 1 0 6"/><path class="wv" d="M18.5 6.5a8 8 0 0 1 0 11"/></svg></div>
         <div class="en" id="enT">to write</div>
         <div class="slots" id="slots"></div>
+        <div class="tag" style="top:20px"><i></i><b>Pinyin + pronunciation</b></div>
       </div>
       <div class="L" id="lMomo"><div class="plate"></div>
-        <div class="momoline"><svg viewBox="0 0 100 100" class="momo-svg"></svg><span id="momoSay">Write it from memory. You can do it.</span></div>
-        <div class="tag" style="top:486px"><i></i><b>Momo <em>墨墨</em>, your study buddy</b></div>
+        <div class="momoline"><svg viewBox="0 0 100 100" class="momo-svg"></svg><span id="momoSay" class="mk">Write it from memory. You can do it.</span></div>
+        <div class="tag" style="top:486px"><i></i><b>Momo <em>墨墨</em>,<br>your study buddy</b></div>
       </div>
       <div class="L" id="lInk"><div class="plate"></div>
         <div class="charbox" id="charbox"><svg viewBox="0 0 1024 1024" id="charSvg"></svg></div>
         <div class="finalw" id="finalw"></div>
-        <div class="tag" style="top:400px"><i></i><b>Real stroke order</b></div>
         <div class="ring" id="sring"></div>
         <div class="stamp" id="stamp"><span class="han" id="stampCh">优</span><small id="stampLb">Excellent</small></div>
       </div>
-    </div>
+    </div></div>
 
     <div class="obj" id="ring"></div>
     <div class="obj" id="track"></div>
@@ -215,7 +220,7 @@ body.capture #ui{display:none}
   <div class="cap left" id="c3"><h2>Words you already know.</h2><p>Start with the characters you learnt in P1 to P6, and write each one from memory.</p></div>
   <div class="cap left low" id="c4"><h2>Stroke by stroke.</h2><p>Each stroke is checked as you write it, in the right order. Wrong stroke? Just try again.</p></div>
   <div class="cap left low" id="c5"><h2>Or just write it.</h2><p>Relaxed mode takes any stroke order, even joined-up strokes. The character fills in once it's close enough.</p></div>
-  <div class="cap top" id="c6"><h2>Start with what you learnt in P1 to P6.</h2><p>Primary levels follow the MOE 欢乐伙伴 lists. When you're ready, Secondary goes on to all 3,500 everyday characters.</p></div>
+  <div class="cap top" id="c6"><h2>Start with what you learnt in P1 to P6.</h2><p>Primary levels follow the MOE 欢乐伙伴 lists. When you're ready, Secondary levels go on to 3,500 everyday characters.</p></div>
   <div class="cap top" id="c7"><h2>Practise until it sticks.</h2><p>Words you struggle with come back sooner. Get them right and the wait grows, until they're mastered.</p></div>
   <div id="etag">Remember how to write Chinese, one stroke at a time.</div>
   <div id="eurl">xiexie.web.app</div>
@@ -234,6 +239,9 @@ const DATA = {"写":{"strokes":["M 306 718 Q 306 719 306 720 Q 293 745 279 755 Q
    so the page can play live or be rendered frame by frame.
    ========================================================= */
 const DUR = 46;
+// 11–15s: version 2 (default) is a close-up tour of the card; ?v=1 shows the exploded layers instead
+const VER = new URLSearchParams(location.search).get("v") === "1" ? 1 : 2;
+const ZOOM = 3.4;   // must match .zoomer in the CSS
 const BEAT = 60 / 96, BAR = BEAT * 4;   // 96 BPM, every scene sits on a bar line
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const seg = (t, a, b) => clamp((t - a) / (b - a));
@@ -270,7 +278,7 @@ const T = {
   // Stroke by stroke: 写 again, with one stroke out of order
   strict: [[15.6, 16.1], [16.3, 17.0], [18.4, 19.0], [19.2, 19.7], [19.9, 20.6]],
   wrong: [17.3, 17.75], wrongIdx: 3, stampA: 21.25,
-  flip: [22.4, 23.5],
+  flip: [22.3, 23.65],
   // Relaxed: 下雨
   inkA: [23.9, 25.4], fillA: [25.45, 25.85],
   inkB: [26.0, 27.9], fillB: [27.95, 28.35],
@@ -397,8 +405,9 @@ const fStrict = T.strict.map(([, e]) => [e + .04, e + .24]);   // each accepted 
 const LEVELS = [
   ["P1", "小一", "240", "一起 没有 我们"], ["P2", "小二", "279", "国家 时候 可能"], ["P3", "小三", "253", "所以 方法 如果"],
   ["P4", "小四", "272", "终于 之后 其他"], ["P5", "小五", "317", "战斗 产生 控制"], ["P6", "小六", "236", "政府 道德 克服"],
+  ["Business", "商务", "103", "公司 会议 开会"],
   ["Sec 1", "中一", "350", "斯文 偶尔 经济"], ["Sec 2", "中二", "387", "庞大 耕地 呵护"], ["Sec 3", "中三", "417", "腐朽 雇佣 迄今"],
-  ["Sec 4", "中四", "430", "抽屉 云霄 绽放"], ["Business", "商务", "103", "公司 会议 开会"],
+  ["Sec 4", "中四", "430", "抽屉 云霄 绽放"],
 ];
 const chips = LEVELS.map(([n, s, c, ex]) => {
   const d = document.createElement("div"); d.className = "lvl";
@@ -409,8 +418,8 @@ const chips = LEVELS.map(([n, s, c, ex]) => {
 /* ---------- Review timeline ----------
    The real schedule (src/lib/srs.ts): Improving puts a word in box 1 (back tomorrow), Good keeps it there,
    Excellent moves it up a box (2 days, then 4). Box 3 counts as mastered. */
-const POS = [0, 420, 760, 1300, 2050];
-const DAYS = ["Today", "Day 1", "Day 2", "Day 4", "Day 8"];
+const POS = [0, 560, 1120, 1680, 2240];   // evenly spaced, so the cards never overlap
+const DAYS = ["Today", "Day 1", "Day 2", "Day 3", "Day 4"];
 const TIERS = [["进", "Improving", "ok"], ["好", "Good", "good"], ["优", "Excellent", "perfect"], ["优", "Mastered", "perfect"]];
 const trackEl = $("track");
 trackEl.innerHTML = `<div class="floor"><div class="lane"></div>${POS.map(x => `<div class="spot" style="left:${x + 500}px"></div>`).join("")}</div>`
@@ -491,7 +500,7 @@ function render(t) {
   const day = seg(t, 9.55, 10.25);
   $("night").style.opacity = 1 - E.sine(day);
   $("vignette").style.opacity = day;
-  $("bg").style.transform = `translate(${-t * 9}px, ${-t * 4}px)`;
+  $("bg").style.transform = `translate(${-(t * 9 % 54)}px, ${-(t * 4 % 54)}px)`;
 
   /* ----- practice card ----- */
   const pc = $("pcard");
@@ -500,16 +509,26 @@ function render(t) {
   if (onCard) {
     let s = 3.25, x = 0, y = 0, rx = 0, ry = 0, rz = 0, z = 0;
     if (t > T.reveal[0]) {
-      x = kf(t, [[10.0, 0], [11.4, 420, "io"], [14.3, 420], [15.4, 330, "io"], [29.6, 330], [30.4, -1500, "in"]]);
-      ry = kf(t, [[9.2, 0], [10.6, -30, "io5"], [12.0, -44, "io"], [14.2, -32, "sine"], [15.4, -10, "io"], [22.4, -6, "lin"], [23.5, 354, "io"], [29.6, 346, "lin"], [30.4, 290, "in"]]);
-      rx = kf(t, [[9.2, 0], [10.6, 14, "io5"], [12.0, 30, "io"], [14.2, 24, "sine"], [15.4, 6, "io"], [22.4, 4], [23.5, 5], [29.6, 3]]);
-      s = kf(t, [[9.2, 3.25], [10.6, 1.42, "io5"], [11.4, 1.2, "io"], [14.3, 1.2], [15.4, 1.38, "io"], [29.6, 1.4, "lin"]]);
-      y = kf(t, [[11, 0], [12.0, 125, "io"], [14.0, 125], [15.0, 0, "io"]]);
-      z = kf(t, [[T.flip[0], 0], [22.95, -380, "out"], [T.flip[1], 0, "in"]]);
+      const [f0, f1] = T.flip, fm = (f0 + f1) / 2;
+      const flipRy = [[f0, -6, "lin"], [f1, 354, "sine"], [29.6, 346, "lin"], [30.4, 290, "in"]];
+      if (VER === 1) {   // exploded layers, off to the right of the caption
+        x = kf(t, [[10.0, 0], [11.4, 300, "io"], [14.3, 300], [15.4, 330, "io"], [29.6, 330], [30.4, -1500, "in"]]);
+        ry = kf(t, [[9.2, 0], [10.6, -30, "io5"], [12.0, -40, "io"], [14.2, -30, "sine"], [15.4, -10, "io"], ...flipRy]);
+        rx = kf(t, [[9.2, 0], [10.6, 12, "io5"], [12.0, 16, "io"], [14.2, 12, "sine"], [15.4, 6, "io"], [f0, 4], [f1, 5], [29.6, 3]]);
+        s = kf(t, [[9.2, 3.25], [10.6, 1.42, "io5"], [11.4, 1.2, "io"], [14.3, 1.2], [15.4, 1.38, "io"], [29.6, 1.4, "lin"]]);
+        y = kf(t, [[11, 0], [12.0, 70, "io"], [14.0, 70], [15.0, 0, "io"]]);
+      } else {             // close-up tour: pinyin and sound, then Momo, then back out
+        x = kf(t, [[10.0, 0], [11.4, 330, "io"], [12.0, 290, "io"], [13.8, 290], [15.0, 330, "io"], [29.6, 330], [30.4, -1500, "in"]]);
+        ry = kf(t, [[9.2, 0], [10.6, -30, "io5"], [11.6, -16, "io"], [12.6, -12, "sine"], [13.8, -18, "sine"], [15.4, -10, "io"], ...flipRy]);
+        rx = kf(t, [[9.2, 0], [10.6, 14, "io5"], [11.6, 8, "io"], [12.6, 4, "sine"], [13.8, 8, "sine"], [15.4, 6, "io"], [f0, 4], [f1, 5], [29.6, 3]]);
+        s = kf(t, [[9.2, 3.25], [10.6, 1.42, "io5"], [11.6, 2.6, "io"], [12.6, 2.6], [13.3, 2.5, "io"], [14.1, 2.5], [15.0, 1.38, "io"], [29.6, 1.4, "lin"]]);
+        y = kf(t, [[10.6, 0], [11.6, 640, "io"], [12.6, 640], [13.3, -420, "io"], [14.1, -420], [15.0, 0, "io"]]);
+      }
+      z = kf(t, [[f0, 0], [fm, -380, "out"], [f1, 0, "in"]]);
       rz = kf(t, [[T.stampA - .05, 0], [T.stampA + .02, -1.4, "out"], [T.stampA + .25, 0, "out"]]) + kf(t, [[T.stampB - .05, 0], [T.stampB + .02, -1.6, "out"], [T.stampB + .25, 0, "out"]]);
       x += shake(t, T.wrong[1] + .02);
     }
-    pc.style.transform = `translate3d(${x}px,${y}px,${z}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg) scale(${s})`;
+    pc.style.transform = `translate3d(${x}px,${y}px,${z}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg) scale3d(${s / ZOOM},${s / ZOOM},${s / ZOOM})`;
     $("sheen").style.background = `linear-gradient(${105 + ry * .8}deg, rgba(255,255,255,0) 30%, rgba(255,255,255,${.35 * day}) 48%, rgba(255,255,255,0) 66%)`;
 
     // The grid fades up in the dark; the card's chrome appears with daylight
@@ -519,21 +538,32 @@ function render(t) {
     for (const id of ["lBase", "lHead", "lMomo", "lAct"]) $(id).style.opacity = chrome;
     $("stagebox").style.background = `rgba(251,253,251,${chrome})`;
 
-    // Exploded view
-    const ex = E.back(seg(t, ...T.explode)) * (1 - E.io(seg(t, ...T.collapse)));
+    // Exploded view (version 1 only)
+    const ex = VER === 1 ? E.back(seg(t, ...T.explode)) * (1 - E.io(seg(t, ...T.collapse))) : 0;
     const Z = { lGrid: 90, lAct: 170, lHead: 250, lMomo: 330, lInk: 460 };
     for (const id in Z) $(id).style.transform = `translateZ(${ex * Z[id]}px)`;
     pc.querySelectorAll(".plate").forEach(pl => pl.style.opacity = clamp(ex) * .9);
     pc.querySelectorAll(".tag").forEach((tg, i) => {
-      const p = E.out(seg(t, 11.6 + i * .2, 12.2 + i * .2)) * (1 - E.in(seg(t, 13.6, 14.0)));
+      const p = VER === 1 ? E.out(seg(t, 11.6 + i * .2, 12.2 + i * .2)) * (1 - E.in(seg(t, 13.6, 14.0))) : 0;
       tg.style.opacity = p; tg.style.transform = `translateX(${(1 - p) * -20}px)`;
     });
 
+    // Version B: marker swipes, speaker waves and a Momo hop while the camera is close
+    const fade = E.in(seg(t, 14.1, 14.6));
+    const mkPy = VER === 2 ? E.out(seg(t, 11.5, 12.0)) * (1 - E.in(seg(t, 12.7, 13.0))) : 0;
+    const mkMomo = VER === 2 ? E.out(seg(t, 13.25, 13.75)) * (1 - fade) : 0;
+    $("pyT").style.backgroundSize = `${mkPy * 100}% 42%`;
+    $("momoSay").style.backgroundSize = `${mkMomo * 100}% 42%`;
+    const talk = VER === 2 && t > 11.6 && t < 12.9;
+    pc.querySelectorAll(".wv").forEach((w, i) => w.style.opacity = talk ? .35 + .65 * (Math.sin((t - 11.6) * 9 - i * 1.3) > 0) : 1);
+    const hop = VER === 2 ? Math.sin(Math.PI * seg(t, 13.3, 13.65)) * 10 + Math.sin(Math.PI * seg(t, 13.65, 13.95)) * 5 : 0;
+    pc.querySelector(".momoline svg").style.transform = `translateY(${-hop}px)`;
+
     // Which word is on the card
-    const second = t > 22.95;
+    const second = t > (T.flip[0] + T.flip[1]) / 2;
     setText("pyT", second ? "xià yǔ" : "xiě"); setText("enT", second ? "to rain" : "to write");
     setText("momoSay", momoLine(t));
-    if (!second) setSlots("写", t > 10.4 && (t < 15.0 || t > T.strict[4][1] + .25) ? 1 : 0, 0);
+    if (!second) setSlots("写", t < 15.0 || t > T.strict[4][1] + .25 ? 1 : 0, 0);   // filled from the start: no yellow flash at the reveal
     else setSlots("下雨", t > T.fillA[1] ? (t > T.fillB[1] ? 2 : 1) : 0, t > T.fillA[1] ? 1 : 0);
 
     // The opening 写, faded out before the stroke-by-stroke round
@@ -602,7 +632,7 @@ function render(t) {
   if (onRing) {
     const pin = E.out(seg(t, ...T.ringIn)), pout = E.in(seg(t, ...T.ringOut));
     const A = lerp(-420, 0, E.expo(seg(t, T.ringIn[0], T.ringLand)));
-    ring.style.transform = `translate3d(0, ${60 - pout * 700}px, ${lerp(-1600, 0, pin)}px) rotateX(-9deg)`;
+    ring.style.transform = `translate3d(0, ${-50 - pout * 700}px, ${lerp(-1600, 0, pin)}px) rotateX(-9deg)`;
     const land = seg(t, T.ringLand, T.ringLand + .35);
     chips.forEach((c, i) => {
       const a = i * 360 / chips.length + A;
@@ -628,7 +658,7 @@ function render(t) {
     });
     if (!(cy < 0)) cx = POS[at];
     if (cache.tier !== at) { cache.tier = at; wcard.innerHTML = wcardHTML(at); wcard.appendChild(badge); }
-    const camX = kf(t, [[35.6, 0], [36.25, 230, "sine"], [37.5, 560, "sine"], [38.75, 1000, "sine"], [40.6, 1150, "sine"]]);
+    const camX = kf(t, [[35.6, 0], [36.25, 300, "sine"], [37.5, 800, "sine"], [38.75, 1360, "sine"], [40.6, 1560, "sine"]]);
     const pin = E.out(seg(t, ...T.trackIn)), pout = E.in(seg(t, ...T.trackOut));
     const f = pin * (1 - pout);
     trackEl.style.transform = `translate3d(${-camX - 330 + (1 - pin) * 900 - pout * 600}px, -10px, ${-pout * 600}px) rotateX(-17deg) rotateY(${-22 + (1 - pin) * 30}deg)`;
@@ -783,14 +813,14 @@ function buildMusic(ctx, dest, offset = 0, base = 0) {
     const g = ctx.createGain(); env(g, t, .003, .35, .3); o.connect(g); g.connect(master); o.start(at(t)); o.stop(at(t) + .4);
     pluck(t + .02, 63, .1, .5, .2, false); pluck(t + .02, 64, .08, .5, .2, false);
   }
-  function sweep(t0, t1, f0, f1, v) {   // risers and whooshes
-    if (t1 < offset) return;
+  function sweep(t0, t1, f0, f1, v) {   // risers and whooshes (skipped when playback starts part-way through one)
+    if (!live(t0)) return;
     const s = ctx.createBufferSource(); s.buffer = noise; s.loop = true;
     const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.Q.value = 1.4;
     f.frequency.setValueAtTime(f0, at(t0)); f.frequency.exponentialRampToValueAtTime(f1, at(t1));
     const g = ctx.createGain(); g.gain.setValueAtTime(0, at(t0)); g.gain.linearRampToValueAtTime(v, at(t1) - .02); g.gain.linearRampToValueAtTime(0, at(t1) + .06);
     s.connect(f); f.connect(g); g.connect(master); const sg = ctx.createGain(); sg.gain.value = .5; g.connect(sg); sg.connect(verb);
-    s.start(Math.max(at(t0), ctx.currentTime)); s.stop(at(t1) + .2);
+    s.start(at(t0)); s.stop(at(t1) + .2);
   }
   const whoosh = (t, v = .1) => { sweep(t, t + .35, 300, 2600, v); sweep(t + .35, t + .75, 2600, 500, v * .5); };
 
@@ -884,7 +914,7 @@ const params = new URLSearchParams(location.search);
 const POSTER = 45;
 if (params.has("capture")) {
   document.body.classList.add("capture");
-  window.__ready = fontsReady.then(() => { render(0); return true; });
+  window.__ready = fontsReady.then(() => { render(params.has("t") ? +params.get("t") : 0); return true; });
   window.__seek = t => { render(t); };
   window.__audio = renderAudio;
   window.__DUR = DUR;
