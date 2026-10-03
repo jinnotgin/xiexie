@@ -224,7 +224,7 @@ async function signOut() {
     </div>
     <footer class="credit">
       <span>© {{ new Date().getFullYear() }} · Created by <a href="https://itsjin.com" target="_blank" rel="noopener">Jin</a></span>
-      <span v-if="buildCommit" class="build" title="Build commit">{{ buildCommit }}</span>
+      <a v-if="buildCommit" class="build" href="https://github.com/jinnotgin/xiexie" target="_blank" rel="noopener" title="Build commit · source on GitHub">{{ buildCommit }}</a>
     </footer>
   </section>
   </Transition>
