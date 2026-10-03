@@ -20,7 +20,7 @@ Many Singaporeans study Chinese for ten years or more but rarely write it after 
 - **Start without an account.** Your progress is saved on your device. You can sign in with Google to sync it across devices.
 
 Built with [Hanzi Writer](https://hanziwriter.org), Vue 3, Pinia, Vue Router and Vite.
-Developed with [Claude Opus 5.5](https://www.anthropic.com/claude) using [Claude Code](https://claude.com/claude-code).
+Developed with [Claude Opus 5.5](https://www.anthropic.com/claude-opus-5-5) using [Claude Code](https://claude.com/claude-code).
 
 ## Getting started
 
