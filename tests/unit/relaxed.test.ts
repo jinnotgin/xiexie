@@ -106,6 +106,19 @@ describe("relaxed checker", () => {
     }
   });
 
+  it("tells finished joined-up writing from unfinished ink, whatever the stroke count", () => {
+    const finished = (ink: Pt[][], c: string) => checker.looksFinished(ink, c, checker.check(ink, c).score);
+    expect(finished(CURSIVE_ZI, "字")).toBe(true);
+    for (const c of "你我字是国") expect(finished(joined(DATA[c].medians), c), c).toBe(true);
+    // a stroke short, joined up or not: Google would read these as the character
+    for (const c of "的家因象石云昨全加共响苦") {
+      expect(finished(asInk(DATA[c].medians.slice(0, -1)), c), c).toBe(false);
+      expect(finished(joined(DATA[c].medians.slice(0, -1)), c), c).toBe(false);
+    }
+    const zigzag: Pt[][] = [Array.from({ length: 20 }, (_, i): Pt => [i * 15, i % 2 ? 0 : 200])];
+    expect(finished(zigzag, "字")).toBe(false);
+  });
+
   it("rejects scribbles and empty ink", () => {
     const zigzag: Pt[][] = [Array.from({ length: 20 }, (_, i): Pt => [i * 15, i % 2 ? 0 : 200])];
     expect(checker.check(zigzag, "字").ok).toBe(false);

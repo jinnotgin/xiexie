@@ -42,6 +42,9 @@ const MAX_SCORE = 0.15;   // beyond this the ink is a different shape altogether
 const NEAR_BEST = 1.03;   // the target may trail the best fit by this factor...
 const NEAR_RANK = 3;      // ...if it is still among the top few
 const PARTIAL_FIT = 0.85; // the target minus a stroke fitting this much better than the whole means it isn't finished
+// Stricter, for looksFinished: on sloppy simulated writing, any stroke-short fit beating the whole
+// catches ~99% of ink with a stroke missing, and still clears ~40-75% of complete joined-up ink.
+const FINISHED_FIT = 1;
 
 /** A resampled path: x, y, heading at each point, and the reference stroke it belongs to (-1 = pen in the air). */
 interface Path { x: Float32Array; y: Float32Array; a: Float32Array; s: Int16Array }
@@ -215,19 +218,32 @@ export function makeChecker(data: Record<string, CharMedians>) {
     return p;
   };
 
+  /**
+   * How well reference paths fit the ink. Each is scored on the ink as written and on the ink
+   * put into its own stroke order, keeping the better: joined-up writing follows the usual order
+   * and lines up as written, while strokes written in another order or direction line up once
+   * sorted. Sorting is tried on the strokes split at their corners and on the strokes whole: a
+   * split can send the two legs of one stroke (女's 𡿨) to either side of another stroke.
+   */
+  function fitter(strokes: Pt[][]) {
+    const norm = normalize(strokes, true), pieces = splitCorners(norm), split = pieces.length > norm.length;
+    const asWritten = toPath(norm, N, false);
+    const sortedFit = (s: Pt[][], r: Path) => dtw(toPath(canonicalize(s, r), N, false), r);
+    return { norm, fitPath: (r: Path) => Math.min(dtw(asWritten, r), sortedFit(pieces, r), split ? sortedFit(norm, r) : Infinity) };
+  }
+
+  /** Whether the target with some stroke left out fits the ink better than the whole target, by `margin`. */
+  const missesStroke = (fitPath: (r: Path) => number, target: string, score: number, margin: number) => {
+    const meds = data[target].medians;
+    return meds.length > 1 && meds.some((_, k) => fitPath(toPath(meds.filter((_, i) => i !== k), N, false)) < score * margin);
+  };
+
   /** Scores the ink against every known character and decides whether it is `target`. */
   function check(ink: Pt[][], target: string): Verdict {
     const strokes = ink.filter(s => s.length > 0);
     if (!data[target] || !strokes.length) return { ok: false, rank: Infinity, score: Infinity, best: "", bestScore: Infinity, rival: "", incomplete: false };
-    // Each candidate is scored on the ink as written and on the ink put into its own stroke
-    // order, keeping the better: joined-up writing follows the usual order and lines up as
-    // written, while strokes written in another order or direction line up once sorted.
-    // Sorting is tried on the strokes split at their corners and on the strokes whole: a
-    // split can send the two legs of one stroke (女's 𡿨) to either side of another stroke.
-    const norm = normalize(strokes, true), pieces = splitCorners(norm), split = pieces.length > norm.length;
-    const asWritten = toPath(norm, N, false), asWrittenCoarse = toPath(norm, N_COARSE, false);
-    const sortedFit = (s: Pt[][], r: Path) => dtw(toPath(canonicalize(s, r), N, false), r);
-    const fitPath = (r: Path) => Math.min(dtw(asWritten, r), sortedFit(pieces, r), split ? sortedFit(norm, r) : Infinity);
+    const { norm, fitPath } = fitter(strokes);
+    const asWrittenCoarse = toPath(norm, N_COARSE, false);
     const fit = (c: string) => fitPath(ref(c, N));
     // Sweep every character cheaply (as written, and order-free), then score a shortlist properly.
     const top = (d: (r: Path) => number) =>
@@ -239,9 +255,7 @@ export function makeChecker(data: Record<string, CharMedians>) {
     const close = score <= MAX_SCORE && (rank === 1 || (rank <= NEAR_RANK && score <= bestScore * NEAR_BEST));
     // No real character is "the target minus a stroke", so unfinished ink still beats every
     // rival. Score it against the target with each stroke left out too (only when it would pass).
-    const meds = data[target].medians;
-    const incomplete = close && meds.length > 1 &&
-      meds.some((_, k) => fitPath(toPath(meds.filter((_, i) => i !== k), N, false)) < score * PARTIAL_FIT);
+    const incomplete = close && missesStroke(fitPath, target, score, PARTIAL_FIT);
     const rival = scored.find(r => r.c !== target)?.c ?? "";
     return { ok: close && !incomplete, rank, score, best: scored[0].c, bestScore, rival, incomplete };
   }
@@ -257,7 +271,20 @@ export function makeChecker(data: Record<string, CharMedians>) {
     return true;
   }
 
+  /**
+   * Whether the ink looks like the whole of `target` rather than part of it, however many pen
+   * lifts it took: the target is a plausible shape for it (`score`, from check) and no
+   * stroke-short version of the target fits it better. Lets joined-up writing, which is short
+   * of the target's stroke count by design, be told apart from ink that is still unfinished.
+   */
+  function looksFinished(ink: Pt[][], target: string, score: number): boolean {
+    const strokes = ink.filter(s => s.length > 0), meds = data[target]?.medians;
+    if (!meds || !strokes.length || !(score <= MAX_SCORE)) return false;
+    if (meds.length < 2) return true;
+    return !missesStroke(fitter(strokes).fitPath, target, score, FINISHED_FIT);
+  }
+
   const strokeCount = (c: string) => data[c]?.medians.length ?? 0;
 
-  return { check, strokeCount, warm };
+  return { check, looksFinished, strokeCount, warm };
 }

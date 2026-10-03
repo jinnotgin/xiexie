@@ -249,10 +249,10 @@ function onInkEnd() { cancelCheck(); checkTimer = later(() => { checkTimer = und
 /**
  * Checks all the ink so far. Not close enough yet is fine: the learner keeps writing.
  * Only ink that has run well past the character without matching counts as a miss.
- * With Google handwriting on, a miss with at least the character's stroke count of ink is
- * passed when Google reads the target first; the local checker stays the judge when Google
- * can't say. Google autocorrects (it reads most characters a stroke short as the character),
- * so shorter ink, which may be unfinished, is never sent.
+ * With Google handwriting on, a miss that looks finished is passed when Google reads the
+ * target first; the local checker stays the judge when Google can't say. Google autocorrects
+ * (it reads most characters a stroke short as the character), so ink is only sent with at least
+ * the character's stroke count, or when it's joined-up writing the checker judges complete.
  */
 async function checkInk() {
   const c = session.cur;
@@ -264,14 +264,17 @@ async function checkInk() {
   const v = relaxedChecker().check(ink, ch);
   const overshot = !v.ok && ink.length >= relaxedChecker().strokeCount(ch) + OVERSHOOT;
   let google: string[] | null = null;
-  if (googleHandwriting && !v.ok && ink.length >= relaxedChecker().strokeCount(ch)) {
+  const sendAs = !googleHandwriting || v.ok ? ""
+    : ink.length >= relaxedChecker().strokeCount(ch) ? "count"
+    : relaxedChecker().looksFinished(ink, ch, v.score) ? "shape" : "";
+  if (sendAs) {
     google = await recognize(ink, writerSize.value);
     // Newer ink has its own check; a remounted pad, a mode switch or a finished character drops this one.
     if (!alive || seq !== checkSeq || c !== session.cur || c.done || charPassed.value || !relaxed.value || !inkPad.value) return;
   }
   const rescued = !!google && google[0] === ch;
   const ok = v.ok || rescued;
-  const googleProps = googleHandwriting ? { google_asked: google !== null, google_top: google?.[0] ?? "", google_rescued: rescued } : {};
+  const googleProps = googleHandwriting ? { google_sent_as: sendAs, google_asked: google !== null, google_top: google?.[0] ?? "", google_rescued: rescued } : {};
   if (posthogEnabled && (ok || overshot)) {
     posthog.capture("practice_relaxed_check", {
       accepted: ok, rank: v.rank, score: v.score, best_score: v.bestScore,
