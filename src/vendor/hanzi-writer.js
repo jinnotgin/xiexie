@@ -35,6 +35,7 @@
 //   #7  Quiz._getStrokeData(): isMisplaced / isForced in stroke callbacks
 //   #8  Quiz.nextStroke(): record drawn strokes
 //   #9  Quiz.nextStroke(): richer onComplete payload
+//   #10 strokeMatches(): reject retracing a stroke already drawn
 // =============================================================================
 
 var HanziWriter = (function () {
@@ -675,8 +676,8 @@ var HanziWriter = (function () {
   const LATER_STROKE_DIST_MOD = 0.65; // distance budget after the first stroke / with outline (upstream: 0.5)
   const SHAPE_LENIENCY = 1; // upstream default; retries never loosen shape
   // Strict-mode placement fallback: the expected stroke, drawn the right shape but in the
-  // wrong spot, still counts (flagged as misplaced) as long as it isn't sitting where another
-  // stroke belongs.
+  // wrong spot, still counts (flagged as misplaced) as long as it isn't retracing a stroke
+  // already drawn.
   const MISPLACED_DIST_MOD = 2.25; // distance budget multiplier over the normal one
   const MISPLACED_MIN_LEN_RATIO = 0.6; // tighter than MIN_LEN_THRESHOLD so a flick can't pass as a long stroke
   const MISPLACED_LONG_STROKE = 200; // ...applied only to strokes this long; dots and ticks keep the normal floor
@@ -709,6 +710,24 @@ var HanziWriter = (function () {
       };
     } // if there is a better match among strokes the user hasn't drawn yet, the user probably drew the wrong stroke
 
+
+    // >>> [xiexie patch 10] BEGIN: reject retracing a stroke already drawn (additive)
+    // Upstream only compares against later strokes, so going over an earlier stroke again
+    // (三's top 横 when the middle one is due) passes whenever the next stroke is nearby.
+    // A stroke that fits an already-drawn stroke better than the expected one is a mistake.
+    for (let i = 0; i < strokeNum; i++) {
+      const earlier = getMatchData(points, strokes[i], { ...options,
+        checkBackwards: false
+      });
+
+      if (earlier.isMatch && earlier.avgDist < avgDist) {
+        return {
+          isMatch: false,
+          meta
+        };
+      }
+    }
+    // <<< [xiexie patch 10] END
 
     const laterStrokes = strokes.slice(strokeNum + 1);
     let closestMatchDist = avgDist;
@@ -751,8 +770,9 @@ var HanziWriter = (function () {
 
   // >>> [xiexie patch 2] BEGIN: misplacedStrokeMatches() (additive; called from patch 6)
   // Shape, direction and length must all fit; location only has to be within a wide budget.
-  // Rejected if the stroke matches any other stroke where it was drawn, so drawing a later (or
-  // already drawn) stroke in its own place is still a mistake, not a misplaced pass.
+  // Rejected only if it retraces a stroke already drawn. Landing where a later stroke belongs
+  // still passes (flagged as misplaced) if it's within the distance budget: favours spatial
+  // leniency over order between nearby same-shaped strokes, e.g. 常's 口 丨 drawn in 巾's spot.
   function misplacedStrokeMatches(userStroke, character, strokeNum, options = {}) {
     const points = stripDuplicates(userStroke.points);
     if (points.length < 2) return false;
@@ -767,7 +787,7 @@ var HanziWriter = (function () {
     const minLenRatio = stroke.getLength() > MISPLACED_LONG_STROKE ? MISPLACED_MIN_LEN_RATIO : MIN_LEN_THRESHOLD;
     if (lenRatio < minLenRatio || lenRatio > MAX_LEN_RATIO) return false;
     if (!directionMatches(points, stroke) || !shapeFit(points, stroke.points, SHAPE_LENIENCY)) return false;
-    return !character.strokes.some((other, i) => i !== strokeNum && getMatchData(points, other, { ...options,
+    return !character.strokes.some((other, i) => i < strokeNum && getMatchData(points, other, { ...options,
       checkBackwards: false
     }).isMatch);
   }
