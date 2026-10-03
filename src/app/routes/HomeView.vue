@@ -8,7 +8,7 @@ setTimeout(() => { splashHeld.value = false; }, SPLASH_MIN_MS);
 
 <script setup lang="ts">
 import { track } from "../../lib/analytics";
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { LEVELS } from "../../data/levels";
 import { wordsIn } from "../../data/words";
@@ -83,13 +83,13 @@ const dueCount = computed(() => learner.due().length);
 const dueNote = computed(() =>
   `${dueCount.value} word${dueCount.value > 1 ? "s" : ""} due for review. They'll come up first.`);
 
-// After a reset, scroll up to Momo, who reacts with a fresh-start line while the zeroed stats pop.
+// After a reset, sign-in or sign-out, scroll up to Momo, who reacts with a fresh-start line while the zeroed stats pop.
 const timers = useTimers();
-const fresh = ref(0); // bumped per reset, so a second reset replays the animation
+const fresh = ref(0); // bumped per reaction, so a second reset replays the animation
 const celebrating = ref(false);
 let freshTimer: ReturnType<typeof timers.later> | undefined;
-function celebrateReset() {
-  greeting.value = pick(LINES.reset);
+function freshStart(lines: string[]) {
+  greeting.value = pick(lines);
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const scrolled = window.scrollY > 0;
   if (scrolled) window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
@@ -119,7 +119,7 @@ async function reset() {
     await learner.wipe();
   }
   track("progress_reset", { reset_scope: account.signedIn ? "account" : "device" });
-  celebrateReset();
+  freshStart(LINES.reset);
 }
 
 onMounted(() => { if (!account.signedIn) account.prepare(); });
@@ -144,9 +144,18 @@ const buildCommit = document.querySelector<HTMLMetaElement>('meta[name="build-co
 
 const syncHealthy = computed(() => account.signedIn && account.state !== "offline" && account.state !== "error");
 
+// signIn() returns once Google says yes; linking (and any conflict prompt) finishes later,
+// so Momo reacts when the account settles, and only if this device ended up signed in.
+let signingIn = false;
+watch(() => account.state, s => {
+  if (!signingIn || s === "busy") return;
+  signingIn = false;
+  if (account.signedIn) freshStart(LINES.signedIn);
+});
 async function signIn() {
+  signingIn = true;
   try { await account.signIn(); }
-  catch (e) { const msg = cloudError(e); if (msg) await tell("Couldn't sign in", msg); }
+  catch (e) { signingIn = false; const msg = cloudError(e); if (msg) await tell("Couldn't sign in", msg); }
 }
 
 async function signOut() {
@@ -155,12 +164,15 @@ async function signOut() {
     message: "Your progress stays in your Google account, and this device starts fresh.",
     confirm: "Sign out",
   }))) return;
-  if (await account.signOut()) return;
-  if (await ask({
-    title: "Some progress hasn't been saved",
-    message: "Progress from this device hasn't reached your account yet (you may be offline). If you sign out now, it's lost.",
-    confirm: "Sign out and lose it", cancel: "Stay signed in", danger: true,
-  })) await account.signOut(true);
+  if (!(await account.signOut())) {
+    if (!(await ask({
+      title: "Some progress hasn't been saved",
+      message: "Progress from this device hasn't reached your account yet (you may be offline). If you sign out now, it's lost.",
+      confirm: "Sign out and lose it", cancel: "Stay signed in", danger: true,
+    }))) return;
+    await account.signOut(true);
+  }
+  freshStart(LINES.signedOut);
 }
 </script>
 

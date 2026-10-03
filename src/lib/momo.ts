@@ -31,6 +31,16 @@ export const LINES = {
     "All cleared. Fresh page, fresh ink!",
     "Done, everything's reset. Like the first day of school."
   ],
+  signedIn: [
+    "Signed in! Your progress now follows you to every device.",
+    "Welcome back! Your words are safe in your Google account.",
+    "Signed in. Write here, carry on anywhere."
+  ],
+  signedOut: [
+    "Signed out! Your progress is safe in your Google account.",
+    "Bye for now. Sign in again and your words come back.",
+    "See you soon! Every word you've learnt is kept in your account."
+  ],
   loading: [
     "Grinding the ink…",
     "Getting ready for you, ok?",
