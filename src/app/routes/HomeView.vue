@@ -107,6 +107,9 @@ const storageNote = computed(() => {
   if (!learner.persistent) return { title: "Storage is unavailable here", detail: "Progress lasts until you close this page." };
   return { title: "Saved on this browser", detail: account.enabled ? "Sign in to keep it on all your devices." : "" };
 });
+// Stamped into <meta name="build-commit"> by vite.config.ts.
+const buildCommit = document.querySelector<HTMLMetaElement>('meta[name="build-commit"]')?.content;
+
 const syncHealthy = computed(() => account.signedIn && account.state !== "offline" && account.state !== "error");
 
 async function signIn() {
@@ -219,6 +222,10 @@ async function signOut() {
     <div class="foot">
       <button class="linkish" id="reset" @click="reset"><Icon name="reset" />Reset progress</button>
     </div>
+    <footer class="credit">
+      <span>© {{ new Date().getFullYear() }} · Created by <a href="https://itsjin.com" target="_blank" rel="noopener">Jin</a></span>
+      <span v-if="buildCommit" class="build" title="Build commit">{{ buildCommit }}</span>
+    </footer>
   </section>
   </Transition>
 </template>

@@ -148,6 +148,9 @@ h2{font-size:1.05rem;margin:0 0 10px}
 .install-tip{position:absolute;right:0;top:calc(100% + 8px);z-index:5;width:220px;margin:0;padding:10px 12px;background:var(--card);border:2px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink);font-size:.85rem;line-height:1.35}
 .install-tip .icon{width:1.1em;height:1.1em;vertical-align:-.2em}
 .foot{margin-top:14px;display:flex;justify-content:center}
+.credit{display:flex;justify-content:space-between;gap:12px;margin-top:32px;padding-top:14px;border-top:1px solid color-mix(in srgb,var(--ink-soft) 30%,transparent);color:var(--ink-soft);font-size:.78rem}
+.credit a{color:inherit;text-underline-offset:2px}
+.credit .build{font-variant-numeric:tabular-nums}
 .linkish{display:inline-flex;align-items:center;gap:.35em;background:none;border:none;color:var(--ink-soft);text-decoration:underline;text-underline-offset:2px;cursor:pointer;padding:0;font-size:.82rem}
 .linkish .icon{width:1em;height:1em}
 #reset:hover{color:var(--seal)}
