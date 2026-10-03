@@ -34,13 +34,19 @@ export const useProgressStore = defineStore("progress", () => {
     status.value = "ready";
   }
 
+  /** Replaces the whole profile, so nothing from the old one (like this week's count) lingers. */
+  function replaceMeta(next: Partial<Meta>) {
+    for (const k of Object.keys(meta)) delete (meta as Record<string, unknown>)[k];
+    Object.assign(meta, DEFAULT_META, { levels: [...DEFAULT_META.levels] }, next);
+  }
+
   /** (Re)reads everything from IndexedDB, e.g. after another tab signed in or out. */
   async function load() {
     const recs = await Store.allProgress();
+    const saved = (await Store.getMeta()) || {};
     progress.clear();
     recs.forEach(p => progress.set(p.id, p));
-    for (const k of Object.keys(meta)) delete (meta as Record<string, unknown>)[k];
-    Object.assign(meta, DEFAULT_META, (await Store.getMeta()) || {});
+    replaceMeta(saved);
     delete (meta as Partial<Meta> & { id?: string }).id;
     delete (meta as Partial<Meta> & { tracing?: boolean }).tracing; // retired setting
     delete (meta as Partial<Meta> & { xp?: number }).xp;            // retired XP counter
@@ -77,7 +83,7 @@ export const useProgressStore = defineStore("progress", () => {
   async function wipe(link: Pick<SyncState, "uid" | "epoch"> = { uid: null, epoch: null }) {
     await Store.reset();
     progress.clear();
-    Object.assign(meta, DEFAULT_META, { levels: [...DEFAULT_META.levels], sync: { ...freshSync(), ...link } });
+    replaceMeta({ sync: { ...freshSync(), ...link } });
     await saveMeta(); changed();
   }
 
