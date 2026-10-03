@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>写写 Demo Reel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Ma+Shan+Zheng&display=block" rel="stylesheet">
+<style>
+:root{
+  --paper:#E8F0EA; --card:#FBFDFB; --ink:#1C2B3A; --ink-soft:#56657A;
+  --grid:#E3A29B; --seal:#C62F2A; --seal-ink:#FFFFFF; --jade:#2F7D5B; --marker:#F2CF3B;
+  --night:#0C1310;
+  color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#000;overflow:hidden}
+body{font-family:"Bricolage Grotesque",ui-rounded,system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+.han{font-family:"Ma Shan Zheng","KaiTi","STKaiti","Kaiti SC",serif;font-weight:400}
+
+/* The film is a fixed 1920×1080 stage, scaled to fit the window. */
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:0 0;overflow:hidden;background:var(--paper)}
+#bg{position:absolute;inset:-200px;background-color:var(--paper);
+  background-image:linear-gradient(rgba(28,43,58,.07) 1.5px,transparent 1.5px),linear-gradient(90deg,rgba(28,43,58,.07) 1.5px,transparent 1.5px);
+  background-size:54px 54px}
+#night{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,#16211c 0%,var(--night) 70%)}
+#vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(20,40,30,.16) 100%)}
+#world{position:absolute;inset:0;perspective:2200px;perspective-origin:50% 48%;transform-style:preserve-3d}
+.obj{position:absolute;left:50%;top:50%;transform-style:preserve-3d;will-change:transform}
+
+/* ---------- Practice card (mirrors the app's .sheet) ---------- */
+#pcard{width:380px;height:620px;margin:-310px 0 0 -190px}
+.L{position:absolute;inset:0;transform-style:preserve-3d;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.base{background:var(--card);border:2px solid var(--ink);border-radius:22px;box-shadow:5px 5px 0 var(--ink),0 50px 90px -30px rgba(20,45,35,.45)}
+.sheen{position:absolute;inset:0;border-radius:22px;pointer-events:none}
+.back{background:var(--card);border:2px solid var(--ink);border-radius:22px;transform:rotateY(180deg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  background-image:linear-gradient(rgba(28,43,58,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(28,43,58,.06) 1px,transparent 1px);background-size:24px 24px}
+.back .han{font-size:84px;line-height:1}
+.back svg{width:110px;height:110px}
+.py{position:absolute;left:0;right:0;top:16px;display:flex;justify-content:center;align-items:center;gap:8px;font-size:30px;font-weight:800;line-height:1.15}
+.py svg{width:22px;height:22px;color:var(--ink-soft)}
+.en{position:absolute;left:0;right:0;top:60px;text-align:center;font-size:16px;font-weight:500;color:var(--ink-soft)}
+.slots{position:absolute;left:0;right:0;top:94px;display:flex;justify-content:center;gap:6px}
+.slot{width:40px;height:40px;border:2px dashed var(--grid);border-radius:8px;display:grid;place-items:center;font-size:27px;color:var(--ink-soft);background:var(--card)}
+.slot.now{border-style:solid;border-color:var(--ink);background:var(--marker);color:#1C2B3A}
+.slot.done{border-style:solid;border-color:var(--ink);color:var(--ink)}
+.stagebox{position:absolute;left:32px;top:146px;width:316px;height:316px;border:2px solid var(--grid);border-radius:6px}
+.stagebox svg{position:absolute;inset:0;width:100%;height:100%}
+.stagebox .grid line{stroke:var(--grid);stroke-width:1;stroke-dasharray:6 6}
+.charbox{position:absolute;left:54px;top:168px;width:272px;height:272px}
+.charbox svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.finalw{position:absolute;left:34px;top:148px;width:312px;height:312px;display:flex;align-items:center;justify-content:center;gap:6px}
+.finalw svg{width:146px;height:146px}
+.momoline{position:absolute;left:0;right:0;top:474px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:15.5px;line-height:1.4;height:52px}
+.momoline svg{width:40px;height:40px;flex:none}
+.momoline span{max-width:26ch;text-align:left}
+.acts{position:absolute;left:18px;right:18px;top:546px;display:flex;align-items:center;gap:10px}
+.cbtn{width:44px;height:44px;border-radius:50%;border:2px solid var(--ink);background:var(--card);box-shadow:3px 3px 0 var(--ink);display:grid;place-items:center}
+.cbtn svg{width:20px;height:20px}
+.pbtn{display:inline-flex;align-items:center;font-weight:700;border:2px solid var(--ink);background:var(--card);border-radius:999px;padding:8px 15px;box-shadow:3px 3px 0 var(--ink);font-size:15.5px}
+.gbtn{font-weight:700;font-size:15.5px;padding:8px 12px}
+.stamp{position:absolute;right:-14px;top:-18px;width:96px;height:96px;border-radius:14px;background:var(--jade);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--jade);backface-visibility:hidden}
+.stamp .han{font-size:44px;line-height:1}
+.stamp small{font-size:11.5px;font-weight:700;margin-top:2px}
+.ring{position:absolute;right:-50px;top:-54px;width:168px;height:168px;border-radius:50%;border:4px solid var(--jade);opacity:0}
+
+/* Annotation tags beside each exploded layer */
+.plate{position:absolute;inset:0;border-radius:22px;border:2px solid rgba(28,43,58,.45);background:rgba(251,253,251,.28);opacity:0}
+.tag{position:absolute;left:100%;display:flex;align-items:center;white-space:nowrap;font-size:15px;font-weight:700}
+.tag i{display:block;width:46px;height:2px;background:var(--ink);position:relative;margin-left:-6px}
+.tag i::before{content:"";position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--ink)}
+.tag b{background:var(--card);border:2px solid var(--ink);border-radius:999px;padding:5px 12px;box-shadow:3px 3px 0 var(--ink)}
+.tag b.han{font-weight:400;font-size:17px}
+.tag em{font-style:normal;font-family:"Ma Shan Zheng",serif;font-weight:400}
+
+/* ---------- Levels ring ---------- */
+#ring{width:0;height:0}
+.lvl{position:absolute;width:250px;height:178px;margin:-89px 0 0 -125px;border:2.5px solid var(--ink);border-radius:18px;background:var(--card);box-shadow:5px 5px 0 var(--ink);
+  padding:16px 18px;display:flex;flex-direction:column;justify-content:space-between}
+.lvl .top{display:flex;justify-content:space-between;align-items:baseline}
+.lvl b{font-size:28px;font-weight:800}
+.lvl .sub{font-size:22px;color:var(--ink-soft)}
+.lvl .w{font-size:62px;line-height:1;text-align:center}
+.lvl small{font-size:14px;color:var(--ink-soft);font-weight:600}
+.lvl.on{background:var(--marker)}
+.lvl.on small,.lvl.on .sub{color:#3b4a5a}
+
+/* ---------- Review timeline ---------- */
+#track{width:0;height:0}
+.floor{position:absolute;left:-500px;top:-260px;width:4600px;height:520px;transform:rotateX(90deg);
+  background-image:linear-gradient(rgba(28,43,58,.09) 2px,transparent 2px),linear-gradient(90deg,rgba(28,43,58,.09) 2px,transparent 2px);background-size:54px 54px;
+  -webkit-mask-image:radial-gradient(ellipse at 30% 50%,#000 30%,transparent 72%);mask-image:radial-gradient(ellipse at 30% 50%,#000 30%,transparent 72%)}
+.floor .lane{position:absolute;left:500px;top:256px;width:3500px;height:0;border-top:4px dashed var(--ink);opacity:.5}
+.spot{position:absolute;top:220px;width:150px;height:72px;margin-left:-75px;border-radius:50%;border:3px solid var(--ink);background:rgba(242,207,59,.0)}
+.spot.hit{background:var(--marker)}
+.dlabel{position:absolute;width:300px;margin-left:-150px;text-align:center;font-weight:800;font-size:38px}
+.dlabel small{display:block;font-weight:600;font-size:24px;color:var(--ink-soft)}
+.wcard{position:absolute;width:290px;height:128px;margin-left:-145px;top:-140px;background:var(--card);border:2.5px solid var(--ink);border-radius:18px;box-shadow:5px 5px 0 var(--ink);
+  display:flex;align-items:center;gap:14px;padding:14px 18px;transform-origin:50% 100%}
+.wcard .w{font-size:56px;line-height:1}
+.wcard small{display:block;color:var(--ink-soft);font-size:16px;line-height:1.3}
+.wcard .mini{width:52px;height:52px;border-radius:10px;background:var(--jade);color:#fff;display:grid;place-items:center;font-size:32px;transform:rotate(-10deg);flex:none;margin-left:auto}
+
+/* ---------- End card ---------- */
+#endg{width:0;height:0}
+.ebox{position:absolute;width:300px;height:300px;margin:-150px 0 0 -150px;background:var(--card);border:2.5px solid var(--grid);border-radius:8px;box-shadow:0 40px 80px -30px rgba(20,45,35,.35)}
+.ebox svg{position:absolute;inset:0;width:100%;height:100%}
+.ebox .grid line{stroke:var(--grid);stroke-width:1.2;stroke-dasharray:7 7}
+.ebox .cb{position:absolute;inset:20px}
+.ebox .cb svg{overflow:visible}
+#emomo{position:absolute;width:150px;height:150px;margin:-75px 0 0 -75px}
+.etag{position:absolute;width:1400px;margin-left:-700px;text-align:center;font-size:44px;font-weight:600;color:var(--ink)}
+.eurl{position:absolute;margin-left:0;transform-origin:50% 50%;font-weight:800;font-size:34px;background:var(--seal);color:#fff;border:2.5px solid var(--ink);border-radius:999px;padding:14px 34px;box-shadow:5px 5px 0 var(--ink);white-space:nowrap}
+
+/* ---------- Captions ---------- */
+.cap{position:absolute;opacity:0}
+.cap h2{margin:0;font-size:76px;line-height:1.04;font-weight:800;letter-spacing:-.015em}
+.cap p{margin:22px 0 0;font-size:30px;line-height:1.38;color:var(--ink-soft);font-weight:500}
+.cap .wd{display:inline-block;white-space:pre}
+.cap .hl{color:var(--seal)}
+.cap.left{left:130px;top:50%;width:580px;transform:translateY(-50%)}
+.cap.top{left:0;right:0;top:92px;text-align:center}
+.cap.top p{max-width:1100px;margin-inline:auto}
+.cap.mid{left:0;right:0;top:50%;text-align:center;transform:translateY(-50%);color:#EAF2EC}
+.cap.mid h2{font-size:92px;font-weight:600}
+
+/* ---------- Player chrome (hidden while capturing) ---------- */
+#ui{position:fixed;inset:0;pointer-events:none;font-family:"Bricolage Grotesque",system-ui,sans-serif}
+#play{pointer-events:auto;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:14px;font:inherit;font-weight:800;font-size:22px;
+  padding:16px 30px 16px 22px;border-radius:999px;border:2.5px solid #1C2B3A;background:#C62F2A;color:#fff;box-shadow:5px 5px 0 #1C2B3A;cursor:pointer}
+#play:active{transform:translate(calc(-50% + 4px),calc(-50% + 4px));box-shadow:1px 1px 0 #1C2B3A}
+#play svg{width:26px;height:26px}
+#bar{pointer-events:auto;position:absolute;left:0;right:0;bottom:0;height:46px;display:flex;align-items:center;gap:14px;padding:0 18px;
+  background:linear-gradient(transparent,rgba(0,0,0,.45));opacity:0;transition:opacity .3s}
+#ui:hover #bar,#ui.paused #bar{opacity:1}
+#bar button{font:inherit;color:#fff;background:none;border:0;cursor:pointer;font-weight:700;font-size:15px;padding:6px}
+#track-ui{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.3);cursor:pointer;position:relative}
+#fill{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:#F2CF3B;width:0}
+#time{color:#fff;font-size:14px;font-variant-numeric:tabular-nums;min-width:86px;text-align:right}
+body.capture #ui{display:none}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"></div>
+  <div id="night"></div>
+  <div id="world">
+
+    <!-- The practice card, built in layers so it can come apart -->
+    <div class="obj" id="pcard">
+      <div class="L back"><svg viewBox="0 0 100 100" class="momo-svg"></svg><div class="han">写写</div></div>
+      <div class="L base" id="lBase"><div class="sheen" id="sheen"></div></div>
+      <div class="L" id="lGrid"><div class="plate"></div>
+        <div class="stagebox" id="stagebox"><svg viewBox="0 0 316 316"><g class="grid"><line x1="0" y1="0" x2="316" y2="316"/><line x1="316" y1="0" x2="0" y2="316"/><line x1="158" y1="0" x2="158" y2="316"/><line x1="0" y1="158" x2="316" y2="158"/></g></svg></div>
+        <div class="tag" style="top:335px"><i></i><b><em>米字格</em> practice grid</b></div>
+      </div>
+      <div class="L" id="lAct"><div class="plate"></div>
+        <div class="acts">
+          <div class="cbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></div>
+          <div class="cbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 20.5-4-4a1.8 1.8 0 0 1 0-2.5L13.8 3.7a1.8 1.8 0 0 1 2.5 0l4 4a1.8 1.8 0 0 1 0 2.5L10.5 20"/><path d="M7.5 20.5h13"/><path d="m9 10.5 4.5 4.5"/></svg></div>
+          <div style="flex:1"></div>
+          <div class="pbtn">Show me</div><div class="gbtn">Skip</div>
+        </div>
+        <div class="tag" style="top:552px"><i></i><b>Undo, erase or get a hint</b></div>
+      </div>
+      <div class="L" id="lHead"><div class="plate"></div>
+        <div class="py"><span id="pyT">xiě</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6"/><path d="M18.5 6.5a8 8 0 0 1 0 11"/></svg></div>
+        <div class="en" id="enT">to write</div>
+        <div class="slots" id="slots"></div>
+        <div class="tag" style="top:40px"><i></i><b>Pinyin and meaning, read aloud</b></div>
+      </div>
+      <div class="L" id="lMomo"><div class="plate"></div>
+        <div class="momoline"><svg viewBox="0 0 100 100" class="momo-svg"></svg><span id="momoSay">Write it from memory. You can do it.</span></div>
+        <div class="tag" style="top:486px"><i></i><b>Momo <em>墨墨</em>, your study buddy</b></div>
+      </div>
+      <div class="L" id="lInk"><div class="plate"></div>
+        <div class="charbox" id="charbox"><svg viewBox="0 0 1024 1024" id="charSvg"></svg></div>
+        <div class="finalw" id="finalw"></div>
+        <div class="tag" style="top:400px"><i></i><b>Real stroke order, 3,500 characters</b></div>
+        <div class="ring" id="sring"></div>
+        <div class="stamp" id="stamp"><span class="han">优</span><small>Excellent</small></div>
+      </div>
+    </div>
+
+    <div class="obj" id="ring"></div>
+    <div class="obj" id="track"></div>
+    <div class="obj" id="endg"></div>
+  </div>
+  <div id="vignette"></div>
+
+  <div class="cap mid" id="c1"><h2>You studied Chinese for ten years.</h2></div>
+  <div class="cap mid" id="c2"><h2>When did you last <span class="hl">write</span> it?</h2></div>
+  <div class="cap left" id="c3"><h2>Write it from memory.</h2><p>The real stroke order for every one of the 3,500 everyday characters, checked as you write.</p></div>
+  <div class="cap left" id="c4"><h2>Messy is fine.</h2><p>Relaxed mode takes any stroke order, even joined-up strokes. The character fills in once it's close enough.</p></div>
+  <div class="cap top" id="c5"><h2>Pick up where school left off.</h2><p>Primary levels follow the MOE 欢乐伙伴 lists. Secondary levels cover the rest of China's 3,500 everyday characters.</p></div>
+  <div class="cap top" id="c6"><h2>It comes back before you forget.</h2><p>Get a word right and the wait doubles. Miss it and it comes back sooner.</p></div>
+</div>
+
+<div id="ui" class="paused">
+  <button id="play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5Z"/></svg><span>Play with sound</span></button>
+  <div id="bar"><button id="pp">Play</button><div id="track-ui"><div id="fill"></div></div><div id="time">0:00 / 0:41</div></div>
+</div>
+
+<script>
+const DATA = {"写":{"strokes":["M 306 718 Q 306 719 306 720 Q 293 745 279 755 Q 257 771 256 742 Q 260 712 238 672 Q 187 603 188 593 Q 182 571 207 527 Q 225 499 246 530 Q 265 560 278 603 Q 293 657 307 691 L 306 718 Z","M 307 691 Q 328 675 377 683 Q 465 711 671 730 Q 699 733 711 730 Q 729 723 728 715 Q 728 709 683 638 Q 676 625 681 620 Q 688 616 705 626 Q 766 660 813 670 Q 853 680 853 689 Q 852 699 783 759 Q 761 780 687 768 Q 659 765 402 730 Q 356 723 308 720 Q 307 720 306 718 C 276 713 280 703 307 691 Z","M 426 496 Q 475 484 516 496 Q 672 535 676 537 Q 686 547 680 555 Q 671 568 640 574 Q 607 580 575 565 Q 544 553 507 544 Q 473 537 434 529 C 405 523 397 503 426 496 Z","M 387 308 Q 471 353 680 366 Q 705 367 714 359 Q 733 340 727 301 Q 702 102 661 70 Q 649 64 566 94 Q 550 103 547 94 Q 546 84 565 67 Q 608 18 625 -21 Q 644 -52 668 -33 Q 720 1 732 28 Q 750 68 788 276 Q 795 319 815 339 Q 831 355 824 367 Q 793 398 749 413 Q 731 419 655 405 Q 568 399 427 367 Q 400 363 406 380 Q 416 447 426 496 L 434 529 Q 441 565 452 588 Q 459 604 449 616 Q 433 632 416 639 Q 392 649 383 644 Q 374 638 380 625 Q 401 588 365 413 Q 362 397 328 361 Q 316 346 325 333 Q 335 321 357 305 Q 369 295 387 308 Z","M 407 180 Q 435 183 463 188 Q 541 200 610 196 Q 632 195 637 204 Q 643 217 631 226 Q 601 248 560 263 Q 547 267 523 258 Q 480 246 357 222 Q 293 212 261 204 Q 225 195 171 191 Q 158 190 158 180 Q 159 168 177 157 Q 216 133 252 145 Q 294 163 407 180 Z"],"medians":[[[268,748],[281,716],[279,695],[228,582],[225,533]],[[314,712],[328,702],[366,703],[495,728],[699,752],[745,743],[759,733],[773,707],[686,625]],[[435,500],[451,511],[524,521],[621,550],[672,546]],[[389,634],[412,612],[420,594],[373,347],[428,346],[542,372],[692,389],[735,383],[768,354],[730,141],[709,73],[690,39],[659,20],[554,91]],[[169,180],[194,171],[239,170],[320,191],[551,230],[625,212]]],"radStrokes":[0,1]},"下":{"strokes":["M 520 688 Q 758 710 827 705 Q 920 702 927 705 Q 927 706 929 707 Q 936 722 923 735 Q 848 801 781 778 Q 673 757 477 733 Q 173 697 130 695 Q 123 696 116 695 Q 101 695 100 683 Q 99 670 120 654 Q 138 641 172 629 Q 184 625 203 633 Q 219 640 294 653 Q 376 674 478 684 L 520 688 Z","M 544 524 Q 544 642 547 654 Q 551 667 541 675 Q 534 682 520 688 C 494 703 470 713 478 684 Q 499 648 485 268 Q 473 39 480 22 Q 486 6 498 -8 Q 511 -24 523 -5 Q 553 53 546 104 Q 540 161 544 492 L 544 524 Z","M 544 492 Q 620 446 712 378 Q 733 360 749 359 Q 759 359 765 371 Q 775 387 753 430 Q 723 493 544 524 C 514 529 518 508 544 492 Z"],"medians":[[[113,682],[145,669],[181,664],[440,706],[807,745],[870,736],[903,726],[924,710]],[[487,681],[516,656],[519,479],[510,-2]],[[555,519],[562,502],[645,466],[706,429],[729,407],[748,377]]],"radStrokes":[0]},"雨":{"strokes":["M 502 676 Q 587 689 679 701 Q 743 711 753 719 Q 763 726 758 736 Q 752 749 723 758 Q 692 767 661 756 Q 588 737 509 722 Q 422 709 321 705 Q 284 701 308 682 Q 350 655 424 667 Q 440 670 458 670 L 502 676 Z","M 219 488 Q 191 512 164 517 Q 158 520 153 513 Q 149 506 153 492 Q 184 438 187 392 Q 196 284 185 165 Q 181 140 192 118 Q 205 97 224 84 Q 239 75 241 87 Q 248 91 250 115 Q 256 142 246 231 Q 234 390 234 450 C 234 476 234 476 219 488 Z","M 529 507 Q 559 514 789 532 Q 808 533 814 524 Q 824 517 822 466 Q 816 258 783 141 Q 773 105 742 111 Q 703 120 668 127 Q 655 131 654 125 Q 653 118 664 107 Q 740 49 761 17 Q 771 -1 784 2 Q 800 3 815 33 Q 843 76 852 129 Q 868 199 882 446 Q 885 491 899 515 Q 917 537 903 542 Q 887 558 849 576 Q 825 592 799 581 Q 763 571 672 560 Q 596 553 530 543 L 485 536 Q 430 529 386 519 Q 301 501 219 488 C 189 483 206 440 234 450 Q 255 468 486 500 L 529 507 Z","M 530 543 Q 531 589 541 623 Q 548 636 546 646 Q 540 653 502 676 C 476 692 443 696 458 670 Q 458 669 460 665 Q 482 635 483 604 Q 484 573 485 536 L 486 500 Q 486 281 474 230 Q 459 203 485 142 Q 491 127 497 125 Q 503 119 508 126 Q 515 130 523 147 Q 530 166 530 193 Q 529 224 529 507 L 530 543 Z","M 327 380 Q 378 347 405 341 Q 415 341 420 352 Q 423 362 418 373 Q 399 409 331 409 L 330 409 Q 317 410 312 406 Q 308 405 311 396 Q 314 389 327 380 Z","M 319 246 Q 370 206 395 201 Q 407 201 412 212 Q 415 222 411 235 Q 404 253 388 260 Q 369 270 324 277 Q 311 278 304 275 Q 300 274 303 264 Q 306 255 319 246 Z","M 611 413 Q 669 383 697 382 Q 709 383 712 395 Q 713 407 707 418 Q 689 445 632 445 Q 598 445 591 439 Q 587 436 592 428 Q 596 419 611 413 Z","M 609 269 Q 658 233 686 228 Q 699 228 704 240 Q 707 252 702 264 Q 684 297 633 300 Q 600 304 592 299 Q 588 298 591 287 Q 594 278 609 269 Z"],"medians":[[[312,695],[343,687],[396,686],[520,701],[698,734],[747,730]],[[162,506],[196,471],[209,425],[217,303],[218,146],[232,89]],[[232,457],[246,475],[259,479],[510,523],[813,557],[845,540],[855,530],[858,511],[840,271],[826,174],[808,104],[780,69],[679,109],[661,123]],[[465,670],[498,651],[511,625],[507,312],[499,210],[502,136]],[[318,400],[372,381],[405,357]],[[310,269],[373,239],[396,218]],[[598,434],[670,415],[697,398]],[[598,292],[663,266],[687,246]]]}};
+
+/* =========================================================
+   Timeline basics. Everything on screen is a pure function of t,
+   so the page can play live or be rendered frame by frame.
+   ========================================================= */
+const DUR = 41;
+const BEAT = 60 / 96, BAR = BEAT * 4;   // 96 BPM, every scene sits on a bar line
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, p) => a + (b - a) * p;
+const E = {
+  lin: x => x,
+  io: x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2,
+  io5: x => x < .5 ? 16 * x ** 5 : 1 - Math.pow(-2 * x + 2, 5) / 2,
+  out: x => 1 - Math.pow(1 - x, 3),
+  in: x => x * x * x,
+  expo: x => x >= 1 ? 1 : 1 - Math.pow(2, -10 * x),
+  sine: x => -(Math.cos(Math.PI * x) - 1) / 2,
+  back: x => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); },
+};
+/** Keyframes [[time, value, ease]]: the ease applies on the way into that key. */
+function kf(t, keys) {
+  if (t <= keys[0][0]) return keys[0][1];
+  for (let i = 1; i < keys.length; i++) {
+    const [t1, v1, e] = keys[i];
+    if (t <= t1) { const [t0, v0] = keys[i - 1]; return lerp(v0, v1, E[e || "io"](seg(t, t0, t1))); }
+  }
+  return keys[keys.length - 1][1];
+}
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let x = Math.imul(seed ^ seed >>> 15, 1 | seed); x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x; return ((x ^ x >>> 14) >>> 0) / 4294967296; }; }
+const $ = id => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs = {}, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+
+/* ---------- Scene timing (shared by picture and music) ---------- */
+const T = {
+  writeA: [5.3, 8.6],          // 写 drawn on the dark open
+  reveal: [9.2, 10.6],         // pull back to the card
+  explode: [11.0, 12.3], collapse: [15.3, 16.2],
+  flip: [16.5, 17.6],
+  inkA: [17.95, 19.45], fillA: [19.5, 19.95],   // 下
+  inkB: [20.05, 21.95], fillB: [22.0, 22.4],    // 雨
+  stamp: 22.5,
+  cardOut: [24.1, 25.0],
+  ringIn: [24.7, 25.8], ringLand: 28.6, ringOut: [29.5, 30.3],
+  trackIn: [29.9, 30.8], hops: [31.25, 32.5, 33.75], hopAir: .62, trackOut: [34.55, 35.2],
+  endA: [35.7, 36.85], endB: [36.75, 37.9], momo: 37.75, tag: 38.15, url: 38.55,
+};
+
+/* ---------- Momo, the ink-drop mascot (from src/lib/momo.ts) ---------- */
+function momoSVG(mood = "happy") {
+  const mouths = {
+    happy: '<path d="M40 66 Q50 75 60 66" fill="none" stroke="var(--card)" stroke-width="4" stroke-linecap="round"/>',
+    wow: '<ellipse cx="50" cy="68" rx="6" ry="7" fill="var(--card)"/>',
+  };
+  return `<path d="M50 6 C62 26 84 44 84 64 A34 32 0 0 1 16 64 C16 44 38 26 50 6Z" fill="var(--ink)"/>
+    <ellipse cx="39" cy="54" rx="6" ry="${mood === "wow" ? 8 : 7}" fill="var(--card)"/>
+    <ellipse cx="61" cy="54" rx="6" ry="${mood === "wow" ? 8 : 7}" fill="var(--card)"/>
+    <circle cx="40" cy="56" r="3" fill="var(--ink)"/><circle cx="62" cy="56" r="3" fill="var(--ink)"/>
+    <ellipse cx="29" cy="66" rx="5" ry="3" fill="var(--seal)" opacity=".55"/>
+    <ellipse cx="71" cy="66" rx="5" ry="3" fill="var(--seal)" opacity=".55"/>
+    ${mouths[mood]}
+    <path d="M30 34 Q34 28 40 30" stroke="var(--card)" stroke-width="3" fill="none" stroke-linecap="round" opacity=".5"/>`;
+}
+document.querySelectorAll(".momo-svg").forEach(s => s.innerHTML = momoSVG());
+
+/* =========================================================
+   Characters drawn from Make Me a Hanzi stroke data: each stroke's
+   outline clips a fat line that runs along its median.
+   ========================================================= */
+let uid = 0;
+function makeChar(svg, ch, color = "var(--ink)") {
+  const g = svgEl("g", { transform: "translate(0,900) scale(1,-1)" }, svg);
+  const strokes = DATA[ch].strokes.map((d, i) => {
+    const id = "k" + (uid++);
+    const cp = svgEl("clipPath", { id }, g); svgEl("path", { d }, cp);
+    const pts = DATA[ch].medians[i];
+    const m = svgEl("path", { d: "M" + pts.map(p => p.join(" ")).join(" L"), fill: "none", "stroke-width": 210, "stroke-linecap": "round", "stroke-linejoin": "round", "clip-path": `url(#${id})` }, g);
+    const f = svgEl("path", { d }, g);
+    const len = m.getTotalLength();
+    m.style.strokeDasharray = `${len} ${len + 400}`;
+    return { m, f, len };
+  });
+  const api = {
+    g, strokes, n: strokes.length,
+    color(c) { for (const s of strokes) { s.m.style.stroke = c; s.f.style.fill = c; } },
+    set(ps) {
+      strokes.forEach((s, i) => {
+        const p = typeof ps === "number" ? ps : ps[i];
+        s.m.style.visibility = p > 0 && p < 1 ? "visible" : "hidden";
+        s.f.style.visibility = p >= 1 ? "visible" : "hidden";
+        s.m.style.strokeDashoffset = s.len * (1 - p);
+      });
+    },
+  };
+  api.color(color);
+  return api;
+}
+/** Splits [t0, t1] across a character's strokes in proportion to their length. */
+function schedule(ch, t0, t1, gap = .1) {
+  const lens = DATA[ch].medians.map(m => m.reduce((a, p, i) => i ? a + Math.hypot(p[0] - m[i - 1][0], p[1] - m[i - 1][1]) : 0, 0) + 120);
+  const tot = lens.reduce((a, b) => a + b, 0), n = lens.length;
+  const pause = (t1 - t0) * gap / Math.max(1, n - 1), avail = (t1 - t0) * (1 - gap);
+  let t = t0;
+  return lens.map(l => { const s = t, e = t + avail * l / tot; t = e + pause; return [s, e]; });
+}
+const strokeP = (t, sched) => sched.map(([s, e]) => E.sine(seg(t, s, e)));
+
+/** Free-hand ink: the medians, wobbled, as a learner might write them. */
+function makeInk(svg, ch, seed) {
+  const r = rng(seed);
+  const g = svgEl("g", { transform: "translate(0,900) scale(1,-1)" }, svg);
+  const paths = DATA[ch].medians.map(pts => {
+    const dx = (r() - .5) * 70, dy = (r() - .5) * 60, rot = (r() - .5) * .14;
+    const P = pts.map(([x, y]) => {
+      const cx = x - 512, cy = y - 388;
+      return [512 + cx * Math.cos(rot) - cy * Math.sin(rot) + dx + (r() - .5) * 40, 388 + cx * Math.sin(rot) + cy * Math.cos(rot) + dy + (r() - .5) * 40];
+    });
+    let d = `M${P[0][0]} ${P[0][1]}`;
+    for (let i = 1; i < P.length; i++) {          // Catmull-Rom through the points
+      const p0 = P[i - 2] || P[i - 1], p1 = P[i - 1], p2 = P[i], p3 = P[i + 1] || p2;
+      d += ` C${p1[0] + (p2[0] - p0[0]) / 6} ${p1[1] + (p2[1] - p0[1]) / 6} ${p2[0] - (p3[0] - p1[0]) / 6} ${p2[1] - (p3[1] - p1[1]) / 6} ${p2[0]} ${p2[1]}`;
+    }
+    const p = svgEl("path", { d, fill: "none", stroke: "var(--ink)", "stroke-width": 30, "stroke-linecap": "round", "stroke-linejoin": "round" }, g);
+    const len = p.getTotalLength();
+    p.style.strokeDasharray = `${len} ${len + 100}`;
+    return { p, len };
+  });
+  const nib = svgEl("circle", { r: 26, fill: "var(--seal)", opacity: 0 }, g);
+  return {
+    g, set(ps) {
+      let tip = null;
+      paths.forEach((s, i) => {
+        const p = ps[i];
+        s.p.style.visibility = p > 0 ? "visible" : "hidden";
+        s.p.style.strokeDashoffset = s.len * (1 - p);
+        if (p > 0 && p < 1) tip = s.p.getPointAtLength(s.len * p);
+      });
+      nib.setAttribute("opacity", tip ? .9 : 0);
+      if (tip) { nib.setAttribute("cx", tip.x); nib.setAttribute("cy", tip.y); }
+    },
+  };
+}
+
+/* ---------- Build the practice card content ---------- */
+const charSvg = $("charSvg");
+const cXie = makeChar(charSvg, "写");
+const cXia = makeChar(charSvg, "下");
+const cYu = makeChar(charSvg, "雨");
+const iXia = makeInk(charSvg, "下", 7);
+const iYu = makeInk(charSvg, "雨", 21);
+const finSvgs = ["下", "雨"].map(ch => { const s = svgEl("svg", { viewBox: "0 0 1024 1024" }, $("finalw")); const c = makeChar(s, ch); c.set(1); return s; });
+const sXie = schedule("写", ...T.writeA, .16);
+const sXia = schedule("下", ...T.inkA, .18), sYu = schedule("雨", ...T.inkB, .1);
+const fXia = schedule("下", ...T.fillA, 0), fYu = schedule("雨", ...T.fillB, 0);
+
+/* ---------- Levels ring ---------- */
+const LEVELS = [
+  ["P1", "小一", "一起", "240"], ["P2", "小二", "着急", "279"], ["P3", "小三", "如果", "253"], ["P4", "小四", "终于", "272"],
+  ["P5", "小五", "控制", "317"], ["P6", "小六", "社会", "236"], ["Sec 1", "中一", "偶尔", "350"], ["Sec 2", "中二", "呵护", "387"],
+  ["Sec 3", "中三", "迄今", "417"], ["Sec 4", "中四", "抽屉", "430"], ["Business", "商务", "开会", "103"],
+];
+const chips = LEVELS.map(([n, s, w, c]) => {
+  const d = document.createElement("div"); d.className = "lvl";
+  d.innerHTML = `<div class="top"><b>${n}</b><span class="sub han">${s}</span></div><div class="w han">${w}</div><small>${c} words</small>`;
+  $("ring").appendChild(d); return d;
+});
+
+/* ---------- Review timeline ---------- */
+const POS = [0, 430, 960, 1620, 2420, 3380];
+const DAYS = [["Today", "first try"], ["+1 day", "review"], ["+2 days", "review"], ["+4 days", "review"], ["+8 days", ""], ["+16 days", ""]];
+const trackEl = $("track");
+trackEl.innerHTML = `<div class="floor"><div class="lane"></div>${POS.map(x => `<div class="spot" style="left:${x + 500}px"></div>`).join("")}</div>`
+  + POS.map((x, i) => `<div class="dlabel" style="transform:translate3d(${x}px,26px,150px)">${DAYS[i][0]}<small>${DAYS[i][1] || "&nbsp;"}</small></div>`).join("");
+const wcardHTML = `<div class="w han">下雨</div><div><small>xià yǔ</small><small>to rain</small></div><div class="mini han">优</div>`;
+const ghosts = [0, 1, 2].map(() => { const d = document.createElement("div"); d.className = "wcard"; d.innerHTML = wcardHTML; trackEl.appendChild(d); return d; });
+const wcard = document.createElement("div"); wcard.className = "wcard"; wcard.innerHTML = wcardHTML; trackEl.appendChild(wcard);
+const spots = [...trackEl.querySelectorAll(".spot")];
+const dlabels = [...trackEl.querySelectorAll(".dlabel")];
+
+/* ---------- End card ---------- */
+const endg = $("endg");
+const eboxes = [-165, 165].map(x => {
+  const b = document.createElement("div"); b.className = "ebox";
+  b.innerHTML = `<svg viewBox="0 0 300 300"><g class="grid"><line x1="0" y1="0" x2="300" y2="300"/><line x1="300" y1="0" x2="0" y2="300"/><line x1="150" y1="0" x2="150" y2="300"/><line x1="0" y1="150" x2="300" y2="150"/></g></svg><div class="cb"><svg viewBox="0 0 1024 1024"></svg></div>`;
+  endg.appendChild(b); b.dataset.x = x; return b;
+});
+const eChars = eboxes.map(b => makeChar(b.querySelector(".cb svg"), "写"));
+const sEndA = schedule("写", ...T.endA, .12), sEndB = schedule("写", ...T.endB, .12);
+const emomo = document.createElement("div"); emomo.id = "emomo"; emomo.innerHTML = `<svg viewBox="0 0 100 100">${momoSVG("happy")}</svg>`; endg.appendChild(emomo);
+const etag = document.createElement("div"); etag.className = "etag"; etag.textContent = "Remember how to write Chinese, one stroke at a time."; endg.appendChild(etag);
+const eurl = document.createElement("div"); eurl.className = "eurl"; eurl.textContent = "xiexie.web.app"; endg.appendChild(eurl);
+
+/* ---------- Captions: split words so they rise one after another ---------- */
+document.querySelectorAll(".cap h2").forEach(h => {
+  const walk = n => [...n.childNodes].forEach(c => {
+    if (c.nodeType === 3) {
+      const frag = document.createDocumentFragment();
+      c.textContent.split(/(\s+)/).forEach(w => { if (!w) return; if (/^\s+$/.test(w)) frag.append(w); else { const s = document.createElement("span"); s.className = "wd"; s.textContent = w; frag.append(s); } });
+      c.replaceWith(frag);
+    } else walk(c);
+  });
+  walk(h);
+});
+const CAPS = [["c1", .45, 2.45], ["c2", 2.75, 4.85], ["c3", 11.1, 16.3], ["c4", 18.0, 24.1], ["c5", 25.3, 29.7], ["c6", 30.5, 34.7]];
+function caption(t, id, tin, tout) {
+  const el = $(id), out = E.in(seg(t, tout - .45, tout));
+  el.style.opacity = t < tin - .05 || t > tout ? 0 : 1;
+  if (el.style.opacity === "0") return;
+  el.querySelectorAll(".wd").forEach((w, i) => {
+    const p = E.out(seg(t, tin + i * .07, tin + i * .07 + .7));
+    w.style.opacity = p * (1 - out);
+    w.style.transform = `translateY(${(1 - p) * 46 - out * 26}px)`;
+    w.style.filter = p < 1 ? `blur(${(1 - p) * 8}px)` : "none";
+  });
+  const para = el.querySelector("p");
+  if (para) {
+    const p = E.out(seg(t, tin + .45, tin + 1.1));
+    para.style.opacity = p * (1 - out);
+    para.style.transform = `translateY(${(1 - p) * 24 - out * 16}px)`;
+  }
+}
+
+/* =========================================================
+   render(t): the whole film
+   ========================================================= */
+let lastWord = null;
+function setWord(w) {
+  if (w === lastWord) return; lastWord = w;
+  if (w === "写") { $("pyT").textContent = "xiě"; $("enT").textContent = "to write"; $("momoSay").textContent = "Write it from memory. You can do it."; }
+  else { $("pyT").textContent = "xià yǔ"; $("enT").textContent = "to rain"; $("momoSay").textContent = "Write it your way. Just get the shape right."; }
+}
+function setSlots(chars, filled, active) {
+  const key = chars + filled + active;
+  if ($("slots").dataset.k === key) return; $("slots").dataset.k = key;
+  $("slots").innerHTML = [...chars].map((c, i) => `<div class="slot han ${i < filled ? "done" : i === active ? "now" : ""}">${i < filled ? c : ""}</div>`).join("");
+}
+const mix = (a, b, p) => `rgb(${a.map((v, i) => Math.round(lerp(v, b[i], p))).join(",")})`;
+const PAPER = [232, 240, 234], INK = [28, 43, 58];
+
+function render(t) {
+  /* ----- light: ink-dark open, paper after the reveal ----- */
+  const day = seg(t, 9.55, 10.25);
+  $("night").style.opacity = 1 - E.sine(day);
+  $("vignette").style.opacity = day;
+  $("bg").style.transform = `translate(${-t * 9}px, ${-t * 4}px)`;
+
+  /* ----- practice card ----- */
+  const pc = $("pcard");
+  const onCard = t < T.cardOut[1] + .1;
+  pc.style.display = onCard ? "" : "none";
+  if (onCard) {
+    const rv = E.io5(seg(t, ...T.reveal));
+    let s = lerp(3.25, 1.42, rv);
+    let x = 0, y = 0, rx = 0, ry = 0, rz = 0, z = 0;
+    rx = lerp(0, 14, rv); ry = lerp(0, -30, rv);
+    if (t > T.reveal[0]) {
+      x = kf(t, [[10.0, 0], [11.4, 250, "io"], [16.3, 250], [17.6, 300, "io"], [24.1, 300], [25.0, -1500, "in"]]);
+      ry = kf(t, [[9.2, 0], [10.6, -30, "io5"], [12.4, -44, "io"], [15.3, -30, "sine"], [16.3, -12, "io"], [17.6, 352, "io"], [24.1, 346, "lin"], [25.0, 290, "in"]]);
+      rx = kf(t, [[9.2, 0], [10.6, 14, "io5"], [12.4, 30, "io"], [15.3, 24, "sine"], [16.3, 12, "io"], [17.6, 5, "io"], [24.1, 3]]);
+      s = kf(t, [[9.2, 3.25], [10.6, 1.42, "io5"], [11.6, 1.2, "io"], [16.2, 1.2], [17.6, 1.36, "io"], [24.1, 1.38, "lin"]]);
+      y = kf(t, [[11, 0], [12.2, 125, "io"], [15.5, 125], [16.3, 0, "io"]]);
+      z = kf(t, [[16.5, 0], [17.05, -380, "out"], [17.6, 0, "in"]]);
+      rz = kf(t, [[22.45, 0], [22.52, -1.6, "out"], [22.75, 0, "out"]]);
+    }
+    pc.style.opacity = E.sine(seg(t, 4.75, 5.4));
+    pc.style.transform = `translate3d(${x}px,${y}px,${z}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg) scale(${s})`;
+    $("sheen").style.background = `linear-gradient(${105 + ry * .8}deg, rgba(255,255,255,0) 30%, rgba(255,255,255,${.35 * day}) 48%, rgba(255,255,255,0) 66%)`;
+
+    // Card chrome appears with daylight
+    const chrome = E.sine(seg(t, 9.6, 10.4));
+    $("lBase").style.opacity = chrome;
+    for (const id of ["lHead", "lMomo", "lAct"]) $(id).style.opacity = chrome;
+    $("stagebox").style.background = `rgba(251,253,251,${chrome})`;
+
+    // Exploded view
+    const ex = E.back(seg(t, ...T.explode)) * (1 - E.io(seg(t, ...T.collapse)));
+    const Z = { lGrid: 90, lAct: 170, lHead: 250, lMomo: 330, lInk: 460 };
+    for (const id in Z) $(id).style.transform = `translateZ(${ex * Z[id]}px)`;
+    pc.querySelectorAll(".plate").forEach(pl => pl.style.opacity = clamp(ex) * .9);
+    pc.querySelectorAll(".tag").forEach((tg, i) => {
+      const p = E.out(seg(t, 11.9 + i * .16, 12.5 + i * .16)) * (1 - E.in(seg(t, 14.9, 15.4)));
+      tg.style.opacity = p; tg.style.transform = `translateX(${(1 - p) * -20}px)`;
+    });
+
+    // Which word is on the card
+    const second = t > 17.06;
+    setWord(second ? "下雨" : "写");
+    if (!second) setSlots("写", t > T.writeA[1] + .2 && t > 10.4 ? 1 : 0, 0);
+    else setSlots("下雨", t > T.fillA[1] ? (t > T.fillB[1] ? 2 : 1) : 0, t > T.fillA[1] ? 1 : 0);
+
+    // Ink
+    const inkCol = mix(PAPER, INK, E.sine(seg(t, 9.6, 10.3)));
+    cXie.color(inkCol);
+    cXie.g.style.display = second ? "none" : "";
+    cXie.set(strokeP(t, sXie));
+    const writingB = second && t < T.stamp;
+    cXia.g.style.display = writingB && t < 20.0 ? "" : "none";
+    iXia.g.style.display = writingB && t < 20.0 ? "" : "none";
+    cYu.g.style.display = writingB && t >= 20.0 ? "" : "none";
+    iYu.g.style.display = writingB && t >= 20.0 ? "" : "none";
+    if (writingB) {
+      iXia.set(strokeP(t, sXia)); iYu.set(strokeP(t, sYu));
+      iXia.g.style.opacity = 1 - seg(t, T.fillA[0], T.fillA[0] + .3);
+      iYu.g.style.opacity = 1 - seg(t, T.fillB[0], T.fillB[0] + .3);
+      cXia.set(strokeP(t, fXia)); cYu.set(strokeP(t, fYu));
+      const outA = seg(t, 19.82, 20.0);
+      cXia.g.style.opacity = 1 - outA;
+    }
+    const fin = E.out(seg(t, T.stamp - .05, T.stamp + .3));
+    $("finalw").style.opacity = t >= T.stamp - .05 ? fin : 0;
+    $("finalw").style.transform = `scale(${lerp(.9, 1, fin)})`;
+    if (t >= T.stamp && t < T.stamp + .05) $("momoSay").textContent = "Shiok! Got it in one go.";
+    if (t >= T.stamp) $("momoSay").textContent = "Shiok! Got it in one go.";
+
+    // The stamp thumps down (same curve as the app's .stamp)
+    const st = seg(t, T.stamp - .2, T.stamp + .22);
+    const sp = E.back(st);
+    $("stamp").style.opacity = st > 0 ? clamp(st * 3) : 0;
+    $("stamp").style.transform = `translateZ(${lerp(240, 30, clamp(sp))}px) rotate(${lerp(-34, -12, sp)}deg) scale(${lerp(2.2, 1, sp)})`;
+    const rp = seg(t, T.stamp, T.stamp + .7);
+    $("sring").style.opacity = rp > 0 && rp < 1 ? (1 - rp) * .9 : 0;
+    $("sring").style.transform = `translateZ(20px) scale(${lerp(.5, 1.25, E.out(rp))})`;
+  }
+
+  /* ----- levels ring ----- */
+  const ring = $("ring");
+  const onRing = t > T.ringIn[0] && t < T.ringOut[1];
+  ring.style.display = onRing ? "" : "none";
+  if (onRing) {
+    const pin = E.out(seg(t, ...T.ringIn)), pout = E.in(seg(t, ...T.ringOut));
+    const A = lerp(-560, 0, E.expo(seg(t, T.ringIn[0], T.ringLand)));
+    ring.style.transform = `translate3d(0, ${-20 + (1 - pin) * 500 - pout * 900}px, ${-300 + pin * 300}px) rotateX(${lerp(-38, -9, pin)}deg)`;
+    ring.style.opacity = pin;
+    const land = seg(t, T.ringLand, T.ringLand + .35);
+    chips.forEach((c, i) => {
+      const a = i * 360 / chips.length + A;
+      const front = Math.cos(a * Math.PI / 180);
+      const pop = i === 0 ? Math.sin(Math.PI * land) * .14 + (land > 0 ? .06 : 0) : 0;
+      c.style.transform = `rotateY(${a}deg) translateZ(760px) scale(${1 + pop})`;
+      c.style.opacity = front > 0 ? clamp(.45 + .55 * front) : clamp(.18 + front * .18);
+      c.classList.toggle("on", i === 0 && land > 0);
+    });
+  }
+
+  /* ----- review timeline ----- */
+  const onTrack = t > T.trackIn[0] && t < T.trackOut[1];
+  trackEl.style.display = onTrack ? "" : "none";
+  if (onTrack) {
+    let cx = 0, cy = 0, sq = 1, tilt = 0, at = 0;
+    T.hops.forEach((land, i) => {
+      const p = seg(t, land - T.hopAir, land);
+      if (p > 0) { at = i + (p >= 1 ? 1 : 0); }
+      if (p > 0 && p < 1) { cx = lerp(POS[i], POS[i + 1], E.sine(p)); cy = -Math.sin(Math.PI * p) * (200 + i * 50); tilt = Math.sin(Math.PI * 2 * p) * -10; }
+      const after = seg(t, land, land + .3);
+      if (after > 0 && after < 1) sq = 1 - Math.sin(Math.PI * after) * .14;
+    });
+    if (!(cy < 0)) cx = POS[at];
+    const camX = kf(t, [[30.6, 0], [31.25, 230], [32.5, 700], [33.75, 1250], [35.2, 1500]].map(([a, b], i) => [a, b, i ? "sine" : undefined]));
+    const pin = E.out(seg(t, ...T.trackIn)), pout = E.in(seg(t, ...T.trackOut));
+    trackEl.style.transform = `translate3d(${-camX - 330 + (1 - pin) * 900 - pout * 600}px, ${-10}px, ${-pout * 600}px) rotateX(-17deg) rotateY(${-22 + (1 - pin) * 30}deg)`;
+    trackEl.style.opacity = pin * (1 - pout);
+    wcard.style.transform = `translate3d(${cx}px, ${cy}px, 0) rotate(${tilt}deg) scale(${2 - sq}, ${sq})`;
+    ghosts.forEach((g, i) => { g.style.opacity = at > i ? .32 : 0; g.style.transform = `translate3d(${POS[i]}px,0,0)`; });
+    spots.forEach((s, i) => s.classList.toggle("hit", i <= at));
+    dlabels.forEach((d, i) => d.style.opacity = i <= at + 2 ? (i <= at ? 1 : .45) : .2);
+  }
+
+  /* ----- end card ----- */
+  const onEnd = t > 35.0;
+  endg.style.display = onEnd ? "" : "none";
+  if (onEnd) {
+    const drift = seg(t, 35, DUR);
+    endg.style.transform = `translate3d(0,-60px,0) scale(1.22) rotateX(${lerp(6, 0, E.out(drift))}deg) rotateY(${lerp(-10, 4, E.sine(drift))}deg)`;
+    eboxes.forEach((b, i) => {
+      const p = E.back(seg(t, 35.05 + i * .2, 35.85 + i * .2));
+      b.style.opacity = clamp(seg(t, 35.05 + i * .2, 35.35 + i * .2));
+      b.style.transform = `translate3d(${b.dataset.x}px, ${(1 - p) * 160 - 60}px, ${(1 - p) * -400}px) rotateX(${(1 - p) * -70}deg)`;
+    });
+    eChars[0].set(strokeP(t, sEndA)); eChars[1].set(strokeP(t, sEndB));
+    const mp = seg(t, T.momo, T.momo + .55);
+    const bob = Math.sin((t - T.momo) * 3.2) * 6 * clamp(seg(t, T.momo + .5, T.momo + 1));
+    emomo.style.opacity = mp > 0 ? 1 : 0;
+    emomo.style.transform = `translate3d(300px, ${-200 + bob}px, 60px) rotate(${lerp(-30, 10, E.back(mp))}deg) scale(${E.back(mp)})`;
+    const tp = E.out(seg(t, T.tag, T.tag + .8));
+    etag.style.opacity = tp; etag.style.transform = `translate3d(0, ${150 + (1 - tp) * 30}px, 0)`;
+    const up = E.back(seg(t, T.url, T.url + .6));
+    eurl.style.opacity = clamp(seg(t, T.url, T.url + .2));
+    eurl.style.transform = `translate3d(-50%, ${232 + (1 - up) * 40}px, 0) scale(${lerp(.7, 1, up)})`;
+    // Fade to the same paper at the very end so a loop doesn't jump
+  }
+
+  /* ----- captions ----- */
+  for (const c of CAPS) caption(t, ...c);
+}
+
+/* =========================================================
+   Music: generated with Web Audio so it is exactly in time with
+   the picture. Same code renders live and offline (for the MP4).
+   D major pentatonic, 96 BPM.
+   ========================================================= */
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+const CHORDS = {   // pad voicing, bass
+  Bm: [[59, 62, 66, 69], 47], G: [[55, 59, 62, 66], 43], D: [[57, 62, 66, 69], 38], A: [[57, 61, 64, 69], 45], Dm: [[62, 66, 69, 74], 38],
+};
+const PROG = ["Bm", "G", "D", "A", "Bm", "G", "D", "A", "Bm", "G", "D", "A", "G", "A", "Dm", "Dm", "Dm"];
+const PENTA = [62, 64, 66, 69, 71, 74, 76, 78, 81, 83, 86];
+
+function buildMusic(ctx, dest, offset = 0, base = 0) {
+  const at = t => t - offset + base;          // film time -> context time
+  const live = t => t >= offset - .001;
+  const R = rng(1234);
+  const noise = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+  { const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = R() * 2 - 1; }
+
+  const master = ctx.createGain(); master.gain.value = .6;
+  const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 3.5; comp.attack.value = .004; comp.release.value = .2;
+  const limit = ctx.createDynamicsCompressor(); limit.threshold.value = -4; limit.knee.value = 0; limit.ratio.value = 20; limit.attack.value = .001; limit.release.value = .12;
+  master.connect(comp); comp.connect(limit); limit.connect(dest);
+  // Reverb: a seeded noise tail
+  const ir = ctx.createBuffer(2, ctx.sampleRate * 3.4, ctx.sampleRate);
+  for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < d.length; i++) d[i] = (R() * 2 - 1) * Math.pow(1 - i / d.length, 2.8); }
+  const verb = ctx.createConvolver(); verb.buffer = ir;
+  const verbOut = ctx.createGain(); verbOut.gain.value = .5; verb.connect(verbOut); verbOut.connect(master);
+  // Dotted-eighth echo for the plucks
+  const dly = ctx.createDelay(2); dly.delayTime.value = BEAT * .75;
+  const fb = ctx.createGain(); fb.gain.value = .33;
+  const dlp = ctx.createBiquadFilter(); dlp.type = "lowpass"; dlp.frequency.value = 2600;
+  dly.connect(dlp); dlp.connect(fb); fb.connect(dly);
+  const dOut = ctx.createGain(); dOut.gain.value = .3; dlp.connect(dOut); dOut.connect(master); dOut.connect(verb);
+
+  function env(g, t, a, peak, d) { g.gain.setValueAtTime(0, at(t)); g.gain.linearRampToValueAtTime(peak, at(t) + a); g.gain.exponentialRampToValueAtTime(.0001, at(t) + a + d); }
+
+  // Plucked string, a little like a guzheng: bright attack, slight pitch fall-in, long decay.
+  function pluck(t, m, v = .2, dec = 1.8, send = .35, echo = true) {
+    if (!live(t)) return;
+    const f = mtof(m);
+    const out = ctx.createGain(); env(out, t, .004, v, dec);
+    const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 1.2;
+    lp.frequency.setValueAtTime(Math.min(9000, f * 9), at(t)); lp.frequency.exponentialRampToValueAtTime(Math.max(400, f * 1.6), at(t) + .5);
+    [[1, "triangle", 1], [2, "sine", .35], [3.01, "sine", .12], [4.02, "sine", .05]].forEach(([h, type, g]) => {
+      const o = ctx.createOscillator(); o.type = type;
+      o.frequency.setValueAtTime(f * h * 1.012, at(t)); o.frequency.exponentialRampToValueAtTime(f * h, at(t) + .05);
+      const og = ctx.createGain(); og.gain.value = g; o.connect(og); og.connect(lp);
+      o.start(at(t)); o.stop(at(t) + dec + .1);
+    });
+    lp.connect(out); out.connect(master);
+    const s = ctx.createGain(); s.gain.value = send; out.connect(s); s.connect(verb);
+    if (echo) out.connect(dly);
+  }
+  function pad(t, notes, len, v = .05, att = .9) {
+    if (t + len < offset) return;
+    const t0 = Math.max(t, offset);
+    const out = ctx.createGain();
+    out.gain.setValueAtTime(0, at(t0)); out.gain.linearRampToValueAtTime(v, at(t0) + att);
+    out.gain.setValueAtTime(v, at(t + len)); out.gain.linearRampToValueAtTime(0, at(t + len) + 1.4);
+    const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1100; lp.Q.value = .3;
+    notes.forEach(m => [-7, 7].forEach(det => {
+      const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = mtof(m); o.detune.value = det;
+      o.connect(lp); o.start(at(t0)); o.stop(at(t + len) + 1.5);
+    }));
+    lp.connect(out); out.connect(master);
+    const s = ctx.createGain(); s.gain.value = .6; out.connect(s); s.connect(verb);
+  }
+  function bass(t, m, len, v = .26) {
+    if (!live(t)) return;
+    const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = mtof(m);
+    const o2 = ctx.createOscillator(); o2.type = "triangle"; o2.frequency.value = mtof(m + 12);
+    const g2 = ctx.createGain(); g2.gain.value = .18; o2.connect(g2);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0, at(t)); g.gain.linearRampToValueAtTime(v, at(t) + .02);
+    g.gain.setValueAtTime(v * .8, at(t) + len - .08); g.gain.linearRampToValueAtTime(0, at(t) + len);
+    o.connect(g); g2.connect(g); g.connect(master);
+    o.start(at(t)); o2.start(at(t)); o.stop(at(t) + len + .05); o2.stop(at(t) + len + .05);
+  }
+  function kick(t, v = .9) {
+    if (!live(t)) return;
+    const o = ctx.createOscillator(); o.frequency.setValueAtTime(150, at(t)); o.frequency.exponentialRampToValueAtTime(44, at(t) + .22);
+    const g = ctx.createGain(); env(g, t, .002, v, .42); o.connect(g); g.connect(master); o.start(at(t)); o.stop(at(t) + .5);
+  }
+  function noiseHit(t, type, freq, q, v, dec, send = 0, a = .002) {
+    if (!live(t)) return;
+    const s = ctx.createBufferSource(); s.buffer = noise;
+    const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+    const g = ctx.createGain(); env(g, t, a, v, dec);
+    s.connect(f); f.connect(g); g.connect(master);
+    if (send) { const sg = ctx.createGain(); sg.gain.value = send; g.connect(sg); sg.connect(verb); }
+    s.start(at(t), R() * 1.2); s.stop(at(t) + a + dec + .05);
+  }
+  const clap = (t, v = .5) => { noiseHit(t, "bandpass", 1500, .9, v, .16, .35); noiseHit(t + .012, "bandpass", 1200, .7, v * .6, .2, .3); };
+  const hat = (t, v = .1) => noiseHit(t, "highpass", 7600, .5, v, .045);
+  function boom(t, v = 1) {      // taiko-ish hit for the big moments
+    if (!live(t)) return;
+    const o = ctx.createOscillator(); o.frequency.setValueAtTime(96, at(t)); o.frequency.exponentialRampToValueAtTime(40, at(t) + .7);
+    const g = ctx.createGain(); env(g, t, .003, v, 1.5); o.connect(g); g.connect(master);
+    const s = ctx.createGain(); s.gain.value = .2; g.connect(s); s.connect(verb);
+    o.start(at(t)); o.stop(at(t) + 1.6);
+    noiseHit(t, "lowpass", 900, .6, v * .45, .22, .35);
+  }
+  function sweep(t0, t1, f0, f1, v) {   // risers and whooshes
+    if (t1 < offset) return;
+    const s = ctx.createBufferSource(); s.buffer = noise; s.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.Q.value = 1.4;
+    f.frequency.setValueAtTime(f0, at(t0)); f.frequency.exponentialRampToValueAtTime(f1, at(t1));
+    const g = ctx.createGain(); g.gain.setValueAtTime(0, at(t0)); g.gain.linearRampToValueAtTime(v, at(t1) - .02); g.gain.linearRampToValueAtTime(0, at(t1) + .06);
+    s.connect(f); f.connect(g); g.connect(master); const sg = ctx.createGain(); sg.gain.value = .5; g.connect(sg); sg.connect(verb);
+    s.start(Math.max(at(t0), ctx.currentTime)); s.stop(at(t1) + .2);
+  }
+  const whoosh = (t, v = .1) => { sweep(t, t + .35, 300, 2600, v); sweep(t + .35, t + .75, 2600, 500, v * .5); };
+
+  /* ----- score ----- */
+  // Pads and bass, bar by bar
+  PROG.forEach((name, b) => {
+    const t = b * BAR, [notes, root] = CHORDS[name];
+    if (b < 14) pad(t, notes, BAR, b < 4 ? .035 : .045, b < 4 ? 1.4 : .5);
+    if (b >= 4 && b < 14) { bass(t, root, BEAT * 1.4); bass(t + BEAT * 1.5, root, BEAT * .9); bass(t + BEAT * 2.5, root, BEAT * 1.4, .22); }
+  });
+  pad(14 * BAR, CHORDS.Dm[0].concat([78]), DUR - 14 * BAR - 1.4, .05, .25);
+  bass(14 * BAR, 38, 4.5, .3);
+
+  // The open: a few notes in the dark, then one note per stroke of 写
+  [[0, 78], [.94, 76], [1.88, 74], [2.81, 69], [3.75, 71], [4.4, 66]].forEach(([t, m]) => pluck(t, m, .16, 2.6, .55));
+  const xieNotes = [74, 76, 78, 81, 83];
+  sXie.forEach(([s], i) => pluck(s, xieNotes[i], .2, 2.2, .5));
+  sweep(8.0, 10.0, 220, 5200, .16);
+  boom(10.0, 1.1);
+
+  // Arpeggios through the middle
+  for (let b = 4; b < 14; b++) {
+    const notes = CHORDS[PROG[b]][0].map(m => m + 12);
+    const pat = [0, 2, 1, 3, 2, 1, 3, 2];
+    const quiet = b >= 7 && b <= 8;     // leave room for the stroke notes while writing
+    pat.forEach((k, i) => pluck(b * BAR + i * BEAT / 2, notes[k], (i % 2 ? .07 : .1) * (quiet ? .55 : 1), .9, .25, false));
+  }
+  // Drums: half-time groove from the reveal to the end card
+  for (let b = 4; b < 14; b++) {
+    const t = b * BAR;
+    kick(t, .85); kick(t + BEAT * 1.5, .6); kick(t + BEAT * 2.5, .7);
+    clap(t + BEAT, b < 6 ? .3 : .42); clap(t + BEAT * 3, b < 6 ? .3 : .42);
+    if (b >= 6) for (let i = 0; i < 8; i++) hat(t + i * BEAT / 2, i % 2 ? .09 : .05);
+    if (b === 13) { clap(t + BEAT * 3.5, .3); clap(t + BEAT * 3.75, .35); }
+  }
+  // Writing 下雨: a high note on every pen stroke, then a chord when each character fills in
+  [...sXia, ...sYu].forEach(([s], i) => pluck(s, PENTA[(i * 2 + 5) % PENTA.length], .13, 1.1, .4));
+  pluck(T.fillA[0], 86, .12, 1.6, .5); pluck(T.fillA[0] + .06, 81, .1, 1.6, .5);
+  pluck(T.fillB[0], 88, .12, 1.6, .5); pluck(T.fillB[0] + .06, 83, .1, 1.6, .5);
+  boom(T.stamp, 1.2);
+  // Whooshes on camera moves
+  whoosh(T.explode[0] - .1, .08); whoosh(T.collapse[0], .06); whoosh(T.flip[0], .1);
+  whoosh(T.cardOut[0], .1); whoosh(T.ringOut[0], .08); whoosh(T.trackOut[0], .08);
+  // Levels land, review hops ping
+  [74, 78, 81, 86].forEach((m, i) => pluck(T.ringLand + i * .05, m, .1, 1.8, .5));
+  T.hops.forEach((l, i) => { pluck(l, [81, 83, 86][i], .16, 1.4, .45); pluck(l - T.hopAir, [69, 71, 74][i], .06, .5, .2, false); });
+  // End: 写写 written again, then the final chord rings out
+  boom(14 * BAR, 1.0);
+  [...sEndA, ...sEndB].forEach(([s], i) => pluck(s, [74, 76, 78, 81, 83, 76, 78, 81, 83, 86][i], .13, 2, .55));
+  pluck(T.momo, 90, .12, 2.4, .6); pluck(T.url, 86, .1, 3, .7); pluck(T.url + .09, 81, .08, 3, .7);
+  return master;
+}
+
+/* WAV for the MP4 export */
+async function renderAudio() {
+  const sr = 48000, ctx = new OfflineAudioContext(2, sr * DUR, sr);
+  buildMusic(ctx, ctx.destination, 0, 0);
+  const buf = await ctx.startRendering();
+  const n = buf.length, L = buf.getChannelData(0), Rr = buf.getChannelData(1);
+  const out = new DataView(new ArrayBuffer(44 + n * 4));
+  const w = (o, s) => [...s].forEach((c, i) => out.setUint8(o + i, c.charCodeAt(0)));
+  w(0, "RIFF"); out.setUint32(4, 36 + n * 4, true); w(8, "WAVEfmt "); out.setUint32(16, 16, true); out.setUint16(20, 1, true); out.setUint16(22, 2, true);
+  out.setUint32(24, sr, true); out.setUint32(28, sr * 4, true); out.setUint16(32, 4, true); out.setUint16(34, 16, true); w(36, "data"); out.setUint32(40, n * 4, true);
+  for (let i = 0; i < n; i++) { out.setInt16(44 + i * 4, clamp(L[i], -1, 1) * 32767, true); out.setInt16(46 + i * 4, clamp(Rr[i], -1, 1) * 32767, true); }
+  const bytes = new Uint8Array(out.buffer); let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
+/* =========================================================
+   Player
+   ========================================================= */
+function fit() {
+  const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+  $("stage").style.transform = `scale(${s}) translate(-50%,-50%)`;
+}
+addEventListener("resize", fit); fit();
+
+const fontsReady = Promise.all([
+  document.fonts.load('400 80px "Ma Shan Zheng"', "写写优下雨小一二三四五六中商务一起着急如果终于控制社会偶尔呵护迄今抽屉开会米字格墨"),
+  document.fonts.load('800 80px "Bricolage Grotesque"', "Aa"), document.fonts.load('600 80px "Bricolage Grotesque"', "Aa"), document.fonts.load('500 80px "Bricolage Grotesque"', "Aa"),
+]).then(() => document.fonts.ready);
+
+const params = new URLSearchParams(location.search);
+if (params.has("capture")) {
+  document.body.classList.add("capture");
+  window.__ready = fontsReady.then(() => { render(0); return true; });
+  window.__seek = t => { render(t); };
+  window.__audio = renderAudio;
+  window.__DUR = DUR;
+} else {
+  let ctx = null, base = 0, offset = 0, playing = false, ended = false;
+  const ui = $("ui"), fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  const now = () => playing ? Math.min(DUR, ctx.currentTime - base + offset) : offset;
+  function start(from) {
+    if (ctx) ctx.close();
+    ctx = new AudioContext(); offset = from; base = ctx.currentTime + .08;
+    buildMusic(ctx, ctx.destination, offset, base);
+    playing = true; ended = false; ui.classList.remove("paused"); $("play").style.display = "none"; $("pp").textContent = "Pause";
+  }
+  function pause() { if (!playing) return; offset = now(); playing = false; ctx.suspend(); ui.classList.add("paused"); $("pp").textContent = "Play"; }
+  // A suspended context's clock stops too, so on resume the film picks up from offset at the current context time.
+  function resumeFix() { if (!ctx) return start(offset); ctx.resume(); base = ctx.currentTime; playing = true; ui.classList.remove("paused"); $("pp").textContent = "Pause"; }
+  $("play").onclick = () => start(params.has("t") ? +params.get("t") : 0);
+  $("pp").onclick = () => playing ? pause() : (ended ? start(0) : resumeFix());
+  $("track-ui").onclick = e => { const r = e.currentTarget.getBoundingClientRect(); start(clamp((e.clientX - r.left) / r.width) * DUR); };
+  addEventListener("keydown", e => {
+    if (e.code === "Space") { e.preventDefault(); if (!ctx) start(0); else playing ? pause() : (ended ? start(0) : resumeFix()); }
+    if (e.key === "r") start(0);
+  });
+  (function loop() {
+    const t = now();
+    if (playing && t >= DUR) { playing = false; ended = true; offset = DUR; ui.classList.add("paused"); $("pp").textContent = "Replay"; }
+    render(ctx ? t : (params.has("t") ? +params.get("t") : 39.5));
+    $("fill").style.width = (t / DUR * 100) + "%";
+    $("time").textContent = `${fmt(t)} / ${fmt(DUR)}`;
+    requestAnimationFrame(loop);
+  })();
+  fontsReady.then(() => render(39.5));
+}
+</script>
+</body>
+</html>
