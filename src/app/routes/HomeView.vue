@@ -92,19 +92,22 @@ async function reset() {
 
 onMounted(() => { if (!account.signedIn) account.prepare(); });
 
+// A short status line, plus a quieter detail line (the account's email, or a hint).
 const storageNote = computed(() => {
   if (account.signedIn) {
     const who = account.user!.email || account.user!.name || "your Google account";
-    return {
-      idle: `Signed in as ${who}.`, busy: `Signed in as ${who}. Saving…`, synced: `Progress is saved to ${who}.`,
-      offline: `Signed in as ${who}. You're offline, so progress is kept on this device until you reconnect.`,
-      error: `Signed in as ${who}. Couldn't reach your account just now, will try again.`,
+    const title = {
+      idle: "Signed in", busy: "Saving…", synced: "Progress saved",
+      offline: "Offline, will try again later", error: "Couldn't save, will try again",
     }[account.state];
+    return { title, detail: who };
   }
-  if (account.state === "busy") return "Signing in…";
-  if (account.lapsed) return "You've been signed out. Sign in again to keep syncing.";
-  return learner.persistent ? "Progress is saved on this browser." : "Storage is unavailable here, so progress lasts until you close this page.";
+  if (account.state === "busy") return { title: "Signing in…", detail: "" };
+  if (account.lapsed) return { title: "You've been signed out", detail: "Sign in again to keep your progress." };
+  if (!learner.persistent) return { title: "Storage is unavailable here", detail: "Progress lasts until you close this page." };
+  return { title: "Saved on this browser", detail: account.enabled ? "Sign in to keep it on all your devices." : "" };
 });
+const syncHealthy = computed(() => account.signedIn && account.state !== "offline" && account.state !== "error");
 
 async function signIn() {
   try { await account.signIn(); }
@@ -202,11 +205,11 @@ async function signOut() {
       <button class="btn" id="open-library" @click="router.push({ name: 'library' })">Browse all words</button>
     </div>
 
-    <div class="sync-card" :class="{ synced: account.signedIn }">
+    <div class="sync-card" :class="{ synced: syncHealthy, 'has-link': account.enabled && account.signedIn }">
       <Icon :name="account.signedIn ? 'cloud' : 'device'" class="sync-icon" />
       <p class="sync-text">
-        <span id="storage-note">{{ storageNote }}</span>
-        <small v-if="account.enabled && !account.signedIn">Sign in to keep it on all your devices.</small>
+        <strong id="storage-note">{{ storageNote.title }}</strong>
+        <small v-if="storageNote.detail" :class="{ 'sync-who': account.signedIn }" :title="storageNote.detail">{{ storageNote.detail }}</small>
       </p>
       <template v-if="account.enabled">
         <button v-if="account.signedIn" class="linkish" id="sign-out" @click="signOut">Sign out</button>

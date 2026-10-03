@@ -126,14 +126,20 @@ h2{font-size:1.05rem;margin:0 0 10px}
 }
 .start-row{display:flex;flex-direction:column;align-items:stretch;gap:12px}
 .due-note{color:var(--ink-soft);font-size:.92rem;text-align:center;margin:0}
-.sync-card{margin-top:34px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px 12px;padding:12px 14px;border:1.5px dashed var(--ink-soft);border-radius:16px;background:color-mix(in srgb,var(--card) 60%,transparent)}
+.sync-card{margin-top:34px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:start;gap:10px 12px;padding:12px 14px;border:1.5px dashed var(--ink-soft);border-radius:16px;background:color-mix(in srgb,var(--card) 60%,transparent)}
 .sync-card.synced{border-style:solid;border-color:var(--jade)}
-.sync-icon{width:22px;height:22px;flex:none;color:var(--ink-soft)}
+.sync-icon{width:22px;height:22px;flex:none;margin-top:1px;color:var(--ink-soft)}
 .sync-card.synced .sync-icon{color:var(--jade)}
-.sync-text{margin:0;min-width:0;overflow-wrap:anywhere;font-size:.9rem;line-height:1.35}
-.sync-text small{display:block;color:var(--ink-soft);font-size:.82rem}
-/* Phones: the action drops to its own row, lined up with the text. */
-@media (max-width:480px){.sync-card{grid-template-columns:auto 1fr}.sync-card>button{grid-column:2;justify-self:start}}
+.sync-card>button{align-self:center}
+.sync-text{margin:0;min-width:0;font-size:.9rem;line-height:1.35}
+.sync-text strong{display:block;font-weight:600}
+.sync-text small{display:block;color:var(--ink-soft);font-size:.82rem;overflow-wrap:anywhere}
+/* The email is one unbreakable token: clip it rather than let it decide the card's height. */
+.sync-text .sync-who{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* A bigger tap target for Sign out, without moving it. */
+.sync-card #sign-out{padding:8px;margin:-8px}
+/* Phones: the wide Sign in button drops to its own row; the short Sign out link stays beside the text. */
+@media (max-width:480px){.sync-card:not(.has-link){grid-template-columns:auto minmax(0,1fr)}.sync-card:not(.has-link)>button{grid-column:2;justify-self:start}}
 /* Phones only: small "Install" pill in the masthead's top-right corner, beside the short 写写 title,
    so the tagline below keeps the full width. On iOS it opens the Add to Home Screen hint. */
 .install{position:absolute;top:0;right:0}
