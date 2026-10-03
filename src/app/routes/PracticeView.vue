@@ -414,6 +414,6 @@ onBeforeUnmount(() => sheetObserver.disconnect());
       </div>
     </div>
     <p v-if="!session.counts" class="tip practice-note" id="practice-note">Practice round: this won't change your progress.</p>
-    <p class="tip" id="tip">{{ relaxed ? "Write it your way, joined-up strokes are fine. It fills in once it's close enough." : "Write with a finger, stylus or mouse." }}</p>
+    <p class="tip" id="tip">{{ relaxed ? "Draw with a finger, stylus or mouse." : "Write with a finger, stylus or mouse." }}</p>
   </section>
 </template>
