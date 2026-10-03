@@ -106,6 +106,14 @@ describe("relaxed checker", () => {
     }
   });
 
+  it("marks a pass clean only with room to spare", () => {
+    for (const c of "你好我们学字中国爱写") expect(checker.check(asInk(DATA[c].medians), c).clean, c).toBe(true);
+    // passes, but only just ahead of 交: a near miss, not full marks
+    const zi = checker.check(CURSIVE_ZI, "字");
+    expect(zi.ok).toBe(true);
+    expect(zi.clean).toBe(false);
+  });
+
   it("tells finished joined-up writing from unfinished ink, whatever the stroke count", () => {
     const finished = (ink: Pt[][], c: string) => checker.looksFinished(ink, c, checker.check(ink, c).score);
     expect(finished(CURSIVE_ZI, "字")).toBe(true);

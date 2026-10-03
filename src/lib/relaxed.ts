@@ -26,7 +26,9 @@ export interface Verdict {
   best: string;       // the best-fitting character
   bestScore: number;
   rival: string;      // the best-fitting character other than the target
+  rivalScore: number;
   incomplete: boolean; // a close fit, but the target minus a stroke fits better: not finished yet
+  clean: boolean;     // passed with room to spare: a close fit, and clearly not the look-alike
 }
 
 const N = 64;          // points per path for the final scoring
@@ -42,6 +44,10 @@ const MAX_SCORE = 0.15;   // beyond this the ink is a different shape altogether
 const NEAR_BEST = 1.03;   // the target may trail the best fit by this factor...
 const NEAR_RANK = 3;      // ...if it is still among the top few
 const PARTIAL_FIT = 0.85; // the target minus a stroke fitting this much better than the whole means it isn't finished
+// A clean pass, the bar for full marks: on simulated writing, neat ink clears it ~94% of the time
+// and sloppy ink about half the time. Real cursive passes score ~0.08-0.09.
+const CLEAN_SCORE = 0.1;  // the target fits at least this well...
+const CLEAN_MARGIN = 1.1; // ...and the nearest look-alike fits this much worse
 // Stricter, for looksFinished: on sloppy simulated writing, any stroke-short fit beating the whole
 // catches ~99% of ink with a stroke missing, and still clears ~40-75% of complete joined-up ink.
 const FINISHED_FIT = 1;
@@ -241,7 +247,7 @@ export function makeChecker(data: Record<string, CharMedians>) {
   /** Scores the ink against every known character and decides whether it is `target`. */
   function check(ink: Pt[][], target: string): Verdict {
     const strokes = ink.filter(s => s.length > 0);
-    if (!data[target] || !strokes.length) return { ok: false, rank: Infinity, score: Infinity, best: "", bestScore: Infinity, rival: "", incomplete: false };
+    if (!data[target] || !strokes.length) return { ok: false, rank: Infinity, score: Infinity, best: "", bestScore: Infinity, rival: "", rivalScore: Infinity, incomplete: false, clean: false };
     const { norm, fitPath } = fitter(strokes);
     const asWrittenCoarse = toPath(norm, N_COARSE, false);
     const fit = (c: string) => fitPath(ref(c, N));
@@ -256,8 +262,10 @@ export function makeChecker(data: Record<string, CharMedians>) {
     // No real character is "the target minus a stroke", so unfinished ink still beats every
     // rival. Score it against the target with each stroke left out too (only when it would pass).
     const incomplete = close && missesStroke(fitPath, target, score, PARTIAL_FIT);
-    const rival = scored.find(r => r.c !== target)?.c ?? "";
-    return { ok: close && !incomplete, rank, score, best: scored[0].c, bestScore, rival, incomplete };
+    const rival = scored.find(r => r.c !== target), rivalScore = rival?.d ?? Infinity;
+    const ok = close && !incomplete;
+    const clean = ok && rank === 1 && score <= CLEAN_SCORE && rivalScore >= score * CLEAN_MARGIN;
+    return { ok, rank, score, best: scored[0].c, bestScore, rival: rival?.c ?? "", rivalScore, incomplete, clean };
   }
 
   /** Builds the reference paths ahead of time, a slice per call, so the first check doesn't stall. */

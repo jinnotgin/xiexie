@@ -82,10 +82,10 @@ export function migrateLevels(levels: string[]) {
   return out.length ? out : ["p1"];
 }
 
-export function gradeOf(c: Pick<CardState, "revealed" | "word" | "mistakes" | "hints" | "notes">): Grade {
+export function gradeOf(c: Pick<CardState, "revealed" | "word" | "mistakes" | "hints" | "notes" | "shaky">): Grade {
   if (c.revealed) return "again";
   const n = c.word.w.length;
-  if (c.mistakes === 0 && c.hints === 0 && !c.notes.length) return "perfect";
+  if (c.mistakes === 0 && c.hints === 0 && !c.notes.length && !c.shaky) return "perfect";
   if (c.hints === 0 && c.mistakes <= n * 2) return "good";   // includes "correct, but order/direction differs"
   return "ok";
 }

@@ -88,11 +88,12 @@ describe("buildSession", () => {
 });
 
 describe("gradeOf", () => {
-  const c = { word: word("你好"), mistakes: 0, hints: 0, revealed: false, notes: [] as { ch: string; order: number; backwards: number }[] };
+  const c = { word: word("你好"), mistakes: 0, hints: 0, shaky: 0, revealed: false, notes: [] as { ch: string; order: number; backwards: number }[] };
   it("grades perfect, good, ok and again", () => {
     expect(gradeOf(c)).toBe("perfect");
     expect(gradeOf({ ...c, notes: [{ ch: "你", order: 1, backwards: 0 }] })).toBe("good");
     expect(gradeOf({ ...c, mistakes: 4 })).toBe("good");      // up to 2 per character
+    expect(gradeOf({ ...c, shaky: 1 })).toBe("good");         // relaxed: only just passed, or started over
     expect(gradeOf({ ...c, mistakes: 5 })).toBe("ok");
     expect(gradeOf({ ...c, hints: 1 })).toBe("ok");
     expect(gradeOf({ ...c, revealed: true })).toBe("again");

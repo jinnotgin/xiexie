@@ -100,6 +100,7 @@ let checkTimer: ReturnType<typeof setTimeout> | undefined;
 const CHECK_DELAY_MS = 120;   // let the stroke paint before the check runs
 const OVERSHOOT = 2;          // pen strokes past the character's own count, still no match = a miss
 let checkSeq = 0;             // bumped by every check and pen-down, so a late Google reply for older ink is dropped
+let fullMiss = false;         // the ink on the pad is a whole attempt that didn't pass: wiping it is starting over
 
 // Result phase: the whole word, a stamp and an optional stroke-order replay.
 const finalSize = ref(0);
@@ -178,7 +179,7 @@ function refit() {
 
 function renderCard() {
   const w = session.queue[session.idx];
-  session.cur = { word: w, ci: 0, filled: 0, mistakes: 0, hints: 0, revealed: false, done: false, notes: [] };
+  session.cur = { word: w, ci: 0, filled: 0, mistakes: 0, hints: 0, revealed: false, done: false, notes: [], shaky: 0 };
   phase.value = "writing";
   finalWriters = [];
   stampStyle.value = {};
@@ -205,6 +206,7 @@ function mountWriter() {
     ...writerColors(),
   };
   writer = null;
+  fullMiss = false;
   mountId.value++;
 }
 
@@ -264,9 +266,9 @@ async function checkInk() {
   const v = relaxedChecker().check(ink, ch);
   const overshot = !v.ok && ink.length >= relaxedChecker().strokeCount(ch) + OVERSHOOT;
   let google: string[] | null = null;
-  const sendAs = !googleHandwriting || v.ok ? ""
-    : ink.length >= relaxedChecker().strokeCount(ch) ? "count"
-    : relaxedChecker().looksFinished(ink, ch, v.score) ? "shape" : "";
+  const fullCount = ink.length >= relaxedChecker().strokeCount(ch);
+  fullMiss = !v.ok && (fullCount || relaxedChecker().looksFinished(ink, ch, v.score));
+  const sendAs = !googleHandwriting || !fullMiss ? "" : fullCount ? "count" : "shape";
   if (sendAs) {
     google = await recognize(ink, writerSize.value);
     // Newer ink has its own check; a remounted pad, a mode switch or a finished character drops this one.
@@ -277,7 +279,7 @@ async function checkInk() {
   const googleProps = googleHandwriting ? { google_sent_as: sendAs, google_asked: google !== null, google_top: google?.[0] ?? "", google_rescued: rescued } : {};
   if (posthogEnabled && (ok || overshot)) {
     posthog.capture("practice_relaxed_check", {
-      accepted: ok, rank: v.rank, score: v.score, best_score: v.bestScore,
+      accepted: ok, clean: v.clean, rank: v.rank, score: v.score, best_score: v.bestScore, rival_score: v.rivalScore,
       ink_stroke_count: ink.length, character: ch, best_match: v.best, ...googleProps,
     });
   }
@@ -292,9 +294,11 @@ async function checkInk() {
         .map(([x, y]) => [Math.round(x), Math.round(y)])),
     });
   }
-  if (ok) return passChar();
+  // Only a clean pass keeps full marks; one that only just made it, or needed Google, is a wobble.
+  if (ok) { if (!v.clean) c.shaky++; return passChar(v.clean); }
   if (!overshot) return;
   c.mistakes++;
+  fullMiss = false;   // the pad clears itself, and the miss already counts
   const stage = stageEl.value;
   if (!reduceMotion && stage) { stage.classList.remove("shake"); void stage.offsetWidth; stage.classList.add("shake"); }
   // Name the look-alike only when the ink really is a good fit for it, and show it over the ink.
@@ -310,8 +314,15 @@ async function checkInk() {
   inkPad.value.clear(true);
 }
 
+/** Wiping out a whole attempt that didn't pass is starting the character over: no full marks. */
+function wipedAttempt() {
+  if (fullMiss && session.cur) session.cur.shaky++;
+  fullMiss = false;
+}
+
 function undoInk() {
   if (charPassed.value || !inkPad.value?.undo()) return;
+  wipedAttempt();
   // What's left may now be close enough (an extra stray stroke was in the way).
   onInkEnd();
 }
@@ -319,13 +330,16 @@ function undoInk() {
 function clearInk() {
   if (charPassed.value) return;
   cancelCheck();
+  wipedAttempt();
   inkPad.value?.clear();
 }
 
-function passChar() {
+function passChar(clean = true) {
   const c = session.cur!;
   charPassed.value = true;
-  if (c.mistakes === 0 && !c.revealed) setMomo("happy", "Got it!");
+  fullMiss = false;
+  if (!clean) setMomo("happy", "Close enough, that passes. Neater next time.");
+  else if (c.mistakes === 0 && !c.revealed) setMomo("happy", "Got it!");
   inkPad.value?.clear(true);
   try { writer.showCharacter({ duration: 300 }); } catch (e) {}
   later(charDone, 650);
@@ -371,6 +385,7 @@ async function finishWord(skipped = false) {
       character_count: [...c.word.w].length,
       mistake_count: c.mistakes,
       hint_count: c.hints,
+      shaky_count: c.shaky,
       was_revealed: c.revealed,
       was_skipped: skipped,
       mode: relaxed.value ? "relaxed" : "strict",

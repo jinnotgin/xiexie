@@ -52,6 +52,7 @@ export interface CardState {
   revealed: boolean;
   done: boolean;
   notes: StrokeNote[];
+  shaky: number;     // relaxed mode: passes that only just made it (or needed Google), and full attempts wiped to start over
 }
 
 export interface Result { word: Word; grade: Grade; notes: StrokeNote[] }
