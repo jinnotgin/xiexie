@@ -98,9 +98,11 @@ h2{font-size:1.05rem;margin:0 0 10px}
 .chip small{font-weight:400;color:var(--ink-soft);font-size:.78rem}
 .chip[aria-pressed="true"]{background:var(--marker);color:#1C2B3A}
 .chip[aria-pressed="true"] small{color:#3b4a5a}
-/* Phones swap the chip grid for a stage picker. */
+/* TODO: remove the chip grid (.levels, .chip) for good once the stage picker has settled in.
+   The chip grid is deprecated for now; the stage picker is used at every width.
 .stage-picker{display:none;margin-bottom:16px}
-@media (max-width:480px){.levels{display:none}.stage-picker{display:block}}
+@media (max-width:480px){.levels{display:none}.stage-picker{display:block}} */
+.stage-picker{margin-bottom:16px}
 .seg{display:flex;border:2px solid var(--ink);border-radius:999px;overflow:hidden}
 .seg button{flex:1;background:transparent;border:none;border-left:2px solid var(--ink);padding:.45em .4em;font-weight:600;font-size:.92rem;cursor:pointer}
 .seg button:first-child{border-left:none}

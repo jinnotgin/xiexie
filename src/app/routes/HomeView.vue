@@ -53,9 +53,11 @@ const failed = computed(() => learner.status === "error");
 const pct = computed(() => learner.loaded === null ? null : Math.round(learner.loaded * 100));
 const unpacking = computed(() => pct.value === null || pct.value >= 100);
 
-const levelCount = (id: string) => wordsIn(id).length;
+// TODO: remove the chip grid for good once the stage picker has settled in at every width.
+// Deprecated for now: the chip grid is hidden; the stage picker is used at every width.
+// const levelCount = (id: string) => wordsIn(id).length;
 
-// Phones: levels grouped by stage: pick a stage, then a number within it.
+// Levels grouped by stage: pick a stage, then a number within it.
 const STAGES = [
   { id: "pri", name: "Primary", levels: LEVELS.filter(L => /^p\d/.test(L.id)) },
   { id: "sec", name: "Secondary", levels: LEVELS.filter(L => L.id.startsWith("sec")) },
@@ -212,10 +214,13 @@ async function signOut() {
     </div>
 
     <h2>Practise from</h2>
+    <!-- TODO: remove the chip grid for good once the stage picker has settled in at every width.
+    Deprecated for now: the stage picker below is used at every width.
     <div class="levels" id="levels" role="group" aria-label="Levels">
       <button v-for="L in LEVELS" :key="L.id" class="chip" :aria-pressed="learner.meta.levels.includes(L.id)"
         @click="learner.setLevel(L.id)">{{ L.name }}<small>{{ L.sub }}, {{ levelCount(L.id) }}</small></button>
     </div>
+    -->
     <div class="stage-picker">
       <div class="seg" role="group" aria-label="Stage">
         <button v-for="S in STAGES" :key="S.id" :aria-pressed="S === stage" @click="pickStage(S)">{{ S.name }}</button>
