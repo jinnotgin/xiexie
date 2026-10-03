@@ -23,6 +23,8 @@ export const useProgressStore = defineStore("progress", () => {
   const due = (levels = meta.levels) => dueWords(WORDS, progress, levels);
   const sync = () => meta.sync!;
   const isEmpty = () => !progress.size && !meta.written;
+  /** A brand-new learner who hasn't picked a writing mode yet: their first round starts with the warm-up. */
+  const needsWarmup = () => isEmpty() && !meta.warmedUp;
 
   async function init() {
     try { await loadCharData(undefined, f => { loaded.value = f; }); }
@@ -63,8 +65,10 @@ export const useProgressStore = defineStore("progress", () => {
     sync().settingsAt = Date.now();
     await saveMeta(); changed();
   }
+  // Picking a mode, on home or after the warm-up, is a choice made: no warm-up after that.
   async function setStrict(v: boolean) {
     meta.relaxed = !v;
+    meta.warmedUp = true;
     sync().settingsAt = Date.now();
     await saveMeta(); changed();
   }
@@ -103,7 +107,7 @@ export const useProgressStore = defineStore("progress", () => {
   }
 
   return {
-    status, loaded, persistent, progress, meta, rev, statusOf: statusOfWord, due, sync, isEmpty,
+    status, loaded, persistent, progress, meta, rev, statusOf: statusOfWord, due, sync, isEmpty, needsWarmup,
     init, load, setLevel, setStrict, record, wipe, applyPull, setLink,
   };
 });

@@ -32,6 +32,8 @@ export interface Events {
   practice_relaxed_check: CheckProps & { accepted: boolean; clean: boolean; rival_score: number };
   practice_relaxed_stall: CheckProps & { score_ratio: number; incomplete: boolean; ink: number[][][] };
   practice_mode_switched: { mode: Mode };
+  /** The first-round warm-up: the writing style picked from the two demos, and how long it took. */
+  onboarding_warmup: { chosen: Mode; seconds: number };
   practice_hint_requested: { hint_count: number };
   practice_word_revealed: Record<string, never>;
   practice_word_skipped: Record<string, never>;

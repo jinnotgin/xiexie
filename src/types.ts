@@ -24,6 +24,7 @@ export interface Meta {
   lastDay: string | null;
   levels: string[];
   relaxed: boolean;
+  warmedUp?: boolean;     // the first-round warm-up is done, or not needed (a mode was picked on home)
   written: number;
   week?: string;           // Monday of the week weekWritten counts (see weekKey)
   weekWritten?: number;

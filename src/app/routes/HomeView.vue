@@ -22,11 +22,24 @@ import { useStartSession } from "../../features/practice/composables/useStartSes
 import Momo from "../../components/Momo.vue";
 import Icon from "../../components/Icon.vue";
 import InstallButton from "../../components/InstallButton.vue";
+import WarmupSheet from "../../features/practice/components/WarmupSheet.vue";
 
 const learner = useProgressStore();
 const account = useAccountStore();
 const router = useRouter();
 const startSession = useStartSession();
+
+// A brand-new learner's first Start opens the warm-up, which picks a writing mode before the round.
+const warmup = ref(false);
+function start() {
+  if (learner.needsWarmup()) warmup.value = true;
+  else startSession();
+}
+async function warmupChose(strict: boolean) {
+  warmup.value = false;
+  await learner.setStrict(strict);
+  startSession();
+}
 
 const greeting = ref(pick(LINES.home));
 // Rotate through Momo's loading lines, starting from a random one.
@@ -203,7 +216,7 @@ async function signOut() {
     <p class="mode-note" id="mode-note">{{ modeNote }}</p>
 
     <div class="start-row">
-      <button class="btn primary" id="start" @click="startSession()">Start 10 words</button>
+      <button class="btn primary" id="start" @click="start">Start 10 words</button>
       <p v-if="dueCount" class="due-note" id="due-note">{{ dueNote }}</p>
       <button class="btn" id="open-library" @click="router.push({ name: 'library' })">Browse all words</button>
     </div>
@@ -226,6 +239,7 @@ async function signOut() {
       <span>© {{ new Date().getFullYear() }} · Created by <a href="https://itsjin.com" target="_blank" rel="noopener">Jin</a></span>
       <a v-if="buildCommit" class="build" href="https://github.com/jinnotgin/xiexie" target="_blank" rel="noopener" title="Build commit · source on GitHub">{{ buildCommit }}</a>
     </footer>
+    <WarmupSheet v-if="warmup" @choose="warmupChose" @close="warmup = false" />
   </section>
   </Transition>
 </template>

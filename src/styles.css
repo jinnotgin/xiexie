@@ -329,3 +329,29 @@ h2{font-size:1.05rem;margin:0 0 10px}
   .actions .icon-btn .icon{width:1.05em;height:1.05em}
   .actions .icon-btn .lbl{display:inline}
 }
+
+/* First-round warm-up (WarmupSheet.vue): 起 written two ways, pick the one that looks like you. */
+.warmup .sheet{position:relative;max-width:480px;padding-inline:clamp(18px,6vw,32px);padding-bottom:16px}
+.warmup h2{font-size:1.2rem;margin:4px 0 0}
+.wu-lead{margin:8px auto 14px;max-width:34ch;line-height:1.45;color:var(--ink-soft);text-wrap:pretty}
+.wu-lead b.han{font-size:1.5em;color:var(--ink);vertical-align:-.12em}
+.wu-cards{display:grid;grid-template-columns:1fr 1fr;gap:clamp(16px,5vw,28px)}
+.wu-card{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 8px 8px;border:2px solid var(--ink);border-radius:16px;
+  background:var(--card);color:var(--ink);font:inherit;cursor:pointer;box-shadow:3px 3px 0 var(--ink);transition:transform .1s,box-shadow .1s,background .15s}
+.wu-card:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.wu-card[aria-pressed="true"]{background:var(--marker);color:#1C2B3A}
+.wu-card svg{display:block;width:100%;max-width:170px;aspect-ratio:1;border:2px solid var(--grid);border-radius:6px;background:var(--card);margin-bottom:6px}
+.wu-grid line{stroke:var(--grid);stroke-width:1;stroke-dasharray:6 6;vector-effect:non-scaling-stroke}
+.wu-sweep{fill:none;stroke:var(--seal);stroke-width:210;stroke-linecap:round;stroke-linejoin:round}
+.wu-fill{fill:var(--ink)}
+.wu-ink{fill:none;stroke:var(--ink);stroke-width:44;stroke-linecap:round;stroke-linejoin:round}
+.wu-nib{fill:var(--seal);opacity:.9}
+.wu-count{font-size:.78rem;font-weight:700;color:var(--seal);min-height:1.2em;font-variant-numeric:tabular-nums}
+.wu-card[aria-pressed="true"] .wu-count{color:#1C2B3A}
+.wu-card strong{font-size:1rem}
+.wu-go{margin-top:14px}
+.wu-go p{margin:0 auto 6px;padding:6px 0;max-width:36ch;line-height:1.45;text-wrap:balance}
+.wu-go:not(.shown) p{color:var(--ink-soft)}
+.wu-tip{margin:22px 0 0}
+.wu-close{position:absolute;top:10px;right:10px;width:36px;height:36px;border:none;border-radius:50%;background:transparent;color:var(--ink-soft);font-size:1.05rem;cursor:pointer;display:grid;place-items:center}
+.wu-close:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 8%,transparent)}
