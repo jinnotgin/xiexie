@@ -53,7 +53,7 @@ function pickStage(S: typeof STAGES[number]) {
   if (S !== stage.value) learner.setLevel(S.levels[0].id);
 }
 // Phones hide the captions inside the mode buttons, so the chosen one is spelt out below them.
-const MODE_NOTES = { strict: "Each stroke checked, in the right order.", relaxed: "Any order, joined-up strokes and all." };
+const MODE_NOTES = { strict: "Every stroke in the right order.", relaxed: "Any order, joined-up strokes and all." };
 const modeNote = computed(() => learner.meta.relaxed === false ? MODE_NOTES.strict : MODE_NOTES.relaxed);
 const levelNote = computed(() =>
   `${LEVELS.filter(L => learner.meta.levels.includes(L.id)).map(L => L.sub).join(" + ")} · ${levelWords.value.length} words`);
