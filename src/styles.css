@@ -263,6 +263,15 @@ h2{font-size:1.05rem;margin:0 0 10px}
 /* ---------- Modal ---------- */
 .modal{position:fixed;inset:0;background:rgba(10,18,15,.55);display:grid;place-items:center;padding:20px;z-index:20}
 .modal .sheet{max-width:440px;width:100%;max-height:90vh;overflow:auto}
+.dialog{max-width:380px!important}
+.dialog h2{font-size:1.15rem;margin:4px 0 0}
+.dialog .answer{margin-top:8px;line-height:1.45}
+.dialog .sheet-actions{margin-top:16px}
+.dialog-enter-active,.dialog-leave-active{transition:opacity .16s ease}
+.dialog-enter-active .sheet,.dialog-leave-active .sheet{transition:transform .16s ease}
+.dialog-enter-from,.dialog-leave-to{opacity:0}
+.dialog-enter-from .sheet,.dialog-leave-to .sheet{transform:translateY(8px) scale(.98)}
+@media (prefers-reduced-motion: reduce){.dialog-enter-active,.dialog-leave-active,.dialog-enter-active .sheet,.dialog-leave-active .sheet{transition:none}}
 .sync-compare{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
 .sync-compare>div{border:1.5px solid var(--ink);border-radius:10px;padding:10px 12px;line-height:1.5}
 .sync-compare small{display:block;color:var(--ink-soft);font-size:.78rem}

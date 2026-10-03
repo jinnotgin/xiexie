@@ -17,6 +17,7 @@ import { streakLive, writtenThisWeek } from "../../lib/srs";
 import { useProgressStore } from "../../stores/progress";
 import { useAccountStore } from "../../features/account/stores/account";
 import { cloudError } from "../../features/account/lib/cloud";
+import { ask, tell } from "../../lib/dialog";
 import { useStartSession } from "../../features/practice/composables/useStartSession";
 import Momo from "../../components/Momo.vue";
 import Icon from "../../components/Icon.vue";
@@ -70,11 +71,19 @@ const dueNote = computed(() =>
 
 async function reset() {
   if (account.signedIn) {
-    if (!confirm("Clear all progress and streak in your account and on all your devices?")) return;
+    if (!(await ask({
+      title: "Reset all your progress?",
+      message: "This clears your progress and streak in your Google account and on all your devices. It can't be undone.",
+      confirm: "Reset everywhere", danger: true,
+    }))) return;
     try { await account.resetAll(); }
-    catch (e) { alert(cloudError(e) || "Couldn't reset your account. Please try again."); return; }
+    catch (e) { await tell("Couldn't reset your account", cloudError(e) || "Please try again."); return; }
   } else {
-    if (!confirm("Clear all progress and streak on this device?")) return;
+    if (!(await ask({
+      title: "Reset your progress?",
+      message: "This clears your progress and streak on this device. It can't be undone.",
+      confirm: "Reset", danger: true,
+    }))) return;
     await learner.wipe();
   }
   track("progress_reset", { reset_scope: account.signedIn ? "account" : "device" });
@@ -99,13 +108,21 @@ const storageNote = computed(() => {
 
 async function signIn() {
   try { await account.signIn(); }
-  catch (e) { const msg = cloudError(e); if (msg) alert(msg); }
+  catch (e) { const msg = cloudError(e); if (msg) await tell("Couldn't sign in", msg); }
 }
 
 async function signOut() {
-  if (!confirm("Sign out? Your progress stays in your Google account, and this device starts fresh.")) return;
+  if (!(await ask({
+    title: "Sign out?",
+    message: "Your progress stays in your Google account, and this device starts fresh.",
+    confirm: "Sign out",
+  }))) return;
   if (await account.signOut()) return;
-  if (confirm("Some progress from this device hasn't reached your account yet (you may be offline). Sign out anyway and lose it?")) await account.signOut(true);
+  if (await ask({
+    title: "Some progress hasn't been saved",
+    message: "Progress from this device hasn't reached your account yet (you may be offline). If you sign out now, it's lost.",
+    confirm: "Sign out and lose it", cancel: "Stay signed in", danger: true,
+  })) await account.signOut(true);
 }
 </script>
 
