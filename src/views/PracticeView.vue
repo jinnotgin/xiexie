@@ -311,7 +311,7 @@ async function checkInk() {
   if (!reduceMotion && stage) { stage.classList.remove("shake"); void stage.offsetWidth; stage.classList.add("shake"); }
   // Name the look-alike only when the ink really is a good fit for it, or Google reads it too, and show it over the ink.
   if (agreed || (v.best && v.best !== ch && v.bestScore < 0.09)) {
-    setMomo("wow", `That looks like ${v.best}.`, { tone: "nudge", glyph: v.best });
+    setMomo("wow", `That looks like ${v.best}, not this one.`, { tone: "nudge", glyph: v.best });
     rivalChar.value = v.best;
     const id = mountId.value;
     inkPad.value.clear(true, RIVAL_HOLD_MS).then(() => { if (mountId.value === id) rivalChar.value = ""; });
