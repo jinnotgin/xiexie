@@ -1,8 +1,14 @@
+// XIEXIE PATCH BEGIN 01-bundle-header: App tooling directives and attribution
+// XIEXIE PATCH ORIGINAL upstream 3.7.3 lines 1-2
+// | /**
+// |  * Hanzi Writer v3.7.3 | https://chanind.github.io/hanzi-writer
+// XIEXIE PATCH REPLACEMENT
 /* eslint-disable */
 // @ts-nocheck
 /**
  * Hanzi Writer v3.7.3 | https://chanind.github.io/hanzi-writer | MIT licence, (c) 2014 David Chanin
  * Patched for 写写: leniency tuning and misplaced-stroke handling (see [xiexie patch] notes)
+// XIEXIE PATCH END 01-bundle-header
  */
 
 var HanziWriter = (function () {
@@ -633,6 +639,9 @@ var HanziWriter = (function () {
 
   const MIN_LEN_THRESHOLD = 0.35; // smaller = more lenient
 
+// XIEXIE PATCH BEGIN 02-matching-constants: Retry, distance, shape and misplaced-stroke thresholds
+// XIEXIE PATCH ORIGINAL addition after upstream 3.7.3 line 632; no original code
+// XIEXIE PATCH REPLACEMENT
   const MAX_LEN_RATIO = 1.9; // [xiexie patch] reject a stroke that badly overshoots the one it is matched to
   // [xiexie patch] adaptive leniency: first attempt at a stroke is judged normally, each miss on
   // the same stroke loosens the thresholds a step (capped), so retries get easier without making
@@ -649,6 +658,7 @@ var HanziWriter = (function () {
   const MISPLACED_LONG_STROKE = 200; // ...applied only to strokes this long; dots and ticks keep the normal floor
   const retryLeniency =(base, misses) => (base || 1) * (1 + RETRY_LENIENCY_STEP * Math.min(misses || 0, RETRY_LENIENCY_MAX_STEPS));
 
+// XIEXIE PATCH END 02-matching-constants
   function strokeMatches(userStroke, character, strokeNum, options = {}) {
     const strokes = character.strokes;
     const points = stripDuplicates(userStroke.points);
@@ -715,6 +725,9 @@ var HanziWriter = (function () {
     };
   }
 
+// XIEXIE PATCH BEGIN 03-misplaced-matching: Accept the expected shape in the wrong position, unless another stroke fits there
+// XIEXIE PATCH ORIGINAL addition after upstream 3.7.3 line 698; no original code
+// XIEXIE PATCH REPLACEMENT
   // [xiexie patch] shape, direction and length must all fit; location only has to be within a
   // wide budget. Rejected if the stroke matches any other stroke where it was drawn, so drawing a
   // later (or already drawn) stroke in its own place is still a mistake, not a misplaced pass.
@@ -737,6 +750,7 @@ var HanziWriter = (function () {
     }).isMatch);
   }
 
+// XIEXIE PATCH END 03-misplaced-matching
   const startAndEndMatches = (points, closestStroke, leniency) => {
     const startingDist = distance(closestStroke.getStartingPoint(), points[0]);
     const endingDist = distance(closestStroke.getEndingPoint(), points[points.length - 1]);
@@ -783,8 +797,13 @@ var HanziWriter = (function () {
     return dedupedPoints;
   };
 
+// XIEXIE PATCH BEGIN 04-shape-rotations: Expand shape comparison rotations to ±22.5 degrees
+// XIEXIE PATCH ORIGINAL upstream 3.7.3 lines 745-745
+// |   const SHAPE_FIT_ROTATIONS = [Math.PI / 16, Math.PI / 32, 0, -1 * Math.PI / 32, -1 * Math.PI / 16];
+// XIEXIE PATCH REPLACEMENT
   // [xiexie patch] ±22.5° instead of ±11.25°, so slanted strokes drawn at a slightly different angle still fit
   const SHAPE_FIT_ROTATIONS = [Math.PI / 8, Math.PI / 16, Math.PI / 32, 0, -1 * Math.PI / 32, -1 * Math.PI / 16, -1 * Math.PI / 8];
+// XIEXIE PATCH END 04-shape-rotations
 
   const shapeFit = (curve1, curve2, leniency) => {
     const normCurve1 = normalizeCurve(curve1);
@@ -803,6 +822,15 @@ var HanziWriter = (function () {
   const getMatchData = (points, stroke, options) => {
     const {
       leniency = 1,
+// XIEXIE PATCH BEGIN 05-matching-options: Separate shape leniency and allow a progress-based distance budget
+// XIEXIE PATCH ORIGINAL upstream 3.7.3 lines 764-769
+// |       isOutlineVisible = false,
+// |       checkBackwards = true,
+// |       averageDistanceThreshold = 350
+// |     } = options;
+// |     const avgDist = stroke.getAverageDistance(points);
+// |     const distMod = isOutlineVisible || stroke.strokeNum > 0 ? 0.5 : 1;
+// XIEXIE PATCH REPLACEMENT
       // [xiexie patch] shape is judged separately from location: `leniency` loosens where the
       // stroke is (average distance, start/end points); `shapeLeniency` loosens what it looks like
       // (Fréchet shape fit, length). Keeping shape at 1 stops a plain 竖 passing as 竖钩.
@@ -816,6 +844,7 @@ var HanziWriter = (function () {
     // `stroke.strokeNum > 0` would hand stroke 0 twice the distance budget of its rivals. The
     // caller passes distModOverride so leniency tracks the character's progress, not the index.
     const distMod = distModOverride !== undefined ? distModOverride : isOutlineVisible || stroke.strokeNum > 0 ? 0.5 : 1;
+// XIEXIE PATCH END 05-matching-options
     const withinDistThresh = avgDist <= averageDistanceThreshold * distMod * leniency; // short circuit for faster matching
 
     if (!withinDistThresh) {
@@ -830,8 +859,14 @@ var HanziWriter = (function () {
 
     const startAndEndMatch = startAndEndMatches(points, stroke, leniency);
     const directionMatch = directionMatches(points, stroke);
+// XIEXIE PATCH BEGIN 06-shape-length-checks: Keep shape and length checks independent of placement leniency
+// XIEXIE PATCH ORIGINAL upstream 3.7.3 lines 784-785
+// |     const shapeMatch = shapeFit(points, stroke.points, leniency);
+// |     const lengthMatch = lengthMatches(points, stroke, leniency);
+// XIEXIE PATCH REPLACEMENT
     const shapeMatch = shapeFit(points, stroke.points, shapeLeniency);
     const lengthMatch = lengthMatches(points, stroke, shapeLeniency);
+// XIEXIE PATCH END 06-shape-length-checks
     const isMatch = withinDistThresh && startAndEndMatch && directionMatch && shapeMatch && lengthMatch;
 
     if (checkBackwards && !isMatch) {
@@ -1254,11 +1289,15 @@ var HanziWriter = (function () {
       this._currentStrokeIndex = Math.min(startIndex, this._character.strokes.length - 1);
       this._mistakesOnStroke = 0;
       this._totalMistakes = 0;
+// XIEXIE PATCH BEGIN 07-quiz-tracking: Reset drawn order, backwards and misplaced tracking for each quiz
+// XIEXIE PATCH ORIGINAL addition after upstream 3.7.3 line 1207; no original code
+// XIEXIE PATCH REPLACEMENT
       // [xiexie patch] track which strokes are done, and any direction/placement notes
       this._drawn = new Set();
       this._drawOrder = [];
       this._backwards = [];
       this._misplaced = [];
+// XIEXIE PATCH END 07-quiz-tracking
       return this._renderState.run(startQuiz(this._character, options.strokeFadeDuration, this._currentStrokeIndex));
     }
 
@@ -1319,6 +1358,23 @@ var HanziWriter = (function () {
 
       const currentStroke = this._getCurrentStroke();
 
+// XIEXIE PATCH BEGIN 08-stroke-acceptance: Apply retry leniency and report misplaced, backwards or forced acceptance
+// XIEXIE PATCH ORIGINAL upstream 3.7.3 lines 1268-1281
+// |       const {
+// |         isMatch,
+// |         meta
+// |       } = strokeMatches(this._userStroke, this._character, this._currentStrokeIndex, {
+// |         isOutlineVisible: this._renderState.state.character.outline.opacity > 0,
+// |         leniency: this._options.leniency,
+// |         averageDistanceThreshold: this._options.averageDistanceThreshold
+// |       }); // if markStrokeCorrectAfterMisses is passed, just force the stroke to count as correct after n tries
+// | 
+// |       const isForceAccepted = markStrokeCorrectAfterMisses && this._mistakesOnStroke + 1 >= markStrokeCorrectAfterMisses;
+// |       const isAccepted = isMatch || isForceAccepted || meta.isStrokeBackwards && acceptBackwardsStrokes;
+// | 
+// |       if (isAccepted) {
+// |         this._handleSuccess(meta);
+// XIEXIE PATCH REPLACEMENT
       const strictOpts = {
         isOutlineVisible: this._renderState.state.character.outline.opacity > 0,
         distModOverride: this._renderState.state.character.outline.opacity > 0 || this._currentStrokeIndex > 0 ? LATER_STROKE_DIST_MOD : 1,
@@ -1341,6 +1397,7 @@ var HanziWriter = (function () {
         if (meta.isStrokeBackwards && !isMatch && this._backwards) this._backwards.push(this._currentStrokeIndex);
         if (isMisplaced && this._misplaced) this._misplaced.push(this._currentStrokeIndex);
         this._handleSuccess({ ...meta, isMisplaced, isForced: !isMatch && !isMisplaced && !isBackwardsAccepted });
+// XIEXIE PATCH END 08-stroke-acceptance
       } else {
         this._handleFailure(meta);
 
@@ -1377,9 +1434,14 @@ var HanziWriter = (function () {
         totalMistakes: this._totalMistakes,
         strokesRemaining: this._character.strokes.length - this._currentStrokeIndex - (isCorrect ? 1 : 0),
         drawnPath: getDrawnPath(this._userStroke),
+// XIEXIE PATCH BEGIN 09-stroke-report: Expose misplaced and forced flags to stroke callbacks
+// XIEXIE PATCH ORIGINAL upstream 3.7.3 lines 1318-1318
+// |         isBackwards: meta.isStrokeBackwards
+// XIEXIE PATCH REPLACEMENT
         isBackwards: meta.isStrokeBackwards,
         isMisplaced: !!meta.isMisplaced,
         isForced: !!meta.isForced
+// XIEXIE PATCH END 09-stroke-report
       };
     }
 
@@ -1398,7 +1460,11 @@ var HanziWriter = (function () {
         strokeHighlightDuration
       } = this._options;
       let animation = showStroke('main', this._currentStrokeIndex, strokeFadeDuration);
+// XIEXIE PATCH BEGIN 10-draw-order: Record accepted stroke order
+// XIEXIE PATCH ORIGINAL addition after upstream 3.7.3 line 1336; no original code
+// XIEXIE PATCH REPLACEMENT
       if (this._drawn) { this._drawn.add(this._currentStrokeIndex); this._drawOrder.push(this._currentStrokeIndex); }
+// XIEXIE PATCH END 10-draw-order
       this._mistakesOnStroke = 0;
       this._currentStrokeIndex += 1;
       const isComplete = this._currentStrokeIndex === strokes.length;
@@ -1407,8 +1473,13 @@ var HanziWriter = (function () {
         this._isActive = false;
         onComplete === null || onComplete === void 0 ? void 0 : onComplete({
           character: symbol,
+// XIEXIE PATCH BEGIN 11-completion-report: Expose backwards, misplaced and draw order arrays on completion
+// XIEXIE PATCH ORIGINAL upstream 3.7.3 lines 1345-1345
+// |           totalMistakes: this._totalMistakes
+// XIEXIE PATCH REPLACEMENT
           totalMistakes: this._totalMistakes,
           backwards: (this._backwards || []).slice(), misplaced: (this._misplaced || []).slice(), drawOrder: (this._drawOrder || []).slice()
+// XIEXIE PATCH END 11-completion-report
         });
 
         if (highlightOnComplete) {
@@ -2848,6 +2919,10 @@ var HanziWriter = (function () {
   return HanziWriter;
 
 }());
+// XIEXIE PATCH BEGIN 12-module-export: Expose the bundle as an ES module for the app
+// XIEXIE PATCH ORIGINAL addition after upstream 3.7.3 line 2784; no original code
+// XIEXIE PATCH REPLACEMENT
 
 
 export default HanziWriter;
+// XIEXIE PATCH END 12-module-export
