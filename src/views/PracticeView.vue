@@ -18,6 +18,7 @@ import { confetti, cssVar, reduceMotion, writerColors } from "../lib/dom";
 import { speak, speechOk } from "../lib/speech";
 import { posthogEnabled, practiceLogger } from "../lib/posthog";
 import { relaxedChecker } from "../lib/chardata";
+import { googleHandwriting, recognize } from "../lib/handwriting";
 import { useProgressStore } from "../stores/progress";
 import { useSessionStore } from "../stores/session";
 import { useKeydown } from "../composables/useKeydown";
@@ -98,6 +99,7 @@ const rivalOpts = computed(() => ({
 let checkTimer: ReturnType<typeof setTimeout> | undefined;
 const CHECK_DELAY_MS = 120;   // let the stroke paint before the check runs
 const OVERSHOOT = 2;          // pen strokes past the character's own count, still no match = a miss
+let checkSeq = 0;             // bumped by every check and pen-down, so a late Google reply for older ink is dropped
 
 // Result phase: the whole word, a stamp and an optional stroke-order replay.
 const finalSize = ref(0);
@@ -239,6 +241,7 @@ function warmChecker() {
 }
 
 function cancelCheck() {
+  checkSeq++;
   if (checkTimer) { clearTimeout(checkTimer); timers.delete(checkTimer); checkTimer = undefined; }
 }
 function onInkEnd() { cancelCheck(); checkTimer = later(() => { checkTimer = undefined; checkInk(); }, CHECK_DELAY_MS); }
@@ -246,33 +249,47 @@ function onInkEnd() { cancelCheck(); checkTimer = later(() => { checkTimer = und
 /**
  * Checks all the ink so far. Not close enough yet is fine: the learner keeps writing.
  * Only ink that has run well past the character without matching counts as a miss.
+ * With Google handwriting on, a miss with at least the character's stroke count of ink is
+ * passed when Google reads the target first; the local checker stays the judge when Google
+ * can't say. Google autocorrects (it reads most characters a stroke short as the character),
+ * so shorter ink, which may be unfinished, is never sent.
  */
-function checkInk() {
+async function checkInk() {
   const c = session.cur;
   if (!c || c.done || charPassed.value || !inkPad.value) return;
   const ink = inkPad.value.strokes;
   const ch = c.word.w[c.ci];
   if (!ink.length) return;
+  const seq = ++checkSeq;
   const v = relaxedChecker().check(ink, ch);
   const overshot = !v.ok && ink.length >= relaxedChecker().strokeCount(ch) + OVERSHOOT;
-  if (posthogEnabled && (v.ok || overshot)) {
+  let google: string[] | null = null;
+  if (googleHandwriting && !v.ok && ink.length >= relaxedChecker().strokeCount(ch)) {
+    google = await recognize(ink, writerSize.value);
+    // Newer ink has its own check; a remounted pad, a mode switch or a finished character drops this one.
+    if (!alive || seq !== checkSeq || c !== session.cur || c.done || charPassed.value || !relaxed.value || !inkPad.value) return;
+  }
+  const rescued = !!google && google[0] === ch;
+  const ok = v.ok || rescued;
+  const googleProps = googleHandwriting ? { google_asked: google !== null, google_top: google?.[0] ?? "", google_rescued: rescued } : {};
+  if (posthogEnabled && (ok || overshot)) {
     posthog.capture("practice_relaxed_check", {
-      accepted: v.ok, rank: v.rank, score: v.score, best_score: v.bestScore,
-      ink_stroke_count: ink.length, character: ch, best_match: v.best,
+      accepted: ok, rank: v.rank, score: v.score, best_score: v.bestScore,
+      ink_stroke_count: ink.length, character: ch, best_match: v.best, ...googleProps,
     });
   }
   // A full character's worth of ink that still doesn't pass: usually a look-alike edging it out.
   // Sends the ink (rounded, thinned) so the miss can be replayed against the checker.
-  if (posthogEnabled && !v.ok && !stallLogged && ink.length >= relaxedChecker().strokeCount(ch)) {
+  if (posthogEnabled && !ok && !stallLogged && ink.length >= relaxedChecker().strokeCount(ch)) {
     stallLogged = true;
     posthog.capture("practice_relaxed_stall", {
       character: ch, rank: v.rank, score: v.score, best_match: v.best, best_score: v.bestScore,
-      score_ratio: v.score / v.bestScore, incomplete: v.incomplete, ink_stroke_count: ink.length,
+      score_ratio: v.score / v.bestScore, incomplete: v.incomplete, ink_stroke_count: ink.length, ...googleProps,
       ink: ink.map(s => s.filter((_, i) => i % Math.ceil(s.length / 16) === 0 || i === s.length - 1)
         .map(([x, y]) => [Math.round(x), Math.round(y)])),
     });
   }
-  if (v.ok) return passChar();
+  if (ok) return passChar();
   if (!overshot) return;
   c.mistakes++;
   const stage = stageEl.value;

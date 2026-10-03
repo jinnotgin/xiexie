@@ -36,7 +36,7 @@ src/
   views/                        HomeView, PracticeView, SummaryView, LibraryView
   components/                   HanziStage (one HanziWriter), InkPad (free-writing layer), GridSvg, Momo, Icon, WordModal, SyncConflict
   stores/                       progress (saved state), session (current round), ui (popup, library tab), account (sign-in, sync)
-  lib/                          srs, sync and relaxed (pure rules; relaxed checks free handwriting), storage (IndexedDB), search, cloud (Firebase), chardata, speech, momo, dom
+  lib/                          srs, sync and relaxed (pure rules; relaxed checks free handwriting), storage (IndexedDB), search, cloud (Firebase), handwriting (Google second opinion for relaxed mode, off by default), chardata, speech, momo, dom
   data/                         levels.ts, words.json (word bank), chardata.json.gz (stroke data)
   vendor/hanzi-writer.js        Hanzi Writer 3.7.3, patched for leniency and misplaced strokes
 docs/sources/                   MOE character lists the primary levels are based on
