@@ -57,6 +57,13 @@ describe("status and due words", () => {
     expect(statusOf(progress, "二")).toBe("learning");
     expect(statusOf(progress, "四")).toBe("new");
   });
+  it("masters a word only after two perfects beyond box 1", () => {
+    const p = new Map<string, ProgressRec>();
+    for (const g of ["good", "perfect"] as const) p.set("人", nextProgress(p.get("人"), "人", g, NOW));
+    expect(statusOf(p, "人")).toBe("learning");
+    p.set("人", nextProgress(p.get("人"), "人", "perfect", NOW));
+    expect(statusOf(p, "人")).toBe("mastered");
+  });
   it("lists only seen words whose due time has passed, within the levels", () => {
     expect(dueWords(words, progress, ["p1"], NOW).map(w => w.w)).toEqual(["一", "三"]);
     expect(dueWords(words, progress, ["p2"], NOW)).toEqual([]);
