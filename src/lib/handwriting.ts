@@ -57,3 +57,15 @@ export async function recognize(ink: Pt[][], size: number): Promise<string[] | n
     clearTimeout(t);
   }
 }
+
+const AGREED_FIT = 0.15;   // relaxed's MAX_SCORE: the ink is at least a plausible shape for the rival
+
+/**
+ * The other character the ink was written as, when the local checker's best fit and Google's
+ * first reading agree on it; "" otherwise. Two independent readings agreeing is what lets a
+ * 别字 be named as soon as the ink looks finished, rather than after it overshoots.
+ */
+export function agreedRival(google: string[] | null, v: { best: string; bestScore: number }, target: string): string {
+  const g = google?.[0];
+  return g && g !== target && g === v.best && v.bestScore <= AGREED_FIT ? g : "";
+}

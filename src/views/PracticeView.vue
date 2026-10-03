@@ -18,7 +18,7 @@ import { confetti, cssVar, reduceMotion, writerColors } from "../lib/dom";
 import { speak, speechOk } from "../lib/speech";
 import { posthogEnabled, practiceLogger } from "../lib/posthog";
 import { relaxedChecker } from "../lib/chardata";
-import { googleHandwriting, recognize } from "../lib/handwriting";
+import { agreedRival, googleHandwriting, recognize } from "../lib/handwriting";
 import { useProgressStore } from "../stores/progress";
 import { useSessionStore } from "../stores/session";
 import { useKeydown } from "../composables/useKeydown";
@@ -254,7 +254,9 @@ function onInkEnd() { cancelCheck(); checkTimer = later(() => { checkTimer = und
  * With Google handwriting on, a miss that looks finished is passed when Google reads the
  * target first; the local checker stays the judge when Google can't say. Google autocorrects
  * (it reads most characters a stroke short as the character), so ink is only sent with at least
- * the character's stroke count, or when it's joined-up writing the checker judges complete.
+ * the character's stroke count, or when it's joined-up writing the checker judges complete
+ * (as the target, or as the look-alike it fits best). When Google and the checker both read the
+ * same other character, that 别字 is named straight away instead of waiting for an overshoot.
  */
 async function checkInk() {
   const c = session.cur;
@@ -267,8 +269,13 @@ async function checkInk() {
   const overshot = !v.ok && ink.length >= relaxedChecker().strokeCount(ch) + OVERSHOOT;
   let google: string[] | null = null;
   const fullCount = ink.length >= relaxedChecker().strokeCount(ch);
-  fullMiss = !v.ok && (fullCount || relaxedChecker().looksFinished(ink, ch, v.score));
-  const sendAs = !googleHandwriting || !fullMiss ? "" : fullCount ? "count" : "shape";
+  const finished = !v.ok && (fullCount || relaxedChecker().looksFinished(ink, ch, v.score));
+  // Joined-up 别字: short of the target's count, and a poor fit for it, but a finished look-alike.
+  // Only a look-alike with at least the target's strokes: a smaller one may be part of it (相 on the way to 想).
+  const finishedRival = googleHandwriting && !v.ok && !finished && v.best !== ch
+    && relaxedChecker().strokeCount(v.best) >= relaxedChecker().strokeCount(ch) && relaxedChecker().looksFinished(ink, v.best, v.bestScore);
+  fullMiss = finished || finishedRival;
+  const sendAs = !googleHandwriting || !fullMiss ? "" : fullCount ? "count" : finished ? "shape" : "rival";
   if (sendAs) {
     google = await recognize(ink, writerSize.value);
     // Newer ink has its own check; a remounted pad, a mode switch or a finished character drops this one.
@@ -276,8 +283,9 @@ async function checkInk() {
   }
   const rescued = !!google && google[0] === ch;
   const ok = v.ok || rescued;
-  const googleProps = googleHandwriting ? { google_sent_as: sendAs, google_asked: google !== null, google_top: google?.[0] ?? "", google_rescued: rescued } : {};
-  if (posthogEnabled && (ok || overshot)) {
+  const agreed = ok ? "" : agreedRival(google, v, ch);
+  const googleProps = googleHandwriting ? { google_sent_as: sendAs, google_asked: google !== null, google_top: google?.[0] ?? "", google_rescued: rescued, google_agreed: agreed } : {};
+  if (posthogEnabled && (ok || overshot || agreed)) {
     posthog.capture("practice_relaxed_check", {
       accepted: ok, clean: v.clean, rank: v.rank, score: v.score, best_score: v.bestScore, rival_score: v.rivalScore,
       ink_stroke_count: ink.length, character: ch, best_match: v.best, ...googleProps,
@@ -296,14 +304,14 @@ async function checkInk() {
   }
   // Only a clean pass keeps full marks; one that only just made it, or needed Google, is a wobble.
   if (ok) { if (!v.clean) c.shaky++; return passChar(v.clean); }
-  if (!overshot) return;
+  if (!overshot && !agreed) return;
   c.mistakes++;
   fullMiss = false;   // the pad clears itself, and the miss already counts
   const stage = stageEl.value;
   if (!reduceMotion && stage) { stage.classList.remove("shake"); void stage.offsetWidth; stage.classList.add("shake"); }
-  // Name the look-alike only when the ink really is a good fit for it, and show it over the ink.
-  if (v.best && v.best !== ch && v.bestScore < 0.09) {
-    setMomo("wow", `That's ${v.best}, not this one.`, { tone: "nudge", glyph: v.best });
+  // Name the look-alike only when the ink really is a good fit for it, or Google reads it too, and show it over the ink.
+  if (agreed || (v.best && v.best !== ch && v.bestScore < 0.09)) {
+    setMomo("wow", `That looks like ${v.best}.`, { tone: "nudge", glyph: v.best });
     rivalChar.value = v.best;
     const id = mountId.value;
     inkPad.value.clear(true, RIVAL_HOLD_MS).then(() => { if (mountId.value === id) rivalChar.value = ""; });
