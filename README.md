@@ -22,26 +22,12 @@ Built with [Hanzi Writer](https://hanziwriter.org), Vue 3, Pinia, Vue Router and
 ```bash
 npm install
 npm run dev          # http://localhost:5173
-npm test             # unit tests for spaced repetition, grading, search and sync
+npm test             # unit tests for spaced repetition, grading, relaxed checking, search and sync
+npm run lint         # ESLint, including the import boundaries between src/app, src/features and shared code
 npm run build        # static site in dist/, hostable anywhere
 ```
 
 The live site is on Firebase Hosting: `npm run build`, then `firebase deploy --only hosting`.
-
-## Project layout
-
-```
-src/
-  main.ts, App.vue, router.ts   app shell; screens are routes (/, /practice, /summary, /library)
-  views/                        HomeView, PracticeView, SummaryView, LibraryView
-  components/                   HanziStage (one HanziWriter), InkPad (free-writing layer), GridSvg, Momo, Icon, WordModal, SyncConflict
-  stores/                       progress (saved state), session (current round), ui (popup, library tab), account (sign-in, sync)
-  lib/                          srs, sync and relaxed (pure rules; relaxed checks free handwriting), storage (IndexedDB), search, cloud (Firebase), handwriting (Google second opinion for relaxed mode, off by default), chardata, speech, momo, dom
-  data/                         levels.ts, words.json (word bank), chardata.json.gz (stroke data)
-  vendor/hanzi-writer.js        Hanzi Writer 3.7.3, patched for leniency and misplaced strokes
-docs/sources/                   MOE character lists the primary levels are based on
-archived/xiexie.html            the original single-file app; progress in IndexedDB (xiexie-db) carries over from it
-```
 
 ## Word bank
 

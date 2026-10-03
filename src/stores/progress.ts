@@ -1,11 +1,12 @@
 import { defineStore } from "pinia";
-import { computed, reactive, ref } from "vue";
+import { reactive, ref } from "vue";
 import type { Grade, Meta, ProgressRec, SyncState, Word } from "../types";
 import { WORDS } from "../data/words";
 import { Store } from "../lib/storage";
 import { loadCharData } from "../lib/chardata";
 import { DEFAULT_META, addWritten, applyWritten, dueWords, migrateLevels, nextProgress, statusOf } from "../lib/srs";
 import { freshSync, type Pull } from "../lib/sync";
+import { trackError } from "../lib/analytics";
 
 /** The learner's saved state: per-word progress plus the profile (streak, settings). */
 export const useProgressStore = defineStore("progress", () => {
@@ -18,8 +19,7 @@ export const useProgressStore = defineStore("progress", () => {
   /** Bumped on every local change, so the account store knows there is something to sync. */
   const rev = ref(0);
 
-  const masteredCount = computed(() => WORDS.filter(w => statusOf(progress, w.id) === "mastered").length);
-  const status_ = (id: string) => statusOf(progress, id);
+  const statusOfWord = (id: string) => statusOf(progress, id);
   const due = (levels = meta.levels) => dueWords(WORDS, progress, levels);
   const sync = () => meta.sync!;
   const isEmpty = () => !progress.size && !meta.written;
@@ -29,6 +29,7 @@ export const useProgressStore = defineStore("progress", () => {
     catch (e) { status.value = "error"; return; }
     await Store.init();
     persistent.value = Store.persistent;
+    Store.onWriteError = e => { persistent.value = false; trackError(e); };
     await load();
     status.value = "ready";
   }
@@ -79,7 +80,6 @@ export const useProgressStore = defineStore("progress", () => {
     Object.assign(meta, DEFAULT_META, { levels: [...DEFAULT_META.levels], sync: { ...freshSync(), ...link } });
     await saveMeta(); changed();
   }
-  const reset = () => wipe();
 
   /** Takes in what a sync brought down from the cloud (see pullChanges in lib/sync.ts). */
   async function applyPull(pull: Pull) {
@@ -97,7 +97,7 @@ export const useProgressStore = defineStore("progress", () => {
   }
 
   return {
-    status, loaded, persistent, progress, meta, rev, masteredCount, statusOf: status_, due, sync, isEmpty,
-    init, load, setLevel, setStrict, record, reset, wipe, applyPull, setLink,
+    status, loaded, persistent, progress, meta, rev, statusOf: statusOfWord, due, sync, isEmpty,
+    init, load, setLevel, setStrict, record, wipe, applyPull, setLink,
   };
 });

@@ -2,7 +2,7 @@
 /** Asked on first sign-in when both this device and the Google account already have progress. */
 import { nextTick, ref, watch } from "vue";
 import { useAccountStore } from "../stores/account";
-import { useKeydown } from "../composables/useKeydown";
+import { useKeydown } from "../../../composables/useKeydown";
 
 const account = useAccountStore();
 const mergeBtn = ref<HTMLButtonElement>();
@@ -21,11 +21,11 @@ useKeydown(e => { if (e.key === "Escape" && account.conflict) account.choose("ca
         <div><small>Your account</small>{{ words(account.conflict.account.words) }}</div>
       </div>
       <p class="answer">Combining keeps your latest result for each word.</p>
-      <div class="row" style="margin-top:12px">
+      <div class="row sheet-actions">
         <button class="btn primary small" ref="mergeBtn" @click="account.choose('merge')">Combine both</button>
         <button class="btn small" @click="account.choose('account')">Use account's only</button>
       </div>
-      <p style="margin-top:10px"><button class="linkish" @click="account.choose('cancel')">Cancel and stay signed out</button></p>
+      <p class="sheet-cancel"><button class="linkish" @click="account.choose('cancel')">Cancel and stay signed out</button></p>
     </div>
   </div>
 </template>

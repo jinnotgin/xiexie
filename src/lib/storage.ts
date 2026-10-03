@@ -1,7 +1,7 @@
 /* =========================================================
    Storage layer. Everything the app saves on this device goes
    through Store. It stays the source of truth when signed in:
-   stores/account.ts syncs it with Firestore (see lib/sync.ts).
+   the account store (features/account) syncs it with Firestore (see lib/sync.ts).
    Database name, version and store layout are unchanged from
    the single-file version, so existing progress keeps loading.
    ========================================================= */
@@ -42,8 +42,26 @@ function run<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore)
 // IndexedDB can't clone Vue proxies, so everything is written as plain data.
 const plain = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 
+/**
+ * A write to IndexedDB failed (storage full, the database closed or was deleted). The app carries
+ * on with what it has in memory, but this device can no longer be trusted to keep progress, so
+ * Store stops claiming it does and tells whoever is listening, once.
+ */
+function writeFailed(e: unknown) {
+  if (!Store.persistent) return;
+  Store.persistent = false;
+  Store.onWriteError?.(e);
+}
+
+async function write(store: string, fn: (s: IDBObjectStore) => IDBRequest | void) {
+  if (!db) return;
+  try { await run(store, "readwrite", fn); } catch (e) { writeFailed(e); }
+}
+
 export const Store = {
   persistent: false,
+  /** Called the first time a write fails after a successful open. */
+  onWriteError: null as ((e: unknown) => void) | null,
   async init() { this.persistent = await open(); },
   async allProgress(): Promise<ProgressRec[]> {
     if (!db) return [...mem.progress.values()];
@@ -53,13 +71,13 @@ export const Store = {
   async putProgress(rec: ProgressRec) {
     const r = plain(rec);
     mem.progress.set(r.id, r);
-    if (db) { try { await run("progress", "readwrite", s => s.put(r)); } catch (e) {} }
+    await write("progress", s => s.put(r));
   },
   async putAllProgress(recs: ProgressRec[]) {
     if (!recs.length) return;
     const rs = recs.map(plain);
     rs.forEach(r => mem.progress.set(r.id, r));
-    if (db) { try { await run("progress", "readwrite", s => { rs.forEach(r => s.put(r)); }); } catch (e) {} }
+    await write("progress", s => { rs.forEach(r => s.put(r)); });
   },
   async getMeta(): Promise<Partial<Meta> | null> {
     if (!db) return mem.meta;
@@ -67,11 +85,13 @@ export const Store = {
     catch (e) { return mem.meta; }
   },
   async putMeta(m: Meta) {
-    mem.meta = { ...plain(m), id: "meta" };
-    if (db) { try { await run("meta", "readwrite", s => s.put(mem.meta)); } catch (e) {} }
+    const meta: StoredMeta = { ...plain(m), id: "meta" };
+    mem.meta = meta;
+    await write("meta", s => s.put(meta));
   },
   async reset() {
     mem.progress.clear(); mem.meta = null;
-    if (db) { try { await run("progress", "readwrite", s => s.clear()); await run("meta", "readwrite", s => s.clear()); } catch (e) {} }
+    await write("progress", s => s.clear());
+    await write("meta", s => s.clear());
   },
 };

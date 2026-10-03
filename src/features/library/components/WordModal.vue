@@ -1,25 +1,26 @@
 <script setup lang="ts">
-/** Popup with a looping stroke-order animation that writes a word one character at a time. */
+/** Popup with a looping stroke-order animation that writes a word one character at a time. Emits `practise` with the word. */
 import { computed, nextTick, ref, watch } from "vue";
-import { reduceMotion, writerColors } from "../lib/dom";
-import { speak, speechOk } from "../lib/speech";
-import { useProgressStore } from "../stores/progress";
-import { useUiStore } from "../stores/ui";
-import { useStartSession } from "../composables/useStartSession";
-import { useKeydown } from "../composables/useKeydown";
-import HanziStage from "./HanziStage.vue";
-import Icon from "./Icon.vue";
+import { reduceMotion, writerColors } from "../../../lib/dom";
+import { speak, speechOk } from "../../../lib/speech";
+import { useProgressStore } from "../../../stores/progress";
+import { useLibraryStore } from "../stores/library";
+import type { Word } from "../../../types";
+import { useKeydown } from "../../../composables/useKeydown";
+import { animate, type Writer } from "../../../lib/writer";
+import HanziStage from "../../../components/HanziStage.vue";
+import Icon from "../../../components/Icon.vue";
 
-const app = useProgressStore();
-const ui = useUiStore();
-const startSession = useStartSession();
+const learner = useProgressStore();
+const library = useLibraryStore();
+const emit = defineEmits<{ practise: [word: Word] }>();
 const closeBtn = ref<HTMLButtonElement>();
 
-const word = computed(() => ui.modalWord);
+const word = computed(() => library.modalWord);
 const size = ref(0);
 const opts = ref<Record<string, unknown>>({});
 
-let writers: any[] = [];
+let writers: Writer[] = [];
 let run = 0;   // bumped to cancel the running animation loop
 
 watch(word, async w => {
@@ -37,13 +38,13 @@ watch(word, async w => {
 const status = computed(() => {
   const w = word.value;
   if (!w) return "";
-  const p = app.progress.get(w.id);
-  const st = app.statusOf(w.id);
+  const p = learner.progress.get(w.id);
+  const st = learner.statusOf(w.id);
   return st === "new" || !p ? "Not practised yet." :
     `${st === "mastered" ? "Mastered" : "Learning"}. Written ${p.seen} time${p.seen > 1 ? "s" : ""}, ${p.perfect} perfect.`;
 });
 
-function onReady(i: number, wr: any) {
+function onReady(i: number, wr: Writer) {
   if (reduceMotion) { wr.showCharacter(); return; }
   wr.hideCharacter({ duration: 0 });
   writers[i] = wr;
@@ -57,7 +58,7 @@ async function loop(id: number) {
   const list = writers;
   while (id === run) {
     for (const wr of list) {
-      await new Promise(res => wr.animateCharacter({ onComplete: res }));
+      await animate(wr);
       if (id !== run) return;
     }
     await pause(1600);
@@ -66,8 +67,8 @@ async function loop(id: number) {
     await pause(400);
   }
 }
-const close = () => { ui.modalWord = null; };
-function practise() { const w = word.value!; close(); startSession([w]); }
+const close = () => { library.modalWord = null; };
+function practise() { const w = word.value!; close(); emit("practise", w); }
 
 useKeydown(e => { if (e.key === "Escape" && word.value) close(); });
 </script>
@@ -85,7 +86,7 @@ useKeydown(e => { if (e.key === "Escape" && word.value) close(); });
         </template>
       </div>
       <p class="answer" id="m-status">{{ status }}</p>
-      <div class="row" style="margin-top:12px">
+      <div class="row sheet-actions">
         <button class="btn primary small" id="m-practise" @click="practise">Practise this</button>
         <button class="btn small" id="m-close" ref="closeBtn" @click="close">Close</button>
       </div>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Word } from "../../src/types";
-import { foldPinyin, searchWords } from "../../src/lib/search";
+import { foldPinyin, searchWords } from "../../src/features/library/lib/search";
 
 const word = (w: string, p: string, e: string): Word => ({ w, p, e, l: "p1", id: w });
 const WORDS = [word("好", "hǎo", "good"), word("你好", "nǐ hǎo", "hello"), word("女", "nǚ", "female"), word("好看", "hǎo kàn", "good-looking")];

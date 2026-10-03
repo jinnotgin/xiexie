@@ -219,6 +219,9 @@ h2{font-size:1.05rem;margin:0 0 10px}
 .mini-stamp.ok{background:var(--seal);opacity:.75}
 .mini-stamp.again{background:var(--seal)}
 .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.sheet-actions{margin-top:12px}
+.sheet-cancel{margin-top:10px}
+.final-word{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
 
 /* ---------- Library ---------- */
 .lib-title{font-size:1.5rem;margin-bottom:12px}

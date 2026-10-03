@@ -3,7 +3,7 @@
    Pure functions: progress and meta are passed in, so the
    rules can be unit-tested without a browser.
    ========================================================= */
-import type { CardState, Counts, Grade, Meta, ProgressRec, Status, Word } from "../types";
+import type { CardState, Counts, Grade, Meta, ProgressRec, Status, StrokeNote, Word } from "../types";
 import { LEVEL_MIGRATION, LEVELS } from "../data/levels";
 
 export const DAY = 86400000;
@@ -106,6 +106,13 @@ export function gradeOf(c: Pick<CardState, "revealed" | "word" | "mistakes" | "h
   if (c.mistakes === 0 && c.hints === 0 && !c.notes.length && !c.shaky) return "perfect";
   if (c.hints === 0 && c.mistakes <= n * 2) return "good";   // includes "correct, but order/direction differs"
   return "ok";
+}
+
+/** How a correctly written word's strokes went their own way, or null if they didn't. */
+export function noteKind(notes: StrokeNote[]): "both" | "order" | "backwards" | null {
+  if (!notes.length) return null;
+  const order = notes.some(n => n.order), back = notes.some(n => n.backwards);
+  return order && back ? "both" : order ? "order" : "backwards";
 }
 
 export const STAMPS: Record<Grade, { ch: string; label: string }> = {

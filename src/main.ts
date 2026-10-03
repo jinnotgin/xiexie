@@ -1,24 +1,21 @@
 import { createApp } from "vue";
 import { createPinia } from "pinia";
-import posthog from "posthog-js";
-import App from "./App.vue";
-import { router } from "./router";
+import App from "./app/App.vue";
+import { router } from "./app/router";
 import { useProgressStore } from "./stores/progress";
-import { useAccountStore } from "./stores/account";
+import { useAccountStore } from "./features/account/stores/account";
 import { setupInstall } from "./lib/install";
-import { initPosthog, posthogEnabled } from "./lib/posthog";
+import { initAnalytics, trackError } from "./lib/analytics";
 import "./styles.css";
 
-initPosthog();
+initAnalytics();
 setupInstall();
 const app = createApp(App).use(createPinia()).use(router);
 
-if (posthogEnabled) {
-  app.config.errorHandler = (error) => {
-    console.error(error); // a custom handler replaces Vue's default console logging
-    posthog.captureException(error);
-  };
-}
+app.config.errorHandler = (error) => {
+  console.error(error); // a custom handler replaces Vue's default console logging
+  trackError(error);
+};
 
 app.mount("#app");
 useProgressStore().init().then(() => useAccountStore().start());

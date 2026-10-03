@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
-import { type CharMedians, type Pt, makeChecker } from "../../src/lib/relaxed";
+import { type CharMedians, type Pt, makeChecker } from "../../src/features/practice/lib/relaxed";
 
 const DATA: Record<string, CharMedians> = JSON.parse(gunzipSync(readFileSync("src/data/chardata.json.gz")).toString());
 const checker = makeChecker(DATA);

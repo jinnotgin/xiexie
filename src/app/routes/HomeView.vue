@@ -7,23 +7,22 @@ setTimeout(() => { splashHeld.value = false; }, SPLASH_MIN_MS);
 </script>
 
 <script setup lang="ts">
-import posthog from "posthog-js";
-import { posthogEnabled } from "../lib/posthog";
+import { track } from "../../lib/analytics";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { LEVELS } from "../data/levels";
-import { WORDS } from "../data/words";
-import { LINES, pick } from "../lib/momo";
-import { streakLive, writtenThisWeek } from "../lib/srs";
-import { useProgressStore } from "../stores/progress";
-import { useAccountStore } from "../stores/account";
-import { cloudError } from "../lib/cloud";
-import { useStartSession } from "../composables/useStartSession";
-import Momo from "../components/Momo.vue";
-import Icon from "../components/Icon.vue";
-import InstallButton from "../components/InstallButton.vue";
+import { LEVELS } from "../../data/levels";
+import { wordsIn } from "../../data/words";
+import { LINES, pick } from "../../lib/momo";
+import { streakLive, writtenThisWeek } from "../../lib/srs";
+import { useProgressStore } from "../../stores/progress";
+import { useAccountStore } from "../../features/account/stores/account";
+import { cloudError } from "../../features/account/lib/cloud";
+import { useStartSession } from "../../features/practice/composables/useStartSession";
+import Momo from "../../components/Momo.vue";
+import Icon from "../../components/Icon.vue";
+import InstallButton from "../../components/InstallButton.vue";
 
-const app = useProgressStore();
+const learner = useProgressStore();
 const account = useAccountStore();
 const router = useRouter();
 const startSession = useStartSession();
@@ -32,14 +31,14 @@ const greeting = ref(pick(LINES.home));
 // Rotate through Momo's loading lines, starting from a random one.
 const loadingIdx = ref(Math.floor(Math.random() * LINES.loading.length));
 const loadingLine = computed(() => LINES.loading[loadingIdx.value % LINES.loading.length]);
-const rotate = setInterval(() => { ready.value ? clearInterval(rotate) : loadingIdx.value++; }, 1800);
+const rotate = setInterval(() => { if (ready.value) clearInterval(rotate); else loadingIdx.value++; }, 1800);
 onUnmounted(() => clearInterval(rotate));
-const ready = computed(() => app.status === "ready" && !splashHeld.value);
-const failed = computed(() => app.status === "error");
-const pct = computed(() => app.loaded === null ? null : Math.round(app.loaded * 100));
+const ready = computed(() => learner.status === "ready" && !splashHeld.value);
+const failed = computed(() => learner.status === "error");
+const pct = computed(() => learner.loaded === null ? null : Math.round(learner.loaded * 100));
 const unpacking = computed(() => pct.value === null || pct.value >= 100);
 
-const levelCount = (id: string) => WORDS.filter(w => w.l === id).length;
+const levelCount = (id: string) => wordsIn(id).length;
 
 // Phones: levels grouped by stage: pick a stage, then a number within it.
 const STAGES = [
@@ -47,25 +46,25 @@ const STAGES = [
   { id: "sec", name: "Secondary", levels: LEVELS.filter(L => L.id.startsWith("sec")) },
   { id: "biz", name: "Business", levels: LEVELS.filter(L => L.id === "biz") },
 ];
-const stage = computed(() => STAGES.find(S => S.levels.some(L => app.meta.levels.includes(L.id))) ?? STAGES[0]);
+const stage = computed(() => STAGES.find(S => S.levels.some(L => learner.meta.levels.includes(L.id))) ?? STAGES[0]);
 // Switching stage starts at its first level; tapping the current stage keeps the choice.
 function pickStage(S: typeof STAGES[number]) {
-  if (S !== stage.value) app.setLevel(S.levels[0].id);
+  if (S !== stage.value) learner.setLevel(S.levels[0].id);
 }
 // Phones hide the captions inside the mode buttons, so the chosen one is spelt out below them.
 const MODE_NOTES = { strict: "Each stroke checked, in the right order.", relaxed: "Any order, joined-up strokes and all." };
-const modeNote = computed(() => app.meta.relaxed === false ? MODE_NOTES.strict : MODE_NOTES.relaxed);
+const modeNote = computed(() => learner.meta.relaxed === false ? MODE_NOTES.strict : MODE_NOTES.relaxed);
 const levelNote = computed(() =>
-  `${LEVELS.filter(L => app.meta.levels.includes(L.id)).map(L => L.sub).join(" + ")} · ${levelWords.value.length} words`);
+  `${LEVELS.filter(L => learner.meta.levels.includes(L.id)).map(L => L.sub).join(" + ")} · ${levelWords.value.length} words`);
 
 // Mastery counted within the chosen levels, so a new learner sees a goal they can reach.
-const levelWords = computed(() => WORDS.filter(w => app.meta.levels.includes(w.l)));
-const levelMastered = computed(() => levelWords.value.filter(w => app.statusOf(w.id) === "mastered").length);
+const levelWords = computed(() => learner.meta.levels.flatMap(wordsIn));
+const levelMastered = computed(() => levelWords.value.filter(w => learner.statusOf(w.id) === "mastered").length);
 const levelLabel = computed(() => {
-  const names = LEVELS.filter(L => app.meta.levels.includes(L.id)).map(L => L.name);
+  const names = LEVELS.filter(L => learner.meta.levels.includes(L.id)).map(L => L.name);
   return names.length <= 2 ? names.join(" + ") : `${names.length} levels`;
 });
-const dueCount = computed(() => app.due().length);
+const dueCount = computed(() => learner.due().length);
 const dueNote = computed(() =>
   `${dueCount.value} word${dueCount.value > 1 ? "s" : ""} due for review. They'll come up first.`);
 
@@ -76,11 +75,9 @@ async function reset() {
     catch (e) { alert(cloudError(e) || "Couldn't reset your account. Please try again."); return; }
   } else {
     if (!confirm("Clear all progress and streak on this device?")) return;
-    await app.reset();
+    await learner.wipe();
   }
-  if (posthogEnabled) {
-    posthog.capture("progress_reset", { reset_scope: account.signedIn ? "account" : "device" });
-  }
+  track("progress_reset", { reset_scope: account.signedIn ? "account" : "device" });
   greeting.value = pick(LINES.home);
 }
 
@@ -97,7 +94,7 @@ const storageNote = computed(() => {
   }
   if (account.state === "busy") return "Signing in…";
   if (account.lapsed) return "You've been signed out. Sign in again to keep syncing.";
-  return app.persistent ? "Progress is saved on this browser." : "Storage is unavailable here, so progress lasts until you close this page.";
+  return learner.persistent ? "Progress is saved on this browser." : "Storage is unavailable here, so progress lasts until you close this page.";
 });
 
 async function signIn() {
@@ -142,30 +139,30 @@ async function signOut() {
     </div>
     <div class="bubble" id="home-bubble">{{ greeting }}</div>
     <div class="stats" id="stats">
-      <span class="pill"><Icon name="flame" />{{ streakLive(app.meta) ? app.meta.streak : 0 }}-day streak</span>
-      <span class="pill"><Icon name="pen" />{{ writtenThisWeek(app.meta) }} written this week</span>
+      <span class="pill"><Icon name="flame" />{{ streakLive(learner.meta) ? learner.meta.streak : 0 }}-day streak</span>
+      <span class="pill"><Icon name="pen" />{{ writtenThisWeek(learner.meta) }} written this week</span>
       <span class="pill"><Icon name="award" />{{ levelMastered }} / {{ levelWords.length }} mastered in {{ levelLabel }}</span>
     </div>
 
     <h2>Practise from</h2>
     <div class="levels" id="levels" role="group" aria-label="Levels">
-      <button v-for="L in LEVELS" :key="L.id" class="chip" :aria-pressed="app.meta.levels.includes(L.id)"
-        @click="app.setLevel(L.id)">{{ L.name }}<small>{{ L.sub }}, {{ levelCount(L.id) }}</small></button>
+      <button v-for="L in LEVELS" :key="L.id" class="chip" :aria-pressed="learner.meta.levels.includes(L.id)"
+        @click="learner.setLevel(L.id)">{{ L.name }}<small>{{ L.sub }}, {{ levelCount(L.id) }}</small></button>
     </div>
     <div class="stage-picker">
       <div class="seg" role="group" aria-label="Stage">
         <button v-for="S in STAGES" :key="S.id" :aria-pressed="S === stage" @click="pickStage(S)">{{ S.name }}</button>
       </div>
       <div v-if="stage.levels.length > 1" class="level-nums" role="group" :aria-label="`${stage.name} level`">
-        <button v-for="L in stage.levels" :key="L.id" :aria-label="L.name" :aria-pressed="app.meta.levels.includes(L.id)"
-          @click="app.setLevel(L.id)">{{ L.name.replace(/\D/g, "") }}</button>
+        <button v-for="L in stage.levels" :key="L.id" :aria-label="L.name" :aria-pressed="learner.meta.levels.includes(L.id)"
+          @click="learner.setLevel(L.id)">{{ L.name.replace(/\D/g, "") }}</button>
       </div>
       <p class="level-note">{{ levelNote }}</p>
     </div>
 
     <h2>How to write</h2>
     <div class="modes" id="modes" role="group" aria-label="Writing mode">
-      <button class="mode" id="mode-strict" :aria-pressed="app.meta.relaxed === false" @click="app.setStrict(true)">
+      <button class="mode" id="mode-strict" :aria-pressed="learner.meta.relaxed === false" @click="learner.setStrict(true)">
         <svg viewBox="-3 -7 56 49" aria-hidden="true">
           <path d="M12 18H48M30 1V40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
           <circle cx="12" cy="8" r="7" fill="var(--seal)" /><text x="12" y="11.6" fill="var(--seal-ink)">1</text>
@@ -173,7 +170,7 @@ async function signOut() {
         </svg>
         Stroke by stroke<small>{{ MODE_NOTES.strict }}</small>
       </button>
-      <button class="mode" id="mode-relaxed" :aria-pressed="app.meta.relaxed !== false" @click="app.setStrict(false)">
+      <button class="mode" id="mode-relaxed" :aria-pressed="learner.meta.relaxed !== false" @click="learner.setStrict(false)">
         <svg viewBox="-3 -7 56 49" aria-hidden="true">
           <path d="M12 18C24 16 40 16 48 18C40 22 32 6 30 1C30 15 31 30 30 40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
         </svg>

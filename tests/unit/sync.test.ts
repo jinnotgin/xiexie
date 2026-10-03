@@ -13,7 +13,7 @@ const meta = (m: Partial<Meta> = {}): Meta => ({ ...DEFAULT_META, ...m });
 const sync = (s: Partial<SyncState> = {}): SyncState => ({ ...freshSync(), contrib: "me", uid: "u1", epoch: "e1", ...s });
 const cloud = (c: Partial<CloudDoc> = {}): CloudDoc => ({ ...emptyCloud("e1"), ...c });
 
-/** One full sync round, as stores/account.ts does it: push, then pull against the result. */
+/** One full sync round, as the account store does it: push, then pull against the result. */
 function round(progress: Map<string, ProgressRec>, m: Meta, s: SyncState, c: CloudDoc | null, now = Date.now()) {
   const patch = pushPatch(progress, m, s, c);
   const after = applyPatch(c, patch, s.epoch!);

@@ -1,7 +1,7 @@
 /* =========================================================
    Cloud sync rules. Pure functions, like srs.ts: local state
    and the cloud document go in, changes come out. Firebase
-   itself lives in cloud.ts, the wiring in stores/account.ts.
+   itself lives in cloud.ts, the wiring in features/account/stores/account.ts.
 
    Cloud document users/{uid}:
      epoch     changes on "Reset progress", so other devices
@@ -42,6 +42,7 @@ export const emptyCloud = (epoch: string): CloudDoc =>
   ({ epoch, progress: {}, counters: {}, streak: { streak: 0, lastDay: null }, settings: null });
 
 /** Fills in anything missing or malformed in a document read from Firestore. */
+/* eslint-disable @typescript-eslint/no-explicit-any -- untrusted data, checked field by field below */
 export function normalizeCloud(d: any): CloudDoc {
   const obj = (v: unknown) => (v && typeof v === "object" ? v : {}) as Record<string, any>;
   const num = (v: unknown) => (typeof v === "number" && isFinite(v) ? v : 0);
@@ -59,6 +60,7 @@ export function normalizeCloud(d: any): CloudDoc {
     settings: s && Array.isArray(s.levels) ? { levels: s.levels, relaxed: !!s.relaxed, at: num(s.at) } : null,
   };
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 /* ---------- Progress records ---------- */
 
@@ -203,7 +205,7 @@ export function pullChanges(progress: ProgressMap, meta: Meta, sync: SyncState, 
 }
 
 /** Headline numbers for the "which progress do you want to keep?" prompt. */
-export const summarizeLocal = (progress: ProgressMap, meta: Meta) =>
+export const summarizeLocal = (progress: ProgressMap) =>
   ({ words: [...progress.values()].filter(p => p.seen).length });
 export const summarizeCloud = (c: CloudDoc) =>
   ({ words: Object.values(c.progress).filter(s => Number(s.split(",")[2]) > 0).length });
