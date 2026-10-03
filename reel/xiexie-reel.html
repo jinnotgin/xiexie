@@ -652,7 +652,7 @@ function render(t) {
     T.hops.forEach((land, i) => {
       const p = seg(t, land - T.hopAir, land);
       if (p >= 1) at = i + 1;
-      if (p > 0 && p < 1) { cx = lerp(POS[i], POS[i + 1], E.sine(p)); cy = -Math.sin(Math.PI * p) * (130 + i * 20); tilt = Math.sin(Math.PI * 2 * p) * -10; }
+      if (p > 0 && p < 1) { cx = lerp(POS[i], POS[i + 1], E.sine(p)); cy = -Math.sin(Math.PI * p) * (190 + i * 20); tilt = Math.sin(Math.PI * 2 * p) * -10; }
       const after = seg(t, land, land + .3);
       if (after > 0 && after < 1) sq = 1 - Math.sin(Math.PI * after) * .14;
     });
