@@ -5,15 +5,17 @@ Live at [xiexie.web.app](https://xiexie.web.app).
 
 ## Why
 
-Many Singaporeans spend ten years or more learning Chinese in school, then rarely use it after they graduate.
-写写 helps you revise and reconnect with writing it:
+Many Singaporeans study Chinese for ten years or more but rarely write it after leaving school.
+写写 helps you practise again, starting with characters you learnt in primary school.
 
-- **Levels follow the Singapore syllabus.** P1 to P6 use the MOE 欢乐伙伴 character lists, so you can start from the year you remember.
-  Sec 1 to Sec 4 cover the rest of China's 3,500 everyday characters, and Business adds words for working life.
-- **You write every stroke,** with a lenient checker that forgives small wobbles.
-  Turn off strict stroke order to write freely instead: any order, any direction, joined-up strokes and all; the character counts once it is close enough.
-- **Spaced repetition** brings words back just before you are likely to forget them.
-- **No account needed.** Progress stays on your device unless you sign in with Google to sync it.
+- **Choose a level to start with.** P1 to P6 follow the MOE 欢乐伙伴 character lists.
+  Sec 1 to Sec 4 cover the remaining characters in China's list of 3,500 everyday characters, grouped by frequency.
+  Business includes words used at work.
+- **Practise writing each character.** The stroke checker allows small mistakes.
+  In relaxed mode, you can write strokes in any order or direction, including joined strokes.
+  Your answer passes when the character is close enough.
+- **Review words over time.** Spaced repetition schedules words for review to help you remember them.
+- **Start without an account.** Your progress is saved on your device. You can sign in with Google to sync it across devices.
 
 Built with [Hanzi Writer](https://hanziwriter.org), Vue 3, Pinia, Vue Router and Vite.
 
@@ -24,62 +26,70 @@ npm install
 npm run dev          # http://localhost:5173
 npm test             # unit tests for spaced repetition, grading, relaxed checking, search and sync
 npm run lint         # ESLint, including the import boundaries between src/app, src/features and shared code
-npm run build        # static site in dist/, hostable anywhere
+npm run build        # static site in dist/
 ```
 
 The live site is on Firebase Hosting: `npm run build`, then `firebase deploy --only hosting`.
 
 ## Word bank
 
-`src/data/words.json` is organised by character, not vocabulary: every character is taught by at least one word,
-so a common word can be missing when its characters are taught elsewhere (雨伞 is not in the bank, but 下雨 and 伞 are).
-It covers 3,502 characters: the 3,500 of China's 通用规范汉字表 (2013), plus 咦 and 踮.
+The word bank in `src/data/words.json` gives you a way to practise each of the app's 3,502 characters:
+the 3,500 in China's 通用规范汉字表 (2013), plus 咦 and 踮, which are both in the app's Primary 6 (P6) level.
+Each character appears in at least one practice word, but the bank does not include every common word.
+For example, it includes 下雨 and 伞, so you can practise both characters in 雨伞 even though 雨伞 itself is missing.
 
 | Level | Characters | Source |
 |---|---|---|
-| P1 to P6 | 1,815 | Year first taught in 欢乐伙伴 Higher Chinese (2015 edition), which includes every standard Chinese character plus 160 more in P5 and P6. |
-| Sec 1 to Sec 4 | 1,687 | The remaining characters in four groups, most common first. MOE publishes no secondary character list. |
-| Business | 103 words | Hand-picked office words, including CPF and GST. |
+| P1 to P6 | 1,815 | 欢乐伙伴 Higher Chinese (2015 edition), grouped by the year each character is first taught. This includes all characters in the standard Chinese course, plus 160 more in P5 and P6. |
+| Sec 1 to Sec 4 | 1,687 | The remaining characters, divided into four groups from most to least common. These groups are not based on an MOE secondary character list, as MOE does not publish one. |
+| Business | 103 words | A selection of office words, including CPF and GST. |
 
-When editing: a word sits in the level of its latest character, and a character counts from the first lesson it appears in,
-as either 识读字 (read) or 识写字 (write). The script that generated the bank is not in this repo, so fixes go straight into `words.json`.
-Progress is keyed by the word, so changing a word's level, pinyin or meaning keeps everyone's progress.
+When editing the bank, assign each word to the highest level of any character in it.
+A character's level is the year it first appears in the syllabus, whether as a 识读字 (for reading) or 识写字 (for writing).
+The script used to generate the bank is not included in this repo, so make corrections directly in `words.json`.
+Progress is saved against the word itself. Changing its level, pinyin or meaning preserves existing progress.
 
 ## Saving progress to a Google account (optional)
 
-Without a Firebase config the sign-in button is hidden and nothing from Firebase is downloaded.
-Signed in, each device keeps IndexedDB as its source of truth and syncs with one Firestore document, `users/{uid}`,
-after each word, when the tab is hidden or shown, and when the connection comes back.
-The merge rules are pure functions in `src/lib/sync.ts`, tested in `tests/unit/sync.test.ts`:
+The sign-in button only appears when a Firebase config is provided. Without one, the app does not download Firebase code.
 
-- **Words**: the most recently practised result wins.
-- **Characters written**: each device keeps its own counter and the total is the sum. The home page shows this week's (from Monday), summing only devices whose count is from this week; the lifetime total is kept too.
-- **Streak**: day ranges from each device are joined, so 1 day on a new phone after a 10-day run elsewhere makes 11.
-- **First sign-in** with progress on both sides: the learner chooses to combine them or keep only the account's.
-- **Sign out** clears the device once everything has reached the account, so a shared computer starts fresh.
-- **Reset progress** clears the account, and other devices drop their copy instead of re-uploading it.
+When you sign in, progress is still saved locally in IndexedDB and synced to a single Firestore document at `users/{uid}`.
+Sync runs after each word, when you leave or return to the tab, and when the device reconnects.
+The merge rules are defined in `src/lib/sync.ts` and tested in `tests/unit/sync.test.ts`:
+
+- **Word progress:** the most recently practised result is kept.
+- **Characters written:** each device tracks its own count, and the counts are added together.
+  The home page shows the total for the current week, starting on Monday, using only counts recorded for that week.
+  A lifetime total is also saved.
+- **Streak:** practice days from all devices are combined.
+  If you practise for ten consecutive days on one device and continue on another the next day, your streak becomes eleven days.
+- **First sign-in:** if both the device and the account have saved progress, you can combine them or use only the account's progress.
+- **Sign out:** once all progress has synced to the account, the device's copy is cleared so someone else can use it.
+- **Reset progress:** the account's progress is cleared. Other devices then clear their copies when they sync.
 
 To turn it on:
 
 1. Create a Firebase project, enable the Google provider under Authentication, and add your hosting domain under Settings, Authorized domains.
 2. Create a Firestore database and publish the rules and indexes with `firebase deploy --only firestore`.
 3. Register a web app, copy `.env.example` to `.env.local`, fill in its values and rebuild.
-   These values are public by design: the Firestore rules control access.
+   These config values are public. Access to saved progress is controlled by the Firestore rules.
 
 ## Google handwriting recognition in relaxed mode (optional, off by default)
 
-Relaxed mode checks handwriting on the device. It can also ask Google's handwriting recognizer for a second opinion
-on ink that looks finished but doesn't pass: if Google reads the character asked for, it passes (without full marks),
-and if Google and the local checker both read the same other character, Momo names that look-alike straight away.
+Relaxed mode checks handwriting on your device. You can also enable Google's handwriting recognizer to check
+completed handwriting that the local checker rejects. If Google recognises the expected character, the answer passes
+but does not receive full marks. If both checkers identify the same incorrect character, Momo tells you which character
+your handwriting resembles.
 
-This uses the endpoint behind Google Translate's and Google Input Tools' handwriting input
-(`inputtools.google.com/request?ime=handwriting`). **It is not a public or documented API**: there are no terms,
-keys or guarantees, and it can change or disappear without notice. The app treats every failure (offline, a 1.5 s
-timeout, an unexpected reply) as "no opinion" and falls back to the local checker. Turning it on also **sends the
-learner's ink to Google**.
+This feature uses the handwriting endpoint used by Google Translate and Google Input Tools
+(`inputtools.google.com/request?ime=handwriting`). **It is not a public or documented API**, and there are no published
+terms for this use, API keys or availability guarantees. It may change or disappear without notice.
+If the request fails, takes longer than 1.5 seconds or returns an unexpected response, the app uses the local checker's result.
+Enabling this feature **sends the learner's handwriting to Google**.
 
-To turn it on, set `VITE_GOOGLE_HANDWRITING=1` in `.env.local` and rebuild. The code is in
-`src/features/practice/lib/handwriting.ts`, and the rules for when ink is sent in `src/features/practice/lib/inkCheck.ts`.
+To enable it, set `VITE_GOOGLE_HANDWRITING=1` in `.env.local` and rebuild.
+The integration is in `src/features/practice/lib/handwriting.ts`.
+The conditions for sending handwriting are defined in `src/features/practice/lib/inkCheck.ts`.
 
 ## Credits and sources
 
@@ -96,5 +106,6 @@ To turn it on, set `VITE_GOOGLE_HANDWRITING=1` in `.env.local` and rebuild. The 
 | Optional second opinion in relaxed mode | Google's handwriting recognizer, from Google Translate and Input Tools (unofficial, undocumented endpoint; nothing bundled) | Google's service, no published terms for this use |
 
 The MOE lists are the 2015 edition for P1 to P6 ([Chinese](https://www.moe.gov.sg/media/files/primary/f607087e-d909-4581-82ac-9c3867c617ee.pdf), [Higher Chinese](https://www.moe.gov.sg/media/files/primary/e055a4ab-c7f4-42b2-96a1-e2b96a370477.pdf)),
-which the levels follow, and 欢乐伙伴 2.0 for P1 and P2 ([Chinese](https://www.moe.gov.sg/api/media/6c0f68ed-a8bf-471c-9f32-b5ea75831910/2024-Character-List-Primary-One-to-Two-Chinese.pdf), [Higher Chinese](https://www.moe.gov.sg/api/media/394e06b1-f4f3-4e90-adb4-a33efd9e1c5e/2024-Character-List-Primary-One-to-Two-Higher-Chinese.pdf)).
-2.0 teaches some characters earlier (伞 moves from P2 to P1), so the levels will need updating as it reaches more years.
+which the app currently follows. The repo also includes 欢乐伙伴 2.0 lists for P1 and P2 ([Chinese](https://www.moe.gov.sg/api/media/6c0f68ed-a8bf-471c-9f32-b5ea75831910/2024-Character-List-Primary-One-to-Two-Chinese.pdf), [Higher Chinese](https://www.moe.gov.sg/api/media/394e06b1-f4f3-4e90-adb4-a33efd9e1c5e/2024-Character-List-Primary-One-to-Two-Higher-Chinese.pdf)).
+欢乐伙伴 2.0 introduces some characters earlier; for example, 伞 moves from P2 to P1.
+The app's levels will need updating as the new edition is introduced across more primary years.
