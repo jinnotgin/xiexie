@@ -652,7 +652,7 @@ function render(t) {
     T.hops.forEach((land, i) => {
       const p = seg(t, land - T.hopAir, land);
       if (p >= 1) at = i + 1;
-      if (p > 0 && p < 1) { cx = lerp(POS[i], POS[i + 1], E.sine(p)); cy = -Math.sin(Math.PI * p) * (200 + i * 50); tilt = Math.sin(Math.PI * 2 * p) * -10; }
+      if (p > 0 && p < 1) { cx = lerp(POS[i], POS[i + 1], E.sine(p)); cy = -Math.sin(Math.PI * p) * (130 + i * 20); tilt = Math.sin(Math.PI * 2 * p) * -10; }
       const after = seg(t, land, land + .3);
       if (after > 0 && after < 1) sq = 1 - Math.sin(Math.PI * after) * .14;
     });
@@ -661,7 +661,8 @@ function render(t) {
     const camX = kf(t, [[35.6, 0], [36.25, 300, "sine"], [37.5, 800, "sine"], [38.75, 1360, "sine"], [40.6, 1560, "sine"]]);
     const pin = E.out(seg(t, ...T.trackIn)), pout = E.in(seg(t, ...T.trackOut));
     const f = pin * (1 - pout);
-    trackEl.style.transform = `translate3d(${-camX - 330 + (1 - pin) * 900 - pout * 600}px, -10px, ${-pout * 600}px) rotateX(-17deg) rotateY(${-22 + (1 - pin) * 30}deg)`;
+    // The camera pans along the track itself (last translate), so every landing sits at the same height on screen
+    trackEl.style.transform = `translate3d(${-330 + (1 - pin) * 900 - pout * 600}px, 150px, ${180 - pout * 600}px) rotateX(-14deg) rotateY(${-15 + (1 - pin) * 30}deg) translate3d(${-camX}px, 0, 0)`;
     floorEl.style.opacity = f;
     wcard.style.opacity = f;
     wcard.style.transform = `translate3d(${cx}px, ${cy}px, 0) rotate(${tilt}deg) scale(${2 - sq}, ${sq})`;
