@@ -1,5 +1,7 @@
 # 写写 Xiě Xiě
 
+[![写写 in two handwriting grids, with the tagline: Remember how to write Chinese, one stroke at a time.](public/og-image.png)](https://xiexie.web.app)
+
 Chinese handwriting practice for Singaporeans who learnt Chinese in school but have barely written it since.
 Live at [xiexie.web.app](https://xiexie.web.app).
 
