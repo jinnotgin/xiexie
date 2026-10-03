@@ -313,7 +313,16 @@ h2{font-size:1.05rem;margin:0 0 10px}
 .momo-glyph{font-size:1.3rem;line-height:1;vertical-align:-.08em;margin:0 2px;padding:1px 4px;border-radius:5px;background:var(--marker);color:#1C2B3A}
 @keyframes pop{0%{transform:scale(.85);opacity:0}70%{transform:scale(1.04);opacity:1}100%{transform:scale(1)}}
 @keyframes wiggle{25%{transform:rotate(-12deg)}50%{transform:rotate(10deg)}75%{transform:rotate(-5deg)}}
-@media (prefers-reduced-motion: reduce){.momo-line.nudge,.momo-line.nudge svg{animation:none!important}.rival-enter-active,.rival-leave-active{transition:none}}
+/* Home, after "Reset progress": Momo hops, the bubble pops with the new line, the zeroed stats pop in turn */
+.momo.cheer{animation:hop .6s ease-out}
+.bubble.fresh{animation:pop .35s ease-out;background:color-mix(in srgb,var(--marker) 22%,var(--card))}
+.bubble.fresh::before{background:inherit}
+.stats.fresh .pill{animation:pop .35s ease-out backwards}
+.stats.fresh .pill:nth-child(2){animation-delay:.08s}
+.stats.fresh .pill:nth-child(3){animation-delay:.16s}
+.bubble,.bubble::before{transition:background-color .6s ease}
+@keyframes hop{0%,100%{transform:translateY(0)}30%{transform:translateY(-12px) rotate(-6deg)}60%{transform:translateY(0) rotate(4deg)}80%{transform:translateY(-4px)}}
+@media (prefers-reduced-motion: reduce){.momo.cheer,.bubble.fresh,.stats.fresh .pill,.momo-line.nudge,.momo-line.nudge svg{animation:none!important}.rival-enter-active,.rival-leave-active{transition:none}}
 .actions .btn-set{display:flex;gap:10px;justify-content:center;align-items:center}
 /* Relaxed: pad tools on the left, help on the right, one row even on a narrow phone. */
 .actions.split{justify-content:space-between;flex-wrap:nowrap;gap:8px}

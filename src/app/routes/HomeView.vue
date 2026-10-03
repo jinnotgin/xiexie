@@ -19,6 +19,7 @@ import { useAccountStore } from "../../features/account/stores/account";
 import { cloudError } from "../../features/account/lib/cloud";
 import { ask, tell } from "../../lib/dialog";
 import { useStartSession } from "../../features/practice/composables/useStartSession";
+import { useTimers } from "../../composables/useTimers";
 import Momo from "../../components/Momo.vue";
 import Icon from "../../components/Icon.vue";
 import InstallButton from "../../components/InstallButton.vue";
@@ -82,6 +83,24 @@ const dueCount = computed(() => learner.due().length);
 const dueNote = computed(() =>
   `${dueCount.value} word${dueCount.value > 1 ? "s" : ""} due for review. They'll come up first.`);
 
+// After a reset, scroll up to Momo, who reacts with a fresh-start line while the zeroed stats pop.
+const timers = useTimers();
+const fresh = ref(0); // bumped per reset, so a second reset replays the animation
+const celebrating = ref(false);
+let freshTimer: ReturnType<typeof timers.later> | undefined;
+function celebrateReset() {
+  greeting.value = pick(LINES.reset);
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const scrolled = window.scrollY > 0;
+  if (scrolled) window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+  timers.cancel(freshTimer);
+  freshTimer = timers.later(() => {
+    fresh.value++;
+    celebrating.value = true;
+    freshTimer = timers.later(() => { celebrating.value = false; }, 2500);
+  }, scrolled && !reduce ? 350 : 0); // let the scroll land so the reaction plays in view
+}
+
 async function reset() {
   if (account.signedIn) {
     if (!(await ask({
@@ -100,7 +119,7 @@ async function reset() {
     await learner.wipe();
   }
   track("progress_reset", { reset_scope: account.signedIn ? "account" : "device" });
-  greeting.value = pick(LINES.home);
+  celebrateReset();
 }
 
 onMounted(() => { if (!account.signedIn) account.prepare(); });
@@ -166,15 +185,15 @@ async function signOut() {
   </section>
   <section v-else id="home">
     <div class="masthead">
-      <Momo class="momo bob" id="momo-big" />
+      <Momo class="momo" :class="celebrating ? 'cheer' : 'bob'" :key="'momo' + fresh" id="momo-big" :mood="celebrating ? 'wow' : 'happy'" />
       <div>
         <h1 class="han">写写</h1>
         <p>Remember how to write, one stroke at a time.</p>
       </div>
       <InstallButton />
     </div>
-    <div class="bubble" id="home-bubble">{{ greeting }}</div>
-    <div class="stats" id="stats">
+    <div class="bubble" :class="{ fresh: celebrating }" :key="'bubble' + fresh" id="home-bubble" aria-live="polite">{{ greeting }}</div>
+    <div class="stats" :class="{ fresh: celebrating }" :key="'stats' + fresh" id="stats">
       <span class="pill"><Icon name="flame" />{{ streakLive(learner.meta) ? learner.meta.streak : 0 }}-day streak</span>
       <span class="pill"><Icon name="pen" />{{ writtenThisWeek(learner.meta) }} written this week</span>
       <span class="pill"><Icon name="award" />{{ levelMastered }} / {{ levelWords.length }} mastered in {{ levelLabel }}</span>

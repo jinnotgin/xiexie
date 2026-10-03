@@ -26,6 +26,11 @@ export const LINES = {
     "No 听写 marks today. Just you, me and some strokes.",
     "Pick a level and let's write a few. Won't take long one."
   ],
+  reset: [
+    "Progress reset! Clean slate, let's start again.",
+    "All cleared. Fresh page, fresh ink!",
+    "Done, everything's reset. Like the first day of school."
+  ],
   loading: [
     "Grinding the ink…",
     "Getting ready for you, ok?",
