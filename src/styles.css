@@ -237,6 +237,21 @@ h2{font-size:1.05rem;margin:0 0 10px}
 
 /* ---------- Library ---------- */
 .lib-title{font-size:1.5rem;margin-bottom:12px}
+/* The word list is long, so the way home stays pinned: a frosted strip bleeding to both window edges (body clips
+   the overflow a classic scrollbar would add), whose divider only fades in once there's content scrolling under it. */
+body{overflow-x:clip}
+#library .topbar{
+  position:sticky;top:0;z-index:5;
+  margin:calc(-16px - env(safe-area-inset-top,0px)) calc(50% - 50vw) 14px;
+  padding:calc(env(safe-area-inset-top,0px) + 8px) calc(50vw - 50%) 8px;
+  background:color-mix(in srgb,var(--paper) 82%,transparent);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  border-bottom:1px solid color-mix(in srgb,var(--ink-soft) 25%,transparent);
+}
+@supports (animation-timeline:scroll()){
+  #library .topbar{border-bottom-color:transparent;animation:lib-bar-edge linear both;animation-timeline:scroll();animation-range:0 48px}
+}
+@keyframes lib-bar-edge{to{border-bottom-color:color-mix(in srgb,var(--ink-soft) 25%,transparent);box-shadow:0 6px 16px -10px color-mix(in srgb,var(--ink) 35%,transparent)}}
 .search{position:relative;margin-bottom:12px}
 .search input{
   width:100%;font:inherit;font-size:1rem;color:var(--ink);background:var(--card);
