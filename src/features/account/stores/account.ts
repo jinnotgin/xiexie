@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { identify, track } from "../../../lib/analytics";
 import { computed, ref, watch } from "vue";
 import { useProgressStore } from "../../../stores/progress";
-import { cloudEnabled, loadCloud, type Cloud, type CloudUser } from "../lib/cloud";
+import { cloudEnabled, loadCloud, signInUnsupported, type Cloud, type CloudUser } from "../lib/cloud";
 import {
   applyPatch, emptyCloud, linkAction, newId, pullChanges, pushPatch, summarizeCloud, summarizeLocal,
 } from "../../../lib/sync";
@@ -20,6 +20,8 @@ export const useAccountStore = defineStore("account", () => {
   const user = ref<CloudUser | null>(null);
   const state = ref<"idle" | "busy" | "synced" | "offline" | "error">("idle");
   const conflict = ref<Conflict | null>(null);
+  /** Sign-in failed in a way that means it can't work in this browser (see signInUnsupported). */
+  const unsupported = ref(false);
 
   let cloud: Cloud | null = null;
   let connecting: Promise<Cloud> | null = null;
@@ -84,6 +86,7 @@ export const useAccountStore = defineStore("account", () => {
       await (cloud || await connect()).signIn(); // onUser takes it from here
     } catch (e) {
       state.value = "idle";
+      if (signInUnsupported(e)) unsupported.value = true;
       throw e;
     }
   }
@@ -190,7 +193,7 @@ export const useAccountStore = defineStore("account", () => {
   }
 
   return {
-    enabled: cloudEnabled, user, state, conflict, signedIn, lapsed,
+    enabled: cloudEnabled, user, state, conflict, signedIn, lapsed, unsupported,
     start, prepare, signIn, choose, flush, signOut, resetAll,
   };
 });

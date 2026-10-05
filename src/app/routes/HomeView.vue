@@ -138,9 +138,27 @@ const storageNote = computed(() => {
   }
   if (account.state === "busy") return { title: "Signing in…", detail: "" };
   if (account.lapsed) return { title: "You've been signed out", detail: "Sign in again to keep your progress." };
-  if (!learner.persistent) return { title: "Storage is unavailable here", detail: "Progress lasts until you close this page." };
+  if (account.unsupported) return learner.persistent
+    ? { title: "Sign-in doesn't work in this browser", detail: "Your progress is still saved here." }
+    : { title: "Sign-in doesn't work in this browser", detail: "Try opening 写写 in another browser to keep your progress.", warn: true };
+  if (!learner.persistent) {
+    if (!account.enabled) return { title: "This browser won't save your progress", detail: "Progress lasts until you close this page." };
+    const n = learner.progress.size;
+    if (!n) return { title: "Sign in to keep your progress", detail: "This browser forgets it when you close the page." };
+    return { title: `Don't lose your ${n === 1 ? "1 word" : `${n} words`}`, detail: `This browser forgets ${n === 1 ? "it" : "them"} when closed. Sign in to keep ${n === 1 ? "it" : "them"}.`, warn: true };
+  }
   return { title: "Saved on this browser", detail: account.enabled ? "Sign in to keep it on all your devices." : "" };
 });
+
+// Where sign-in can't work and nothing is saved, the way out is this page in another browser.
+const copied = ref(false);
+async function copyLink() {
+  const url = location.origin + location.pathname;
+  try { await navigator.clipboard.writeText(url); }
+  catch { return tell("Copy this link", url); }
+  copied.value = true;
+  timers.later(() => { copied.value = false; }, 2000);
+}
 // Stamped into <meta name="build-commit"> by vite.config.ts.
 const buildCommit = document.querySelector<HTMLMetaElement>('meta[name="build-commit"]')?.content;
 
@@ -257,7 +275,7 @@ async function signOut() {
       <button class="btn" id="open-library" @click="router.push({ name: 'library' })">Browse all words</button>
     </div>
 
-    <div class="sync-card" :class="{ synced: syncHealthy, 'has-link': account.enabled && account.signedIn }">
+    <div class="sync-card" :class="{ synced: syncHealthy, warn: storageNote.warn, 'has-link': account.enabled && account.signedIn }">
       <Icon :name="account.signedIn ? 'cloud' : 'device'" class="sync-icon" />
       <p class="sync-text">
         <strong id="storage-note">{{ storageNote.title }}</strong>
@@ -265,6 +283,9 @@ async function signOut() {
       </p>
       <template v-if="account.enabled">
         <button v-if="account.signedIn" class="linkish" id="sign-out" @click="signOut">Sign out</button>
+        <template v-else-if="account.unsupported">
+          <button v-if="!learner.persistent" class="btn small" id="copy-link" @click="copyLink">{{ copied ? "Copied" : "Copy link" }}</button>
+        </template>
         <button v-else class="btn small" id="sign-in" :disabled="account.state === 'busy'" @click="signIn">Sign in with Google</button>
       </template>
     </div>

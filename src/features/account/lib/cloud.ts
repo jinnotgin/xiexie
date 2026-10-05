@@ -65,10 +65,20 @@ async function init() {
   };
 }
 
+/**
+ * Firebase says sign-in can't run in this browser at all (it can't open its sign-in frame's storage,
+ * or the environment isn't supported), so offering the button again won't help.
+ */
+export function signInUnsupported(e: unknown): boolean {
+  const code = (e as { code?: string })?.code || "";
+  return code === "auth/web-storage-unsupported" || code === "auth/operation-not-supported-in-this-environment";
+}
+
 /** A short, learner-facing reason for a failed Firebase call, or null if it needs no message. */
 export function cloudError(e: unknown): string | null {
   const code = (e as { code?: string })?.code || "";
   if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") return null;
+  if (signInUnsupported(e)) return null; // the home bar explains it instead
   if (code === "auth/popup-blocked") return "Your browser blocked the sign-in window. Allow pop-ups for this site and try again.";
   if (code === "auth/unauthorized-domain") return "Sign-in isn't set up for this web address yet.";
   if (code === "auth/network-request-failed" || code === "unavailable" || !navigator.onLine) return "You seem to be offline. Try again when you're connected.";
