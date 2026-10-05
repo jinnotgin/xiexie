@@ -132,6 +132,9 @@ h2{font-size:1.05rem;margin:0 0 10px}
 .sync-card.synced{border-style:solid;border-color:var(--jade)}
 .sync-icon{width:22px;height:22px;flex:none;color:var(--ink-soft)}
 .sync-card.synced .sync-icon{color:var(--jade)}
+/* Progress is at risk: this browser won't keep it. */
+.sync-card.warn{border-style:solid;border-color:var(--seal)}
+.sync-card.warn .sync-icon{color:var(--seal)}
 .sync-text{margin:0;min-width:0;font-size:.9rem;line-height:1.35}
 .sync-text strong{display:block;font-weight:600}
 .sync-text small{display:block;color:var(--ink-soft);font-size:.82rem;overflow-wrap:anywhere}
