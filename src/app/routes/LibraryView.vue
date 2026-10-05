@@ -2,7 +2,7 @@
 import { track } from "../../lib/analytics";
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { LEVELS, LIB_INTRO, SOURCE_NOTE } from "../../data/levels";
+import { LEVELS, LIB_INTRO } from "../../data/levels";
 import { WORDS, wordsIn } from "../../data/words";
 import type { Word } from "../../types";
 import { searchWords } from "../../features/library/lib/search";
@@ -42,7 +42,9 @@ const tabLabels = computed(() => Object.fromEntries(LEVELS.map(L => {
   const ws = wordsIn(L.id);
   return [L.id, `${L.name} (${ws.filter(w => learner.statusOf(w.id) === "mastered").length}/${ws.length})`];
 })));
-const intro = computed(() => LIB_INTRO[level.value.startsWith("p") ? "p" : level.value]);
+const intro = computed(() => level.value.startsWith("p")
+  ? LIB_INTRO.p.replace("{level}", LEVELS.find(L => L.id === level.value)?.name ?? "")
+  : LIB_INTRO[level.value]);
 function pickLevel(id: string) { if (id === level.value) query.value = ""; else router.replace({ query: { level: id } }); }
 function openWord(word: Word) {
   track("library_word_opened", {
@@ -79,6 +81,15 @@ function openWord(word: Word) {
         <span class="w han">{{ w.w }}</span><small>{{ w.p }}</small><small class="en">{{ w.e }}</small>
       </button>
     </div>
-    <p class="source-note" id="source-note">{{ SOURCE_NOTE }}</p>
+    <p class="source-note" id="source-note">
+      English meanings for Chinese characters are picked automatically from
+      <a href="https://www.mdbg.net/chinese/dictionary?page=cc-cedict" target="_blank" rel="noopener">CC-CEDICT</a> and
+      <a href="https://github.com/drkameleon/complete-hsk-vocabulary" target="_blank" rel="noopener">Complete HSK Vocabulary</a>,
+      so a few may read oddly.
+    </p>
+    <p class="source-note">
+      Character stroke order comes from the
+      <a href="https://github.com/skishore/makemeahanzi" target="_blank" rel="noopener">Make Me a Hanzi</a> dataset.
+    </p>
   </section>
 </template>

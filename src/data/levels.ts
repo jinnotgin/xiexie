@@ -20,7 +20,7 @@ export const LEVEL_MIGRATION: Record<string, string[]> = {
 };
 
 export const LIB_INTRO: Record<string, string> = {
-  p: "Characters first taught in this year, following the 欢乐伙伴 Higher Chinese character lists (which include every Chinese character).",
+  p: "Characters taught in the {level} MOE Higher Chinese syllabus (欢乐伙伴).",
   sec1: "The most common quarter of China's 3,500 everyday characters not taught in primary school.",
   sec2: "The second most common quarter of China's 3,500 everyday characters not taught in primary school.",
   sec3: "The third most common quarter of China's 3,500 everyday characters not taught in primary school.",
@@ -28,4 +28,3 @@ export const LIB_INTRO: Record<string, string> = {
   biz: "Everyday office and business words: meetings, money, contracts, email, plus a few Singapore ones like CPF and GST.",
 };
 
-export const SOURCE_NOTE = "Word choices and English meanings are picked automatically from CC-CEDICT (CC BY-SA 4.0) and HSK word lists, so a few may read oddly. Stroke data from Make Me a Hanzi via Hanzi Writer.";

@@ -274,6 +274,9 @@ body{overflow-x:clip}
 .legend i.m{border-color:var(--jade);background:var(--jade)}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
 .source-note{color:var(--ink-soft);font-size:.8rem;line-height:1.5;margin:22px 0 0}
+.source-note a{color:inherit;white-space:nowrap;text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--jade) 45%,transparent);text-decoration-thickness:1.5px;text-underline-offset:3px;transition:color .15s,text-decoration-color .15s}
+.source-note a:hover,.source-note a:focus-visible{color:var(--jade);text-decoration-color:var(--jade)}
+.source-note + .source-note{margin-top:6px}
 .lib-intro{color:var(--ink-soft);font-size:.9rem;margin:-4px 0 12px}
 .tile{background:var(--card);border:2px solid var(--faint);border-radius:12px;padding:10px 6px 8px;cursor:pointer;text-align:center;position:relative}
 .tile .w{font-size:1.5rem;line-height:1.2;display:block;white-space:nowrap}
